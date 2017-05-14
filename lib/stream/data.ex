@@ -47,6 +47,25 @@ defmodule Stream.Data do
 
     new(generator, &is_integer/1)
   end
+
+  def list(%__MODULE__{} = data) do
+    generator = fn state ->
+      {length, seed} = :rand.uniform_s(state.size + 1, state.seed)
+      length = length - 1
+
+      if length > 0 do
+        Enum.map_reduce(1..length, %{state | seed: seed}, fn _i, acc ->
+          data.generator.(acc)
+        end)
+      else
+        {[], %{state | seed: seed}}
+      end
+    end
+
+    validator = Saul.list_of(data.validator)
+
+    new(generator, validator)
+  end
 end
 
 defimpl Enumerable, for: Stream.Data do

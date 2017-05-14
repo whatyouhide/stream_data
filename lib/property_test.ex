@@ -11,7 +11,7 @@ defmodule PropertyTest do
       |> Stream.unfold(iteration_fun)
       |> Stream.filter(&match?({:iteration_completed, _}, &1))
       |> Stream.take(100)
-      |> Stream.run()
+      |> Enum.each(fn _ -> IO.write("≈") end)
     end
   end
 
