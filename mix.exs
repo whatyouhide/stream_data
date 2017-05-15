@@ -22,6 +22,7 @@ defmodule StreamData.Mixfile do
   defp deps do
     [
       {:saul, "~> 0.1"},
+      {:eqc_ex, ">= 0.0.0"},
     ]
   end
 end

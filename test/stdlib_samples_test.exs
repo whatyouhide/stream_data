@@ -6,7 +6,6 @@ defmodule StdlibSamplesTest do
 
   test ":lists.reverse/1" do
     for_all(with list <- list(int()) do
-      IO.puts "testing list #{inspect(list)}"
       assert length(:lists.reverse(list)) == length(list)
       assert List.first(list) == List.last(:lists.reverse(list))
     end)

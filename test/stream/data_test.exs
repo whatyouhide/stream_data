@@ -17,9 +17,9 @@ defmodule Stream.DataTest do
   end
 
   defp generator() do
-    fn state ->
-      {next, seed} = :rand.uniform_s(state.size * 2, state.seed)
-      {next - state.size, %{state | seed: seed}}
+    fn seed, size ->
+      {next, seed} = :rand.uniform_s(size * 2, seed)
+      {next - size, seed}
     end
   end
 

@@ -5,66 +5,96 @@ defmodule Stream.Data do
   #   smaller values---used after a test fails, to enable
   #   QuickCheck to search for a similar, but simpler failing case.
 
+  @type size :: non_neg_integer
+  @type generator(result) :: (:rand.state, size -> {result, :rand.state})
+
   defstruct [
     :generator,
     :validator,
-    :state,
+    :size,
+    :seed,
   ]
 
-  def new(generator, validator, options \\ []) when is_function(generator, 1) do
-    state = %{
-      size: options[:size] || 10,
-      seed: options[:seed] || :rand.seed(:exs64),
+  def new(generator, validator) do
+    %__MODULE__{
+      generator: generator,
+      validator: validator,
+      size: 10,
+      seed: :rand.seed(:exs64),
     }
+  end
 
-    %__MODULE__{generator: generator, validator: validator, state: state}
+  def bind(generator, fun) when is_function(fun, 1) do
+    fn seed, size ->
+      {next, seed} = generator.(seed, size)
+      fun.(next).(seed, size)
+    end
   end
 
   def filter(%__MODULE__{} = data, validator) do
-    filtered_generator = fn state ->
-      filter_generator(state, data.generator, validator)
+    filtered_generator = fn seed, size ->
+      filter_generator(seed, size, data.generator, validator)
     end
     filtered_validator = Saul.all_of([data.validator, validator])
 
     %{data | generator: filtered_generator, validator: filtered_validator}
   end
 
-  defp filter_generator(state, generator, validator) do
-    {next_elem, new_state} = generator.(state)
-    case Saul.validate(next_elem, validator) do
-      {:ok, transformed} -> {transformed, new_state}
-      _other -> filter_generator(new_state, generator, validator)
+  defp filter_generator(seed, size, generator, validator) do
+    {next, seed} = generator.(seed, size)
+    case Saul.validate(next, validator) do
+      {:ok, transformed} -> {transformed, seed}
+      _other -> filter_generator(seed, size, generator, validator)
     end
   end
 
   ## Generators
 
   def int() do
-    generator = fn state ->
-      {next, seed} = :rand.uniform_s(state.size * 2, state.seed)
-      {next - state.size, %{state | seed: seed}}
+    generator = fn seed, size ->
+      {next, seed} = :rand.uniform_s(size * 2, seed)
+      {next - size, seed}
     end
 
     new(generator, &is_integer/1)
   end
 
   def list(%__MODULE__{} = data) do
-    generator = fn state ->
-      {length, seed} = :rand.uniform_s(state.size + 1, state.seed)
+    generator = fn seed, size ->
+      {length, seed} = :rand.uniform_s(size + 1, seed)
       length = length - 1
 
       if length > 0 do
-        Enum.map_reduce(1..length, %{state | seed: seed}, fn _i, acc ->
-          data.generator.(acc)
+        Enum.map_reduce(1..length, seed, fn _i, acc ->
+          data.generator.(acc, size)
         end)
       else
-        {[], %{state | seed: seed}}
+        {[], seed}
       end
     end
 
     validator = Saul.list_of(data.validator)
 
     new(generator, validator)
+  end
+
+  def binary() do
+    generator = fn seed, size ->
+      {length, seed} = :rand.uniform_s(size + 1, seed)
+      length = length - 1
+
+      if length > 0 do
+        {bytes, seed} = Enum.map_reduce(1..length, seed, fn _, acc ->
+          {byte, seed} = :rand.uniform_s(256, acc)
+          {byte - 1, seed}
+        end)
+        {IO.iodata_to_binary(bytes), seed}
+      else
+        {<<>>, seed}
+      end
+    end
+
+    new(generator, &is_binary/1)
   end
 end
 
@@ -78,8 +108,8 @@ defimpl Enumerable, for: Stream.Data do
   end
 
   def reduce(data, {:cont, acc}, fun) do
-    {next_elem, new_state} = data.generator.(data.state)
-    reduce(%{data | state: new_state}, fun.(next_elem, acc), fun)
+    {next_elem, new_seed} = data.generator.(data.seed, data.size)
+    reduce(%{data | seed: new_seed}, fun.(next_elem, acc), fun)
   end
 
   def count(_data) do

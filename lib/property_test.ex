@@ -50,8 +50,10 @@ defmodule PropertyTest do
   defp compile_clauses([{:<-, _meta, [{var_name, _, context} = var, generator]} | rest], block)
       when is_atom(var_name) and is_atom(context) do
     quote do
-      {unquote(var), new_state} = unquote(generator).generator.(var!(state))
-      var!(state) = new_state
+      seed = var!(state).seed
+      size = var!(state).size
+      {unquote(var), new_seed} = unquote(generator).generator.(seed, size)
+      var!(state) = %{var!(state) | seed: new_seed}
       unquote(compile_clauses(rest, block))
     end
   end
