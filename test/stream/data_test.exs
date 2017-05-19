@@ -3,6 +3,25 @@ defmodule Stream.DataTest do
 
   alias Stream.Data
 
+  test "map/2" do
+    elements =
+      Data.int()
+      |> Data.map(&abs/1)
+      |> Enum.take(10_000)
+
+    assert Enum.all?(elements, &(is_integer(&1) and &1 >= 0))
+  end
+
+  test "one_of/1" do
+    elements =
+      [Data.int(), Data.binary()]
+      |> Data.one_of()
+      |> Enum.take(10_000)
+
+    assert Enum.any?(elements, &is_binary/1)
+    assert Enum.any?(elements, &is_integer/1)
+  end
+
   test "filter/2" do
     data = Data.new(generator(), validator())
 

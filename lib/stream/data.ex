@@ -1,12 +1,5 @@
 defmodule Stream.Data do
-  # * A set of values that can be generated,
-  # * A probability distribution on that set,
-  # * A way of shrinking generated values to similar,
-  #   smaller values---used after a test fails, to enable
-  #   QuickCheck to search for a similar, but simpler failing case.
-
-  @type size :: non_neg_integer
-  @type generator(result) :: (:rand.state, size -> {result, :rand.state})
+  alias Stream.Data.Random
 
   defstruct [
     :generator,
@@ -19,16 +12,9 @@ defmodule Stream.Data do
     %__MODULE__{
       generator: generator,
       validator: validator,
-      size: 10,
+      size: 5,
       seed: :rand.seed(:exs64),
     }
-  end
-
-  def bind(generator, fun) when is_function(fun, 1) do
-    fn seed, size ->
-      {next, seed} = generator.(seed, size)
-      fun.(next).(seed, size)
-    end
   end
 
   def filter(%__MODULE__{} = data, validator) do
@@ -48,28 +34,73 @@ defmodule Stream.Data do
     end
   end
 
-  ## Generators
-
-  def int() do
+  def map(data, fun) when is_function(fun, 1) do
     generator = fn seed, size ->
-      {next, seed} = :rand.uniform_s(size * 2, seed)
-      {next - size, seed}
+      {next, seed} = data.generator.(seed, size)
+      {fun.(next), seed}
     end
 
+    validator = Saul.all_of([data.validator, Saul.transform(fun)])
+
+    %{data | generator: generator, validator: validator}
+  end
+
+  ## Combinators
+
+  def one_of([_ | _] = datas) do
+    generator = fn seed, size ->
+      {index, seed} = Random.uniform_in_range(0..(length(datas) - 1), seed)
+      data = Enum.fetch!(datas, index)
+      data.generator.(seed, size)
+    end
+
+    validator =
+      datas
+      |> Enum.map(&(&1.validator))
+      |> Saul.one_of()
+
+    new(generator, validator)
+  end
+
+  ## Generators
+
+  def boolean() do
+    generator = fn seed, _size -> Random.boolean(seed) end
+    new(generator, &is_boolean/1)
+  end
+
+  def int(lower..upper) when lower > upper do
+    int(upper..lower)
+  end
+
+  def int(_lower.._upper = range) do
+    generator = fn seed, _size -> Random.uniform_in_range(range, seed) end
+    new(generator, &(is_integer(&1) and &1 in range))
+  end
+
+  def int() do
+    generator = fn seed, size -> Random.uniform_in_range(-size..size, seed) end
     new(generator, &is_integer/1)
+  end
+
+  def byte() do
+    int(0..255)
+  end
+
+  def binary() do
+    generator = byte() |> list() |> map(&IO.iodata_to_binary/1)
+    new(generator, &is_binary/1)
   end
 
   def list(%__MODULE__{} = data) do
     generator = fn seed, size ->
-      {length, seed} = :rand.uniform_s(size + 1, seed)
-      length = length - 1
-
-      if length > 0 do
-        Enum.map_reduce(1..length, seed, fn _i, acc ->
-          data.generator.(acc, size)
-        end)
-      else
-        {[], seed}
+      case Random.uniform_in_range(0..size, seed) do
+        {0, seed} ->
+          {[], seed}
+        {length, seed} ->
+          Enum.map_reduce(1..length, seed, fn _i, acc ->
+            data.generator.(acc, size)
+          end)
       end
     end
 
@@ -78,23 +109,23 @@ defmodule Stream.Data do
     new(generator, validator)
   end
 
-  def binary() do
+  def map(%__MODULE__{} = key_data, %__MODULE__{} = value_data) do
     generator = fn seed, size ->
-      {length, seed} = :rand.uniform_s(size + 1, seed)
-      length = length - 1
-
-      if length > 0 do
-        {bytes, seed} = Enum.map_reduce(1..length, seed, fn _, acc ->
-          {byte, seed} = :rand.uniform_s(256, acc)
-          {byte - 1, seed}
-        end)
-        {IO.iodata_to_binary(bytes), seed}
-      else
-        {<<>>, seed}
+      case Random.uniform_in_range(0..size, seed) do
+        {0, seed} ->
+          {%{}, seed}
+        {length, seed} ->
+          Enum.reduce(1..length, {%{}, seed}, fn _i, {map, seed} ->
+            {key, seed} = key_data.generator.(seed, size)
+            {value, seed} = value_data.generator.(seed, size)
+            {Map.put(map, key, value), seed}
+          end)
       end
     end
 
-    new(generator, &is_binary/1)
+    validator = Saul.map_of(key_data.validator, value_data.validator)
+
+    new(generator, validator)
   end
 end
 
