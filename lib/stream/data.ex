@@ -88,8 +88,10 @@ defmodule Stream.Data do
   end
 
   def binary() do
-    generator = byte() |> list() |> map(&IO.iodata_to_binary/1)
-    new(generator, &is_binary/1)
+    byte()
+    |> list()
+    |> map(&IO.iodata_to_binary/1)
+    |> Map.put(:validator, &is_binary/1)
   end
 
   def list(%__MODULE__{} = data) do
@@ -105,25 +107,6 @@ defmodule Stream.Data do
     end
 
     validator = Saul.list_of(data.validator)
-
-    new(generator, validator)
-  end
-
-  def map(%__MODULE__{} = key_data, %__MODULE__{} = value_data) do
-    generator = fn seed, size ->
-      case Random.uniform_in_range(0..size, seed) do
-        {0, seed} ->
-          {%{}, seed}
-        {length, seed} ->
-          Enum.reduce(1..length, {%{}, seed}, fn _i, {map, seed} ->
-            {key, seed} = key_data.generator.(seed, size)
-            {value, seed} = value_data.generator.(seed, size)
-            {Map.put(map, key, value), seed}
-          end)
-      end
-    end
-
-    validator = Saul.map_of(key_data.validator, value_data.validator)
 
     new(generator, validator)
   end
