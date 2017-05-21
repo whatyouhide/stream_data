@@ -17,4 +17,15 @@ defmodule StdlibSamplesTest do
       assert String.starts_with?(bin1 <> bin2, bin1)
     end)
   end
+
+  describe "List" do
+    test "duplicate/2" do
+      for_all(with n <- filter(int(), &(&1 >= 0)),
+                   i <- int() do
+        list = List.duplicate(i, n)
+        assert length(list) == n
+        assert Enum.all?(list, &(&1 == i))
+      end)
+    end
+  end
 end

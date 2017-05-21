@@ -4,16 +4,12 @@ defmodule Stream.Data do
   defstruct [
     :generator,
     :validator,
-    :size,
-    :seed,
   ]
 
-  def new(generator, validator) do
+  def new(generator, validator) when is_function(generator, 2) do
     %__MODULE__{
       generator: generator,
       validator: validator,
-      size: 5,
-      seed: :rand.seed(:exs64),
     }
   end
 
@@ -22,10 +18,11 @@ defmodule Stream.Data do
       filter_generator(seed, size, data.generator, validator)
     end
     filtered_validator = Saul.all_of([data.validator, validator])
-
-    %{data | generator: filtered_generator, validator: filtered_validator}
+    new(filtered_generator, filtered_validator)
   end
 
+  # TODO: this doesn't work because it can keep trying forever, we
+  # need a mechanism to make it try N times tops.
   defp filter_generator(seed, size, generator, validator) do
     {next, seed} = generator.(seed, size)
     case Saul.validate(next, validator) do
@@ -42,7 +39,12 @@ defmodule Stream.Data do
 
     validator = Saul.all_of([data.validator, Saul.transform(fun)])
 
-    %{data | generator: generator, validator: validator}
+    new(generator, validator)
+  end
+
+  def resize(data, new_size) do
+    generator = fn seed, _size -> data.generator.(seed, new_size) end
+    %{data | generator: generator}
   end
 
   ## Combinators
@@ -64,9 +66,16 @@ defmodule Stream.Data do
 
   ## Generators
 
+  def fixed(term) do
+    generator = fn seed, _size -> {term, seed} end
+    validator = Saul.lit(term)
+    new(generator, validator)
+  end
+
   def boolean() do
     generator = fn seed, _size -> Random.boolean(seed) end
-    new(generator, &is_boolean/1)
+    validator = &is_boolean/1
+    new(generator, validator)
   end
 
   def int(lower..upper) when lower > upper do
@@ -110,27 +119,14 @@ defmodule Stream.Data do
 
     new(generator, validator)
   end
-end
 
-defimpl Enumerable, for: Stream.Data do
-  def reduce(_data, {:halt, acc}, _fun) do
-    {:halted, acc}
-  end
-
-  def reduce(data, {:suspend, acc}, fun) do
-    {:suspended, acc, &reduce(data, &1, fun)}
-  end
-
-  def reduce(data, {:cont, acc}, fun) do
-    {next_elem, new_seed} = data.generator.(data.seed, data.size)
-    reduce(%{data | seed: new_seed}, fun.(next_elem, acc), fun)
-  end
-
-  def count(_data) do
-    {:error, __MODULE__}
-  end
-
-  def member?(_data, _elem) do
-    {:error, __MODULE__}
+  def member(enum) do
+    generator = fn seed, _size ->
+      enum_length = Enum.copunt(enum)
+      {random_index, seed} = Random.uniform_in_range(0..(enum_length - 1), seed)
+      {Enum.fetch!(enum, random_index), seed}
+    end
+    validator = Saul.member(enum)
+    new(generator, validator)
   end
 end
