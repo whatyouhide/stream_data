@@ -5,6 +5,23 @@ defmodule Stream.DataTest do
     assert_raise FunctionClauseError, fn -> Stream.Data.new(%{}) end
   end
 
+  test "implementation of the Enumerable protocol" do
+    integers = Enum.take(Stream.Data.int(), 10)
+    assert Enum.all?(integers, &is_integer/1)
+  end
+
+  test "resize/1" do
+    data = Stream.Data.new(fn seed, size ->
+      case :rand.uniform_s(2, seed) do
+        {1, seed} -> {size, seed}
+        {2, seed} -> {-size, seed}
+      end
+    end)
+    values = Enum.take(Stream.Data.resize(data, 10), 1000)
+
+    assert Enum.all?(values, &(&1 in [-10, 10]))
+  end
+
   test "fmap/1" do
     [integer] =
       data()
@@ -12,11 +29,6 @@ defmodule Stream.DataTest do
       |> take(1, _size = 5)
 
     assert integer in -1..-5
-  end
-
-  test "implementation of the Enumerable protocol" do
-    integers = Enum.take(Stream.Data.int(), 10)
-    assert Enum.all?(integers, &is_integer/1)
   end
 
   test "one_of/1" do
