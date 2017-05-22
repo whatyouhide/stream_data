@@ -27,7 +27,7 @@ defmodule Property do
   # {:pattern_failed, new_state}.
   defp compile_clauses([{:<-, _meta, [pattern, generator]} | rest], block) do
     quote generated: true do
-      case unquote(generator).generator.(var!(seed), var!(size)) do
+      case Stream.Data.call(unquote(generator), var!(seed), var!(size)) do
         {unquote(pattern), new_seed} ->
           var!(seed) = new_seed
           unquote(compile_clauses(rest, block))

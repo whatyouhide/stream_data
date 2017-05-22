@@ -3,79 +3,59 @@ defmodule Stream.Data do
 
   defstruct [
     :generator,
-    :validator,
   ]
 
-  def new(generator, validator) when is_function(generator, 2) do
-    %__MODULE__{
-      generator: generator,
-      validator: validator,
-    }
+  def new(generator) when is_function(generator, 2) do
+    %__MODULE__{generator: generator}
   end
 
-  def filter(%__MODULE__{} = data, validator) do
-    filtered_generator = fn seed, size ->
-      filter_generator(seed, size, data.generator, validator)
-    end
-    filtered_validator = Saul.all_of([data.validator, validator])
-    new(filtered_generator, filtered_validator)
+  def call(%__MODULE__{generator: generator}, seed, size) do
+    generator.(seed, size)
   end
 
-  # TODO: this doesn't work because it can keep trying forever, we
-  # need a mechanism to make it try N times tops.
-  defp filter_generator(seed, size, generator, validator) do
-    {next, seed} = generator.(seed, size)
-    case Saul.validate(next, validator) do
-      {:ok, transformed} -> {transformed, seed}
-      _other -> filter_generator(seed, size, generator, validator)
-    end
-  end
-
-  def map(data, fun) when is_function(fun, 1) do
-    generator = fn seed, size ->
-      {next, seed} = data.generator.(seed, size)
+  def fmap(%__MODULE__{} = data, fun) when is_function(fun, 1) do
+    new(fn seed, size ->
+      {next, seed} = call(data, seed, size)
       {fun.(next), seed}
-    end
-
-    validator = Saul.all_of([data.validator, Saul.transform(fun)])
-
-    new(generator, validator)
+    end)
   end
 
-  def resize(data, new_size) do
-    generator = fn seed, _size -> data.generator.(seed, new_size) end
-    %{data | generator: generator}
+  def resize(%__MODULE__{} = data, new_size) when is_integer(new_size) and new_size >= 0 do
+    new(fn seed, _size ->
+      call(data, seed, new_size)
+    end)
   end
 
   ## Combinators
 
   def one_of([_ | _] = datas) do
-    generator = fn seed, size ->
-      {index, seed} = Random.uniform_in_range(0..(length(datas) - 1), seed)
-      data = Enum.fetch!(datas, index)
-      data.generator.(seed, size)
-    end
-
-    validator =
+    new(fn seed, size ->
+      {index, seed} = Random.uniform_in_range(0..length(datas) - 1, seed)
       datas
-      |> Enum.map(&(&1.validator))
-      |> Saul.one_of()
-
-    new(generator, validator)
+      |> Enum.fetch!(index)
+      |> call(seed, size)
+    end)
   end
 
   ## Generators
 
   def fixed(term) do
-    generator = fn seed, _size -> {term, seed} end
-    validator = Saul.lit(term)
-    new(generator, validator)
+    new(fn seed, _size -> {term, seed} end)
   end
 
+  def member(enum) do
+    enum_length = Enum.count(enum)
+
+    new(fn seed, _size ->
+      {index, seed} = Random.uniform_in_range(0..enum_length - 1, seed)
+      {Enum.fetch!(enum, index), seed}
+    end)
+  end
+
+  ## Simple data types
+
   def boolean() do
-    generator = fn seed, _size -> Random.boolean(seed) end
-    validator = &is_boolean/1
-    new(generator, validator)
+    new(fn seed, _size -> Random.boolean(seed) end)
   end
 
   def int(lower..upper) when lower > upper do
@@ -83,13 +63,11 @@ defmodule Stream.Data do
   end
 
   def int(_lower.._upper = range) do
-    generator = fn seed, _size -> Random.uniform_in_range(range, seed) end
-    new(generator, &(is_integer(&1) and &1 in range))
+    new(fn seed, _size -> Random.uniform_in_range(range, seed) end)
   end
 
   def int() do
-    generator = fn seed, size -> Random.uniform_in_range(-size..size, seed) end
-    new(generator, &is_integer/1)
+    new(fn seed, size -> Random.uniform_in_range(-size..size, seed) end)
   end
 
   def byte() do
@@ -99,12 +77,13 @@ defmodule Stream.Data do
   def binary() do
     byte()
     |> list()
-    |> map(&IO.iodata_to_binary/1)
-    |> Map.put(:validator, &is_binary/1)
+    |> fmap(&IO.iodata_to_binary/1)
   end
 
+  ## Compound data types
+
   def list(%__MODULE__{} = data) do
-    generator = fn seed, size ->
+    new(fn seed, size ->
       case Random.uniform_in_range(0..size, seed) do
         {0, seed} ->
           {[], seed}
@@ -113,20 +92,33 @@ defmodule Stream.Data do
             data.generator.(acc, size)
           end)
       end
-    end
-
-    validator = Saul.list_of(data.validator)
-
-    new(generator, validator)
+    end)
   end
 
-  def member(enum) do
-    generator = fn seed, _size ->
-      enum_length = Enum.copunt(enum)
-      {random_index, seed} = Random.uniform_in_range(0..(enum_length - 1), seed)
-      {Enum.fetch!(enum, random_index), seed}
+  ## Enumerable
+
+  defimpl Enumerable do
+    @initial_size 1
+
+    def reduce(data, acc, fun) do
+      reduce(data, acc, fun, :rand.seed_s(:exs64), @initial_size)
     end
-    validator = Saul.member(enum)
-    new(generator, validator)
+
+    defp reduce(_data, {:halt, acc}, _fun, _seed, _size) do
+      {:halted, acc}
+    end
+
+    defp reduce(data, {:suspend, acc}, fun, seed, size) do
+      {:suspended, acc, &reduce(data, &1, fun, seed, size)}
+    end
+
+    defp reduce(data, {:cont, acc}, fun, seed, size) do
+      {next, seed} = @for.call(data, seed, size)
+      reduce(data, fun.(next, acc), fun, seed, size + 1)
+    end
+
+    def count(_data), do: {:error, __MODULE__}
+
+    def member?(_data, _term), do: {:error, __MODULE__}
   end
 end
