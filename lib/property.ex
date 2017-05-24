@@ -1,8 +1,10 @@
 defmodule Property do
   def compile(clauses, block) do
-    quote do
+    quote generated: true do
       fn var!(seed), var!(size) ->
-        unquote(compile_clauses(clauses, block))
+        result = unquote(compile_clauses(clauses, block))
+        _ = var!(seed)
+        result
       end
     end
   end
@@ -18,7 +20,7 @@ defmodule Property do
   defp compile_clauses([], block) do
     quote do
       result = unquote(block)
-      {{:success, result}, var!(seed)}
+      {:success, result}
     end
   end
 
@@ -27,12 +29,12 @@ defmodule Property do
   # {:pattern_failed, new_state}.
   defp compile_clauses([{:<-, _meta, [pattern, generator]} | rest], block) do
     quote generated: true do
-      case Stream.Data.call(unquote(generator), var!(seed), var!(size)) do
-        {unquote(pattern), new_seed} ->
-          var!(seed) = new_seed
+      {new_seed, var!(seed)} = Stream.Data.Random.split(var!(seed))
+      case Stream.Data.call(unquote(generator), new_seed, var!(size)) do
+        unquote(pattern) ->
           unquote(compile_clauses(rest, block))
-        {_other, new_seed} ->
-          {:filtered_out, new_seed}
+        _other ->
+          :filtered_out
       end
     end
   end
@@ -49,7 +51,7 @@ defmodule Property do
       if unquote(expression) do
         unquote(compile_clauses(rest,  block))
       else
-        {:filtered_out, var!(seed)}
+        :filtered_out
       end
     end
   end

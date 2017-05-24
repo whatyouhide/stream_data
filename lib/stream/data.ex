@@ -15,8 +15,9 @@ defmodule Stream.Data do
 
   def fmap(%__MODULE__{} = data, fun) when is_function(fun, 1) do
     new(fn seed, size ->
-      {next, seed} = call(data, seed, size)
-      {fun.(next), seed}
+      data
+      |> call(seed, size)
+      |> fun.()
     end)
   end
 
@@ -26,29 +27,60 @@ defmodule Stream.Data do
     end)
   end
 
+  def sized(fun) when is_function(fun, 1) do
+    new(fn seed, size ->
+      new_data = fun.(size)
+      call(new_data, seed, size)
+    end)
+  end
+
+  def scale(%__MODULE__{} = data, size_changer) when is_function(size_changer, 1) do
+    sized(fn size ->
+      resize(data, size_changer.(size))
+    end)
+  end
+
+  def frequency(frequencies) when is_list(frequencies) do
+    frequencies = Enum.sort(frequencies, &elem(&1, 0))
+    sum = frequencies |> Enum.map(&elem(&1, 0)) |> Enum.sum()
+
+    new(fn seed, size ->
+      {seed1, seed2} = Random.split(seed)
+      frequencies
+      |> find_frequency(Random.uniform_in_range(1..sum, seed1))
+      |> call(seed2, size)
+    end)
+  end
+
+  defp find_frequency([{frequency, data} | _], int) when int <= frequency,
+    do: data
+  defp find_frequency([{frequency, _data} | rest], int),
+    do: find_frequency(rest, frequency - int)
+
   ## Combinators
 
   def one_of([_ | _] = datas) do
     new(fn seed, size ->
-      {index, seed} = Random.uniform_in_range(0..length(datas) - 1, seed)
+      {seed1, seed2} = Random.split(seed)
+      index = Random.uniform_in_range(0..length(datas) - 1, seed1)
       datas
       |> Enum.fetch!(index)
-      |> call(seed, size)
+      |> call(seed2, size)
     end)
   end
 
   ## Generators
 
   def fixed(term) do
-    new(fn seed, _size -> {term, seed} end)
+    new(fn _seed, _size -> term end)
   end
 
   def member(enum) do
     enum_length = Enum.count(enum)
 
     new(fn seed, _size ->
-      {index, seed} = Random.uniform_in_range(0..enum_length - 1, seed)
-      {Enum.fetch!(enum, index), seed}
+      index = Random.uniform_in_range(0..enum_length - 1, seed)
+      Enum.fetch!(enum, index)
     end)
   end
 
@@ -84,13 +116,17 @@ defmodule Stream.Data do
 
   def list(%__MODULE__{} = data) do
     new(fn seed, size ->
-      case Random.uniform_in_range(0..size, seed) do
-        {0, seed} ->
-          {[], seed}
-        {length, seed} ->
-          Enum.map_reduce(1..length, seed, fn _i, acc ->
-            data.generator.(acc, size)
+      {seed1, seed2} = Random.split(seed)
+
+      case Random.uniform_in_range(0..size, seed1) do
+        0 ->
+          []
+        length ->
+          {result, _seed} = Enum.map_reduce(1..length, seed2, fn _i, acc ->
+            {s1, s2} = Random.split(acc)
+            {call(data, s1, size), s2}
           end)
+          result
       end
     end)
   end
@@ -113,8 +149,9 @@ defmodule Stream.Data do
     end
 
     defp reduce(data, {:cont, acc}, fun, seed, size) do
-      {next, seed} = @for.call(data, seed, size)
-      reduce(data, fun.(next, acc), fun, seed, size + 1)
+      {seed1, seed2} = Random.split(seed)
+      next = @for.call(data, seed1, size)
+      reduce(data, fun.(next, acc), fun, seed2, size + 1)
     end
 
     def count(_data), do: {:error, __MODULE__}

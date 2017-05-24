@@ -10,11 +10,11 @@ defmodule Stream.DataTest do
     assert Enum.all?(integers, &is_integer/1)
   end
 
-  test "resize/1" do
+  test "resize/2" do
     data = Stream.Data.new(fn seed, size ->
       case :rand.uniform_s(2, seed) do
-        {1, seed} -> {size, seed}
-        {2, seed} -> {-size, seed}
+        {1, _seed} -> size
+        {2, _seed} -> -size
       end
     end)
     values = Enum.take(Stream.Data.resize(data, 10), 1000)
@@ -24,55 +24,48 @@ defmodule Stream.DataTest do
 
   test "fmap/1" do
     [integer] =
-      data()
+      data(1..5)
       |> Stream.Data.fmap(&(-&1))
-      |> take(1, _size = 5)
+      |> Enum.take(1)
 
     assert integer in -1..-5
   end
 
   test "one_of/1" do
-    data = Stream.Data.one_of([data(), Stream.Data.fmap(data(), &(-&1))])
-    values = take(data, 10_000, _size = 5)
+    data = Stream.Data.one_of([data(1..5), Stream.Data.fmap(data(1..5), &(-&1))])
+    values = Enum.take(data, 10_000)
     Enum.each(values, fn value ->
       assert value in 1..5 or value in -1..-5
     end)
   end
 
   test "fixed/1" do
-    values = take(Stream.Data.fixed(:term), 1_000, _size = 5)
+    values = Enum.take(Stream.Data.fixed(:term), 1_000)
     Enum.each(values, fn value ->
       assert value == :term
     end)
   end
 
   test "boolean/0" do
-    values = take(Stream.Data.boolean(), 1_000, _size = 5)
+    values = Enum.take(Stream.Data.boolean(), 1_000)
     Enum.each(values, fn value ->
       assert is_boolean(value)
     end)
   end
 
   test "member/1" do
-    values = take(Stream.Data.member([1, 2, 3]), 1_000, _size = 5)
+    values = Enum.take(Stream.Data.member([1, 2, 3]), 1_000)
     Enum.each(values, fn value ->
       assert value in [1, 2, 3]
     end)
 
-    values = take(Stream.Data.member(MapSet.new([1, 2, 3])), 1_000, _size = 5)
+    values = Enum.take(Stream.Data.member(MapSet.new([1, 2, 3])), 1_000)
     Enum.each(values, fn value ->
       assert value in [1, 2, 3]
     end)
   end
 
-  defp data() do
-    Stream.Data.new(fn seed, size -> :rand.uniform_s(size, seed) end)
-  end
-
-  defp take(data, count, size) do
-    {results, _seed} = Enum.map_reduce(1..count, :rand.seed_s(:exs64), fn _i, seed ->
-      Stream.Data.call(data, seed, size)
-    end)
-    results
+  defp data(range) do
+    Stream.Data.new(fn seed, _size -> Stream.Data.Random.uniform_in_range(range, seed) end)
   end
 end

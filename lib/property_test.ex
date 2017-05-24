@@ -10,8 +10,9 @@ defmodule PropertyTest do
 
       {:rand.seed_s(:exs64), _size = 10}
       |> Stream.unfold(fn {seed, size} ->
-        {next, seed} = property.(seed, size)
-        {next, {seed, size}}
+        {seed1, seed2} = Stream.Data.Random.split(seed)
+        next = property.(seed1, size)
+        {next, {seed2, size}}
       end)
       |> Stream.filter(&match?({:success, _}, &1))
       |> Stream.take(100)
