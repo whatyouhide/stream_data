@@ -19,10 +19,6 @@ defmodule Stream.Data.Random do
     random_int - 1 + left
   end
 
-  def boolean(seed) do
-    uniform_in_range(1..2, seed) == 2
-  end
-
   defp triple_of_ints(seed) do
     {int1, seed} = :rand.uniform_s(1_000_000_000, seed)
     {int2, seed} = :rand.uniform_s(1_000_000_000, seed)

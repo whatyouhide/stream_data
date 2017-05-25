@@ -17,11 +17,4 @@ defmodule Stream.Data.RandomTest do
       assert int1 == int2
     end)
   end
-
-  test "boolean/1" do
-    Enum.each(1..1_000, fn _ ->
-      seed = :rand.seed_s(:exs64)
-      assert is_boolean(Random.boolean(seed))
-    end)
-  end
 end

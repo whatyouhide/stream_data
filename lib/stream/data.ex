@@ -87,7 +87,7 @@ defmodule Stream.Data do
   ## Simple data types
 
   def boolean() do
-    new(fn seed, _size -> Random.boolean(seed) end)
+    new(fn seed, _size -> Random.uniform_in_range(0..1, seed) == 1 end)
   end
 
   def int(lower..upper) when lower > upper do
