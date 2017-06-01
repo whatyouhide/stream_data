@@ -13,6 +13,10 @@ defmodule Stream.Data do
     generator.(seed, size)
   end
 
+  def fixed(term) do
+    new(fn _seed, _size -> term end)
+  end
+
   def fmap(%__MODULE__{} = data, fun) when is_function(fun, 1) do
     new(fn seed, size ->
       data
@@ -69,12 +73,6 @@ defmodule Stream.Data do
     end)
   end
 
-  ## Generators
-
-  def fixed(term) do
-    new(fn _seed, _size -> term end)
-  end
-
   def member(enum) do
     enum_length = Enum.count(enum)
 
@@ -88,10 +86,6 @@ defmodule Stream.Data do
 
   def boolean() do
     new(fn seed, _size -> Random.uniform_in_range(0..1, seed) == 1 end)
-  end
-
-  def int(lower..upper) when lower > upper do
-    int(upper..lower)
   end
 
   def int(_lower.._upper = range) do
@@ -131,10 +125,31 @@ defmodule Stream.Data do
     end)
   end
 
+  def tuple(tuple_datas) when is_tuple(tuple_datas) do
+    datas = Tuple.to_list(tuple_datas)
+
+    new(fn seed, size ->
+      {elems, _seed} = Enum.map_reduce(datas, seed, fn data, acc ->
+        {seed1, seed2} = Random.split(acc)
+        next = call(data, seed1, size)
+        {next, seed2}
+      end)
+      List.to_tuple(elems)
+    end)
+  end
+
+  def map(%__MODULE__{} = key_data, %__MODULE__{} = value_data) do
+    {key_data, value_data}
+    |> tuple()
+    |> list()
+    |> fmap(&Map.new/1)
+  end
+
   ## Enumerable
 
   defimpl Enumerable do
     @initial_size 1
+    @max_size 100
 
     def reduce(data, acc, fun) do
       reduce(data, acc, fun, :rand.seed_s(:exs64), @initial_size)
@@ -151,7 +166,8 @@ defmodule Stream.Data do
     defp reduce(data, {:cont, acc}, fun, seed, size) do
       {seed1, seed2} = Random.split(seed)
       next = @for.call(data, seed1, size)
-      reduce(data, fun.(next, acc), fun, seed2, size + 1)
+      size = if(size < @max_size, do: size + 1, else: size)
+      reduce(data, fun.(next, acc), fun, seed2, size)
     end
 
     def count(_data), do: {:error, __MODULE__}
