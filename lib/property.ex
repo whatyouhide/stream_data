@@ -2,9 +2,10 @@ defmodule Property do
   def compile(clauses, block) do
     quote generated: true do
       fn var!(seed), var!(size) ->
+        var!(generated_values) = []
         result = unquote(compile_clauses(clauses, block))
         _ = var!(seed)
-        result
+        {result, Enum.reverse(var!(generated_values))}
       end
     end
   end
@@ -19,19 +20,28 @@ defmodule Property do
   # exceptions are raised (by assertions for example) we return.
   defp compile_clauses([], block) do
     quote do
-      result = unquote(block)
-      {:success, result}
+      try do
+        unquote(block)
+      rescue
+        exception in [ExUnit.AssertionError, ExUnit.MultiError] ->
+          {:failure, exception, System.stacktrace()}
+      else
+        result ->
+          {:success, result}
+      end
     end
   end
 
   # "pattern <- generator" clauses. We compile this to a case that keeps going
   # with the other clauses if the pattern matches, otherwise returns
   # {:pattern_failed, new_state}.
-  defp compile_clauses([{:<-, _meta, [pattern, generator]} | rest], block) do
+  defp compile_clauses([{:<-, _meta, [pattern, generator]} = clause | rest], block) do
     quote generated: true do
       {new_seed, var!(seed)} = Stream.Data.Random.split(var!(seed))
       case Stream.Data.call(unquote(generator), new_seed, var!(size)) do
-        unquote(pattern) ->
+        unquote(pattern) = generated ->
+          string_clause = unquote(Macro.to_string(clause))
+          var!(generated_values) = [{string_clause, generated} | var!(generated_values)]
           unquote(compile_clauses(rest, block))
         _other ->
           :filtered_out
