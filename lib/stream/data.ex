@@ -85,7 +85,7 @@ defmodule Stream.Data do
   ## Simple data types
 
   def boolean() do
-    new(fn seed, _size -> Random.uniform_in_range(0..1, seed) == 1 end)
+    member([true, false])
   end
 
   def int(_lower.._upper = range) do
@@ -93,7 +93,7 @@ defmodule Stream.Data do
   end
 
   def int() do
-    new(fn seed, size -> Random.uniform_in_range(-size..size, seed) end)
+    sized(fn size -> int(-size..size) end)
   end
 
   def byte() do
@@ -116,11 +116,7 @@ defmodule Stream.Data do
         0 ->
           []
         length ->
-          {result, _seed} = Enum.map_reduce(1..length, seed2, fn _i, acc ->
-            {s1, s2} = Random.split(acc)
-            {call(data, s1, size), s2}
-          end)
-          result
+          map_and_reduce_seed(1..length, seed2, size, fn _i -> data end)
       end
     end)
   end
@@ -129,12 +125,9 @@ defmodule Stream.Data do
     datas = Tuple.to_list(tuple_datas)
 
     new(fn seed, size ->
-      {elems, _seed} = Enum.map_reduce(datas, seed, fn data, acc ->
-        {seed1, seed2} = Random.split(acc)
-        next = call(data, seed1, size)
-        {next, seed2}
-      end)
-      List.to_tuple(elems)
+      datas
+      |> map_and_reduce_seed(seed, size, &(&1))
+      |> List.to_tuple()
     end)
   end
 
@@ -143,6 +136,15 @@ defmodule Stream.Data do
     |> tuple()
     |> list()
     |> fmap(&Map.new/1)
+  end
+
+  defp map_and_reduce_seed(enum, seed, size, fun) do
+    {result, _seed} = Enum.map_reduce(enum, seed, fn elem, acc ->
+      {seed1, seed2} = Random.split(acc)
+      data = fun.(elem)
+      {call(data, seed1, size), seed2}
+    end)
+    result
   end
 
   ## Enumerable
