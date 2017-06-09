@@ -1,4 +1,13 @@
 defmodule Property do
+  @doc """
+  Compiles to an anonymous function of type:
+
+      fun(seed, size) :: {result, generated_values :: [term]}
+                         when result: {:failure, Exception.t, [:erlang.stack_item()]} |
+                                      {:success, term} |
+                                      :filtered_out
+
+  """
   def compile(clauses, block) do
     quote generated: true do
       fn var!(seed), var!(size) ->
