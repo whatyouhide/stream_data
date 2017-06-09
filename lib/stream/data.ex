@@ -5,6 +5,14 @@ defmodule Stream.Data do
     :generator,
   ]
 
+  defmodule FilterTooNarrowError do
+    defexception [:message]
+
+    def exception(options) do
+      %__MODULE__{message: "too many failures: #{inspect(options)}"}
+    end
+  end
+
   def new(generator) when is_function(generator, 2) do
     %__MODULE__{generator: generator}
   end
@@ -23,6 +31,26 @@ defmodule Stream.Data do
       |> call(seed, size)
       |> fun.()
     end)
+  end
+
+  def filter(%__MODULE__{} = data, predicate, max_consecutive_failures \\ 10)
+      when is_function(predicate, 1) and
+           is_integer(max_consecutive_failures) and max_consecutive_failures >= 0 do
+    new(&filter(&1, &2, data, predicate, max_consecutive_failures, 0))
+  end
+
+  defp filter(_seed, _size, data, _predicate, max_consecutive_failures, max_consecutive_failures) do
+    raise FilterTooNarrowError, data: data, max_consecutive_failures: max_consecutive_failures
+  end
+
+  defp filter(seed, size, data, predicate, max_consecutive_failures, consecutive_failures) do
+    {seed1, seed2} = Random.split(seed)
+    next = call(data, seed1, size)
+    if predicate.(next) do
+      next
+    else
+      filter(seed2, size, data, predicate, max_consecutive_failures, consecutive_failures + 1)
+    end
   end
 
   def resize(%__MODULE__{} = data, new_size) when is_integer(new_size) and new_size >= 0 do

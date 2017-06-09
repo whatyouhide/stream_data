@@ -39,6 +39,24 @@ defmodule Stream.DataTest do
     end)
   end
 
+  test "filter/2,3" do
+    values =
+      int(-5..5)
+      |> filter(&(&1 > 0), 990)
+      |> Enum.take(1000)
+
+    assert length(values) <= 1000
+
+    Enum.each(values, fn value ->
+      assert value in 1..5
+    end)
+
+    data = filter(fixed(:term), &is_binary/1, 10)
+    assert_raise Stream.Data.FilterTooNarrowError, fn ->
+      Enum.take(data, 10)
+    end
+  end
+
   test "one_of/1" do
     data = one_of([int(1..5), int(-1..-5)])
     values = Enum.take(data, 1000)
