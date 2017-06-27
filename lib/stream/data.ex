@@ -110,7 +110,7 @@ defmodule Stream.Data do
   end
 
   def frequency(frequencies) when is_list(frequencies) do
-    frequencies = Enum.sort(frequencies, &elem(&1, 0))
+    frequencies = Enum.sort_by(frequencies, &elem(&1, 0))
     sum = frequencies |> Enum.map(&elem(&1, 0)) |> Enum.sum()
 
     new(fn seed, size ->
@@ -152,14 +152,14 @@ defmodule Stream.Data do
   end
 
   defp int_lazy_tree(int) do
-    LazyTree.new(int, Stream.map(shrink_integer(int), &int_lazy_tree/1))
-  end
+    children =
+      int
+      |> Stream.iterate(&div(&1, 2))
+      |> Stream.take_while(&(&1 != 0))
+      |> Stream.map(&(int - &1))
+      |> Stream.map(&int_lazy_tree/1)
 
-  defp shrink_integer(int) do
-    int
-    |> Stream.iterate(&div(&1, 2))
-    |> Stream.take_while(&(&1 != 0))
-    |> Stream.map(&(int - &1))
+    LazyTree.new(int, children)
   end
 
   def int() do
@@ -200,11 +200,12 @@ defmodule Stream.Data do
   end
 
   defp list_lazy_tree(list) do
-    LazyTree.new(list, Stream.map(shrink_list(list), &list_lazy_tree/1))
-  end
+    children =
+      (0..length(list) - 1)
+      |> Stream.map(&List.delete_at(list, &1))
+      |> Stream.map(&list_lazy_tree/1)
 
-  defp shrink_list(list) do
-    Stream.map(0..length(list) - 1, &List.delete_at(list, &1))
+    LazyTree.new(list, children)
   end
 
   def tuple(tuple_datas) when is_tuple(tuple_datas) do
