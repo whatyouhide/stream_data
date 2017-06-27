@@ -3,6 +3,8 @@ defmodule Stream.DataTest do
 
   import Stream.Data
 
+  alias Stream.Data.LazyTree
+
   test "new/1" do
     assert_raise FunctionClauseError, fn -> new(%{}) end
   end
@@ -15,8 +17,8 @@ defmodule Stream.DataTest do
   test "resize/2" do
     data = new(fn seed, size ->
       case :rand.uniform_s(2, seed) do
-        {1, _seed} -> size
-        {2, _seed} -> -size
+        {1, _seed} -> LazyTree.pure(size)
+        {2, _seed} -> LazyTree.pure(-size)
       end
     end)
 
