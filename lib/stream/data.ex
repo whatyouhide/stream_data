@@ -258,6 +258,14 @@ defmodule Stream.Data do
     |> fmap(&Map.new/1)
   end
 
+  # TODO: floats
+  # TODO: printable binaries ("strings")
+  # TODO: atoms
+  # TODO: nonempty collections
+  # TODO: keyword lists
+  # TODO: iodata (very interesting because recursive)
+  # TODO: specific map
+
   ## Enumerable
 
   defimpl Enumerable do
