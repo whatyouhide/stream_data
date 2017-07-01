@@ -100,6 +100,25 @@ defmodule Stream.Data do
 
   ### Rich API
 
+  @spec int(Range.t) :: t(integer)
+  def int(_lower.._upper = range) do
+    new(fn seed, _size ->
+      int = Random.uniform_in_range(range, seed)
+      int_lazy_tree(int)
+    end)
+  end
+
+  defp int_lazy_tree(int) do
+    children =
+      int
+      |> Stream.iterate(&div(&1, 2))
+      |> Stream.take_while(&(&1 != 0))
+      |> Stream.map(&(int - &1))
+      |> Stream.map(&int_lazy_tree/1)
+
+    LazyTree.new(int, children)
+  end
+
   ## Generator modifiers
 
   @spec resize(t(a), size) :: t(a) when a: term
@@ -158,28 +177,11 @@ defmodule Stream.Data do
     end)
   end
 
+  ## Data types
+
   @spec boolean() :: t(boolean)
   def boolean() do
     member([false, true])
-  end
-
-  @spec int(Range.t) :: t(integer)
-  def int(_lower.._upper = range) do
-    new(fn seed, _size ->
-      int = Random.uniform_in_range(range, seed)
-      int_lazy_tree(int)
-    end)
-  end
-
-  defp int_lazy_tree(int) do
-    children =
-      int
-      |> Stream.iterate(&div(&1, 2))
-      |> Stream.take_while(&(&1 != 0))
-      |> Stream.map(&(int - &1))
-      |> Stream.map(&int_lazy_tree/1)
-
-    LazyTree.new(int, children)
   end
 
   @spec int() :: t(integer)
