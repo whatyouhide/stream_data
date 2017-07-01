@@ -4,9 +4,15 @@ defmodule Stream.Data do
     Random,
   }
 
-  defstruct [
-    :generator,
-  ]
+  @type size :: non_neg_integer
+
+  @type generator_fun(a) :: (Random.seed, size -> LazyTree.t(a))
+
+  @type t(a) :: %__MODULE__{
+    generator: generator_fun(a),
+  }
+
+  defstruct [:generator]
 
   defmodule FilterTooNarrowError do
     defexception [:message]
@@ -20,22 +26,26 @@ defmodule Stream.Data do
 
   ## Helpers
 
+  @spec new(generator_fun(a)) :: t(a) when a: term
   def new(generator) when is_function(generator, 2) do
     %__MODULE__{generator: generator}
   end
 
+  @spec call(t(a), Random.seed, non_neg_integer) :: a when a: term
   def call(%__MODULE__{generator: generator}, seed, size) do
     %LazyTree{} = generator.(seed, size)
   end
 
   ## Generators
 
+  @spec fixed(a) :: t(a) when a: var
   def fixed(term) do
     new(fn _seed, _size -> LazyTree.pure(term) end)
   end
 
   ## Combinators
 
+  @spec fmap(t(a), (a -> b)) :: t(b) when a: term, b: term
   def fmap(%__MODULE__{} = data, fun) when is_function(fun, 1) do
     new(fn seed, size ->
       data
@@ -44,6 +54,7 @@ defmodule Stream.Data do
     end)
   end
 
+  @spec bind(t(a), (a -> t(b))) :: t(b) when a: term, b: term
   def bind(%__MODULE__{} = data, fun) when is_function(fun, 1) do
     new(fn seed, size ->
       {seed1, seed2} = Random.split(seed)
@@ -59,6 +70,7 @@ defmodule Stream.Data do
     end)
   end
 
+  @spec filter(t(a), (a -> as_boolean(term)), non_neg_integer) :: t(a) when a: term
   def filter(%__MODULE__{} = data, predicate, max_consecutive_failures \\ 10)
       when is_function(predicate, 1) and is_integer(max_consecutive_failures) and max_consecutive_failures >= 0 do
     new(fn seed, size ->
@@ -90,12 +102,14 @@ defmodule Stream.Data do
 
   ## Generator modifiers
 
+  @spec resize(t(a), size) :: t(a) when a: term
   def resize(%__MODULE__{} = data, new_size) when is_integer(new_size) and new_size >= 0 do
     new(fn seed, _size ->
       call(data, seed, new_size)
     end)
   end
 
+  @spec sized((size -> t(a))) :: t(a) when a: term
   def sized(fun) when is_function(fun, 1) do
     new(fn seed, size ->
       new_data = fun.(size)
@@ -103,12 +117,14 @@ defmodule Stream.Data do
     end)
   end
 
+  @spec scale(t(a), (size -> size)) :: t(a) when a: term
   def scale(%__MODULE__{} = data, size_changer) when is_function(size_changer, 1) do
     sized(fn size ->
       resize(data, size_changer.(size))
     end)
   end
 
+  @spec frequency([{pos_integer, t(a)}]) :: t(a) when a: term
   def frequency(frequencies) when is_list(frequencies) do
     frequencies = Enum.sort_by(frequencies, &elem(&1, 0))
     sum = frequencies |> Enum.map(&elem(&1, 0)) |> Enum.sum()
@@ -126,6 +142,7 @@ defmodule Stream.Data do
   defp find_frequency([{frequency, _data} | rest], int),
     do: find_frequency(rest, frequency - int)
 
+  @spec one_of([t(a)]) :: t(a) when a: term
   def one_of([_ | _] = datas) do
     bind(int(0..length(datas) - 1), fn index ->
       Enum.fetch!(datas, index)
@@ -133,6 +150,7 @@ defmodule Stream.Data do
   end
 
   # Shrinks towards earlier elements in the enumerable.
+  @spec member(Enumerable.t) :: t(term)
   def member(enum) do
     enum_length = Enum.count(enum)
     bind(int(0..enum_length - 1), fn index ->
@@ -140,10 +158,12 @@ defmodule Stream.Data do
     end)
   end
 
+  @spec boolean() :: t(boolean)
   def boolean() do
     member([false, true])
   end
 
+  @spec int(Range.t) :: t(integer)
   def int(_lower.._upper = range) do
     new(fn seed, _size ->
       int = Random.uniform_in_range(range, seed)
@@ -162,14 +182,17 @@ defmodule Stream.Data do
     LazyTree.new(int, children)
   end
 
+  @spec int() :: t(integer)
   def int() do
     sized(fn size -> int(-size..size) end)
   end
 
+  @spec byte() :: t(byte)
   def byte() do
     int(0..255)
   end
 
+  @spec binary() :: t(binary)
   def binary() do
     byte()
     |> list()
@@ -179,6 +202,7 @@ defmodule Stream.Data do
   ## Compound data types
 
   # Shrinks by removing elements from the list.
+  @spec list(t(a)) :: t([a]) when a: term
   def list(%__MODULE__{} = data) do
     new(fn seed, size ->
       {seed1, seed2} = Random.split(seed)
@@ -208,6 +232,7 @@ defmodule Stream.Data do
     LazyTree.new(list, children)
   end
 
+  @spec tuple(tuple) :: t(tuple)
   def tuple(tuple_datas) when is_tuple(tuple_datas) do
     datas = Tuple.to_list(tuple_datas)
 
@@ -223,6 +248,7 @@ defmodule Stream.Data do
     end)
   end
 
+  @spec map(t(key), t(value)) :: t(%{optional(key) => value}) when key: term, value: term
   def map(%__MODULE__{} = key_data, %__MODULE__{} = value_data) do
     {key_data, value_data}
     |> tuple()

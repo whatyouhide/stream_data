@@ -1,6 +1,14 @@
 defmodule Stream.Data.Random do
   @algorithm :exs1024
 
+  @type seed :: :rand.state
+
+  @spec new_seed() :: seed
+  def new_seed() do
+    :rand.seed_s(@algorithm)
+  end
+
+  @spec split(seed) :: {seed, seed}
   def split(seed) do
     {int1, seed} = :rand.uniform_s(1_000_000_000, seed)
     {int2, seed} = :rand.uniform_s(1_000_000_000, seed)
@@ -8,6 +16,9 @@ defmodule Stream.Data.Random do
     new_seed = :rand.seed_s(@algorithm, {int1, int2, int3})
     {new_seed, seed}
   end
+
+  @spec uniform_in_range(Range.t(integer, integer), seed) :: integer
+  def uniform_in_range(range, seed)
 
   def uniform_in_range(left..right, seed) when left > right do
     uniform_in_range(right..left, seed)
@@ -17,9 +28,5 @@ defmodule Stream.Data.Random do
     width = right - left
     {random_int, _seed} = :rand.uniform_s(width + 1, seed)
     random_int - 1 + left
-  end
-
-  def new_seed() do
-    :rand.seed_s(@algorithm)
   end
 end
