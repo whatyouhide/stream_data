@@ -1,21 +1,34 @@
 defmodule Property do
-  @doc """
-  Compiles to an anonymous function of type:
+  defmodule Failure do
+    defstruct [:exception, :stacktrace, :binding, :generated_values]
+  end
 
-      fun(seed, size) :: {result, generated_values :: [term]}
-                         when result: {:failure, Exception.t, [:erlang.stack_item()]} |
-                                      {:success, term} |
-                                      :filtered_out
+  defmodule Success do
+    defstruct [:result, :binding, :generated_values]
+  end
 
-  """
-  def compile(clauses, block) do
-    quote generated: true do
-      fn var!(seed), var!(size) ->
-        var!(generated_values) = []
-        result = unquote(compile_clauses(clauses, block))
-        _ = var!(seed)
-        {result, Enum.reverse(var!(generated_values))}
+  @doc false
+  def __property_generator__(fun, binding, generated_values) do
+    import Stream.Data.LazyTree, only: [pure: 1]
+
+    Stream.Data.new(fn _seed, _size ->
+      try do
+        fun.()
+      rescue
+        exception in [ExUnit.AssertionError, ExUnit.MultiError] ->
+          stacktrace = System.stacktrace()
+          pure(%Failure{exception: exception, stacktrace: stacktrace, binding: binding, generated_values: generated_values})
+      else
+        result ->
+          pure(%Success{result: result, binding: binding, generated_values: generated_values})
       end
+    end)
+  end
+
+  def compile(clauses, block) do
+    quote do
+      var!(generated_values) = []
+      unquote(compile_clauses(clauses, block))
     end
   end
 
@@ -25,36 +38,19 @@ defmodule Property do
   # done by assigning var!(state) = to_something.
   defp compile_clauses(clauses, block)
 
-  # We finished to compile all clauses, so we just execute the block and if no
-  # exceptions are raised (by assertions for example) we return.
   defp compile_clauses([], block) do
     quote do
-      try do
-        unquote(block)
-      rescue
-        exception in [ExUnit.AssertionError, ExUnit.MultiError] ->
-          {:failure, exception, System.stacktrace()}
-      else
-        result ->
-          {:success, result}
-      end
+      generated_values = Enum.reverse(var!(generated_values))
+      Property.__property_generator__(fn -> unquote(block) end, binding(), generated_values)
     end
   end
 
-  # "pattern <- generator" clauses. We compile this to a case that keeps going
-  # with the other clauses if the pattern matches, otherwise returns
-  # {:pattern_failed, new_state}.
   defp compile_clauses([{:<-, _meta, [pattern, generator]} = clause | rest], block) do
-    quote generated: true do
-      {new_seed, var!(seed)} = Stream.Data.Random.split(var!(seed))
-      case Stream.Data.call(unquote(generator), new_seed, var!(size)) do
-        unquote(pattern) = generated ->
-          string_clause = unquote(Macro.to_string(clause))
-          var!(generated_values) = [{string_clause, generated} | var!(generated_values)]
-          unquote(compile_clauses(rest, block))
-        _other ->
-          :filtered_out
-      end
+    quote do
+      Stream.Data.bind(unquote(generator), fn unquote(pattern) = generated_value ->
+        var!(generated_values) = [{unquote(Macro.to_string(clause)), generated_value} | var!(generated_values)]
+        unquote(compile_clauses(rest, block))
+      end)
     end
   end
 
@@ -62,16 +58,6 @@ defmodule Property do
     quote do
       unquote(assignment)
       unquote(compile_clauses(rest, block))
-    end
-  end
-
-  defp compile_clauses([expression | rest], block) do
-    quote do
-      if unquote(expression) do
-        unquote(compile_clauses(rest,  block))
-      else
-        :filtered_out
-      end
     end
   end
 end

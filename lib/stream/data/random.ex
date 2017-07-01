@@ -18,4 +18,8 @@ defmodule Stream.Data.Random do
     {random_int, _seed} = :rand.uniform_s(width + 1, seed)
     random_int - 1 + left
   end
+
+  def new_seed() do
+    :rand.seed_s(@algorithm)
+  end
 end
