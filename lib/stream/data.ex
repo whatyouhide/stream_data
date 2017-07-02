@@ -172,6 +172,11 @@ defmodule Stream.Data do
   @spec member(Enumerable.t) :: t(term)
   def member(enum) do
     enum_length = Enum.count(enum)
+
+    if enum_length == 0 do
+      raise "cannot generate elements from an empty enumerable"
+    end
+
     bind(int(0..enum_length - 1), fn index ->
       fixed(Enum.fetch!(enum, index))
     end)
