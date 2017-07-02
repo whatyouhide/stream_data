@@ -1,28 +1,10 @@
 defmodule Property do
   defmodule Failure do
-    defstruct [:exception, :stacktrace, :binding, :generated_values]
+    defstruct [:exception, :stacktrace, :generated_values]
   end
 
   defmodule Success do
-    defstruct [:result, :binding, :generated_values]
-  end
-
-  @doc false
-  def __property_generator__(fun, binding, generated_values) do
-    import Stream.Data.LazyTree, only: [pure: 1]
-
-    Stream.Data.new(fn _seed, _size ->
-      try do
-        fun.()
-      rescue
-        exception in [ExUnit.AssertionError, ExUnit.MultiError] ->
-          stacktrace = System.stacktrace()
-          pure(%Failure{exception: exception, stacktrace: stacktrace, binding: binding, generated_values: generated_values})
-      else
-        result ->
-          pure(%Success{result: result, binding: binding, generated_values: generated_values})
-      end
-    end)
+    defstruct [:generated_values]
   end
 
   def compile(clauses, block) do
@@ -41,7 +23,17 @@ defmodule Property do
   defp compile_clauses([], block) do
     quote do
       generated_values = Enum.reverse(var!(generated_values))
-      Property.__property_generator__(fn -> unquote(block) end, binding(), generated_values)
+
+      try do
+        unquote(block)
+      rescue
+        exception in [ExUnit.AssertionError, ExUnit.MultiError] ->
+          stacktrace = System.stacktrace()
+          Stream.Data.fixed(%Failure{exception: exception, stacktrace: stacktrace, generated_values: generated_values})
+      else
+        _result ->
+          Stream.Data.fixed(%Success{generated_values: generated_values})
+      end
     end
   end
 

@@ -62,7 +62,7 @@ defmodule Stream.Data do
 
       bound_data = new(fn seed, size ->
         lazy_tree
-        |> LazyTree.fmap(fn term -> call(_bound_data = fun.(term), seed, size) end) # tree of rose trees
+        |> LazyTree.fmap(fn term -> call(_bound_data = fun.(term), seed, size) end) # tree of lazy trees
         |> LazyTree.join()
       end)
 
