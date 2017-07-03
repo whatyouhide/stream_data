@@ -267,6 +267,7 @@ defmodule Stream.Data do
   # TODO: keyword lists
   # TODO: iodata (very interesting because recursive)
   # TODO: specific map
+  # TODO: noshrink
 
   ## Enumerable
 
