@@ -19,6 +19,15 @@ defmodule StdlibSamplesTest do
     end)
   end
 
+  test "something with filter" do
+    for_all(with a <- int(),
+                 b <- int(),
+                 a + b >= 0,
+                 sum = a + b do
+       assert sum > 0
+     end)
+  end
+
   defp my_starts_with?(a, "") when byte_size(a) > 0, do: false
   defp my_starts_with?(_, _), do: true
 end
