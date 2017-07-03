@@ -193,4 +193,11 @@ defmodule Stream.DataTest do
   end
 
   # TODO: map_of/2
+
+  test "non_empty/1" do
+    data = non_empty(list_of(constant(:term)))
+    for_many(data, fn list ->
+      assert length(list) > 0
+    end)
+  end
 end

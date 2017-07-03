@@ -274,10 +274,14 @@ defmodule Stream.Data do
     map(list_of(key_value_pairs), &Map.new/1)
   end
 
+  @spec non_empty(t(Enumerable.t)) :: t(Enumerable.t)
+  def non_empty(enum_data) do
+    filter(enum_data, &not(Enum.empty?(&1)))
+  end
+
   # TODO: floats
   # TODO: printable binaries ("strings")
   # TODO: atoms
-  # TODO: nonempty collections
   # TODO: keyword lists
   # TODO: iodata (very interesting because recursive)
   # TODO: specific map
