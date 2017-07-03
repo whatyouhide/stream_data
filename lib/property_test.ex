@@ -1,7 +1,6 @@
 defmodule PropertyTest do
   alias Stream.{
     Data,
-    Data.LazyTree,
     Data.Random,
   }
 
