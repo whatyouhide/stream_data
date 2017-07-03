@@ -20,19 +20,20 @@ defmodule Stream.Data.LazyTree do
     %__MODULE__{root: root, children: children}
   end
 
+  # TODO: better name
   @spec pure(a) :: t(a) when a: term
   def pure(term) do
     new(term, [])
   end
 
-  @spec fmap(t(a), (a -> b)) :: t(b) when a: term, b: term
-  def fmap(%__MODULE__{} = tree, fun) when is_function(fun, 1) do
-    new(fun.(tree.root), Stream.map(tree.children, &fmap(&1, fun)))
+  @spec map(t(a), (a -> b)) :: t(b) when a: term, b: term
+  def map(%__MODULE__{root: root, children: children}, fun) when is_function(fun, 1) do
+    new(fun.(root), Stream.map(children, &map(&1, fun)))
   end
 
-  @spec join(t(t(a))) :: t(a) when a: term
-  def join(%__MODULE__{root: %__MODULE__{}} = tree) do
-    new(tree.root.root, Stream.concat(tree.root.children, Stream.map(tree.children, &join/1)))
+  @spec flatten(t(t(a))) :: t(a) when a: term
+  def flatten(%__MODULE__{root: %__MODULE__{}} = tree) do
+    new(tree.root.root, Stream.concat(tree.root.children, Stream.map(tree.children, &flatten/1)))
   end
 
   @spec filter(t(a), (a -> as_boolean(term))) :: t(a) when a: term

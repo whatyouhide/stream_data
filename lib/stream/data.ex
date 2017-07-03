@@ -45,12 +45,12 @@ defmodule Stream.Data do
 
   ## Combinators
 
-  @spec fmap(t(a), (a -> b)) :: t(b) when a: term, b: term
-  def fmap(%__MODULE__{} = data, fun) when is_function(fun, 1) do
+  @spec map(t(a), (a -> b)) :: t(b) when a: term, b: term
+  def map(%__MODULE__{} = data, fun) when is_function(fun, 1) do
     new(fn seed, size ->
       data
       |> call(seed, size)
-      |> LazyTree.fmap(fun)
+      |> LazyTree.map(fun)
     end)
   end
 
@@ -62,8 +62,8 @@ defmodule Stream.Data do
 
       bound_data = new(fn seed, size ->
         lazy_tree
-        |> LazyTree.fmap(fn term -> call(_bound_data = fun.(term), seed, size) end) # tree of lazy trees
-        |> LazyTree.join()
+        |> LazyTree.map(fn term -> call(_bound_data = fun.(term), seed, size) end) # tree of lazy trees
+        |> LazyTree.flatten()
       end)
 
       call(bound_data, seed2, size)
@@ -169,8 +169,8 @@ defmodule Stream.Data do
   end
 
   # Shrinks towards earlier elements in the enumerable.
-  @spec member(Enumerable.t) :: t(term)
-  def member(enum) do
+  @spec member_of(Enumerable.t) :: t(term)
+  def member_of(enum) do
     enum_length = Enum.count(enum)
 
     if enum_length == 0 do
@@ -186,7 +186,7 @@ defmodule Stream.Data do
 
   @spec boolean() :: t(boolean)
   def boolean() do
-    member([false, true])
+    member_of([false, true])
   end
 
   @spec int() :: t(integer)
@@ -201,16 +201,14 @@ defmodule Stream.Data do
 
   @spec binary() :: t(binary)
   def binary() do
-    byte()
-    |> list()
-    |> fmap(&IO.iodata_to_binary/1)
+    map(list_of(byte()), &IO.iodata_to_binary/1)
   end
 
   ## Compound data types
 
   # Shrinks by removing elements from the list.
-  @spec list(t(a)) :: t([a]) when a: term
-  def list(%__MODULE__{} = data) do
+  @spec list_of(t(a)) :: t([a]) when a: term
+  def list_of(%__MODULE__{} = data) do
     new(fn seed, size ->
       {seed1, seed2} = Random.split(seed)
 
@@ -230,6 +228,7 @@ defmodule Stream.Data do
     end)
   end
 
+  # TODO: improve
   defp list_lazy_tree(list) do
     children =
       (0..length(list) - 1)
@@ -251,16 +250,14 @@ defmodule Stream.Data do
 
       trees
       |> LazyTree.zip()
-      |> LazyTree.fmap(&List.to_tuple/1)
+      |> LazyTree.map(&List.to_tuple/1)
     end)
   end
 
-  @spec map(t(key), t(value)) :: t(%{optional(key) => value}) when key: term, value: term
-  def map(%__MODULE__{} = key_data, %__MODULE__{} = value_data) do
-    {key_data, value_data}
-    |> tuple()
-    |> list()
-    |> fmap(&Map.new/1)
+  @spec map_of(t(key), t(value)) :: t(%{optional(key) => value}) when key: term, value: term
+  def map_of(%__MODULE__{} = key_data, %__MODULE__{} = value_data) do
+    key_value_pairs = tuple({key_data, value_data})
+    map(list_of(key_value_pairs), &Map.new/1)
   end
 
   # TODO: floats

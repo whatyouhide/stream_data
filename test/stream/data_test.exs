@@ -30,10 +30,10 @@ defmodule Stream.DataTest do
     assert Enum.all?(values, &(&1 in [-10, 10]))
   end
 
-  test "fmap/1" do
+  test "map/1" do
     values =
       int(1..5)
-      |> fmap(&(-&1))
+      |> map(&(-&1))
       |> Enum.take(1000)
 
     Enum.each(values, fn value ->
@@ -108,8 +108,8 @@ defmodule Stream.DataTest do
     end)
   end
 
-  test "list/1" do
-    values = Enum.take(list(fixed(:term)), 1000)
+  test "list_of/1" do
+    values = Enum.take(list_of(fixed(:term)), 1000)
     Enum.each(values, fn value ->
       assert is_list(value)
       assert Enum.all?(value, &(&1 == :term))
@@ -125,13 +125,13 @@ defmodule Stream.DataTest do
     end)
   end
 
-  test "member/1" do
-    values = Enum.take(member([1, 2, 3]), 1_000)
+  test "member_of/1" do
+    values = Enum.take(member_of([1, 2, 3]), 1_000)
     Enum.each(values, fn value ->
       assert value in [1, 2, 3]
     end)
 
-    values = Enum.take(member(MapSet.new([1, 2, 3])), 1_000)
+    values = Enum.take(member_of(MapSet.new([1, 2, 3])), 1_000)
     Enum.each(values, fn value ->
       assert value in [1, 2, 3]
     end)

@@ -18,7 +18,7 @@ defmodule Stream.Data.LazyTreeTest do
     import LazyTree, only: [new: 2, pure: 1]
 
     tree = new(1, [pure(2), pure(3)])
-    mapped_tree = LazyTree.fmap(tree, &Integer.to_string/1)
+    mapped_tree = LazyTree.map(tree, &Integer.to_string/1)
     expected = new("1", [pure("2"), pure("3")])
 
     assert realize_tree(mapped_tree) == realize_tree(expected)
@@ -31,7 +31,7 @@ defmodule Stream.Data.LazyTreeTest do
     tree2 = new(:root2, [pure(:child2_a), pure(:child2_b)])
     tree = new(tree1, [pure(tree2)])
 
-    assert %LazyTree{} = joined_tree = LazyTree.join(tree)
+    assert %LazyTree{} = joined_tree = LazyTree.flatten(tree)
 
     expected = new(:root1, [
       pure(:child1_a),
