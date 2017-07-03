@@ -3,9 +3,9 @@ defmodule Stream.Data.Random do
 
   @type seed :: :rand.state
 
-  @spec new_seed() :: seed
-  def new_seed() do
-    :rand.seed_s(@algorithm)
+  @spec new_seed(integer) :: seed
+  def new_seed(int) when is_integer(int) do
+    :rand.seed_s(@algorithm, {0, 0, int})
   end
 
   @spec split(seed) :: {seed, seed}
