@@ -1,2 +1,0 @@
-%{"eqc_ex": {:hex, :eqc_ex, "1.4.2", "c89322cf8fbd4f9ddcb18141fb162a871afd357c55c8c0198441ce95ffe2e105", [:mix], [], "hexpm"},
-  "saul": {:hex, :saul, "0.1.0", "a4a52cff0531ce0bde063fa957d9929cb233f12b6815813c22de6a49e15cced0", [:mix], [], "hexpm"}}

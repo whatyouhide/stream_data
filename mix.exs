@@ -14,15 +14,12 @@ defmodule StreamData.Mixfile do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger],
+      extra_applications: [],
     ]
   end
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
-    [
-      {:saul, "~> 0.1"},
-      {:eqc_ex, ">= 0.0.0"},
-    ]
+    []
   end
 end
