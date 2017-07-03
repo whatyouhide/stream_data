@@ -24,16 +24,18 @@ defmodule Property do
     quote do
       generated_values = Enum.reverse(var!(generated_values))
 
-      try do
-        unquote(block)
-      rescue
-        exception in [ExUnit.AssertionError, ExUnit.MultiError] ->
-          stacktrace = System.stacktrace()
-          Stream.Data.fixed(%Failure{exception: exception, stacktrace: stacktrace, generated_values: generated_values})
-      else
-        _result ->
-          Stream.Data.fixed(%Success{generated_values: generated_values})
-      end
+      Stream.Data.fixed(fn ->
+        try do
+          unquote(block)
+        rescue
+          exception in [ExUnit.AssertionError, ExUnit.MultiError] ->
+            stacktrace = System.stacktrace()
+            %Failure{exception: exception, stacktrace: stacktrace, generated_values: generated_values}
+        else
+          _result ->
+            %Success{generated_values: generated_values}
+        end
+      end)
     end
   end
 

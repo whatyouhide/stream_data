@@ -32,12 +32,14 @@ defmodule PropertyTest do
   defp run_property(property, seed, size, state, options) do
     {seed1, seed2} = Random.split(seed)
 
-    case Data.call(property, seed1, size) do
-      %LazyTree{root: %Property.Success{}} ->
+    tree = Data.call(property, seed1, size)
+
+    case tree.root.() do
+      %Property.Success{} ->
         state = Map.update!(state, :successes, &(&1 + 1))
         run_property(property, seed2, size + 5, state, options)
-      %LazyTree{root: %Property.Failure{}} = failure_tree ->
-        smallest_failure = find_smallest_failure(failure_tree, options.max_shrink_depth)
+      %Property.Failure{} ->
+        smallest_failure = find_smallest_failure(tree, options.max_shrink_depth)
         %Property.Failure{exception: exception, stacktrace: stacktrace} = smallest_failure
         reraise(enrich_message(exception, smallest_failure), stacktrace)
     end
@@ -49,7 +51,7 @@ defmodule PropertyTest do
   end
 
   defp find_smallest_failure(tree, max_depth) do
-    find_smallest_failure(tree.children, _smallest = tree.root, max_depth)
+    find_smallest_failure(tree.children, _smallest = tree.root.(), max_depth)
   end
 
   defp find_smallest_failure(_nodes, smallest, _max_depth = 0) do
@@ -60,14 +62,16 @@ defmodule PropertyTest do
     if Enum.empty?(nodes) do
       smallest
     else
-      case Enum.take(nodes, 1) do
-        [%LazyTree{root: %Property.Success{}}] ->
+      [first_child] = Enum.take(nodes, 1)
+
+      case first_child.root.() do
+        %Property.Success{} ->
           find_smallest_failure(Stream.drop(nodes, 1), smallest, max_depth)
-        [first_child] ->
+        %Property.Failure{} = failure ->
           if Enum.empty?(first_child.children) do
-            find_smallest_failure(Stream.drop(nodes, 1), first_child.root, max_depth)
+            find_smallest_failure(Stream.drop(nodes, 1), failure, max_depth)
           else
-            find_smallest_failure(first_child.children, first_child.root, max_depth - 1)
+            find_smallest_failure(first_child.children, failure, max_depth - 1)
           end
       end
     end
