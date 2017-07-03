@@ -38,9 +38,9 @@ defmodule Stream.Data do
 
   ## Generators
 
-  @spec fixed(a) :: t(a) when a: var
-  def fixed(term) do
-    new(fn _seed, _size -> LazyTree.pure(term) end)
+  @spec constant(a) :: t(a) when a: var
+  def constant(term) do
+    new(fn _seed, _size -> LazyTree.constant(term) end)
   end
 
   ## Combinators
@@ -97,7 +97,7 @@ defmodule Stream.Data do
       when is_function(predicate, 1) and is_integer(max_consecutive_failures) and max_consecutive_failures >= 0 do
     bind_filter(data, fn term ->
       if predicate.(term) do
-        {:pass, fixed(term)}
+        {:pass, constant(term)}
       else
         :skip
       end
@@ -184,7 +184,7 @@ defmodule Stream.Data do
     end
 
     bind(int(0..enum_length - 1), fn index ->
-      fixed(Enum.fetch!(enum, index))
+      constant(Enum.fetch!(enum, index))
     end)
   end
 
@@ -220,7 +220,7 @@ defmodule Stream.Data do
 
       case Random.uniform_in_range(0..size, seed1) do
         0 ->
-          LazyTree.pure([])
+          LazyTree.constant([])
         length ->
           {list, _final_seed} =
             Enum.map_reduce(1..length, seed2, fn _i, acc ->

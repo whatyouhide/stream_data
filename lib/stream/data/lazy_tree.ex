@@ -21,8 +21,8 @@ defmodule Stream.Data.LazyTree do
   end
 
   # TODO: better name
-  @spec pure(a) :: t(a) when a: term
-  def pure(term) do
+  @spec constant(a) :: t(a) when a: term
+  def constant(term) do
     new(term, [])
   end
 

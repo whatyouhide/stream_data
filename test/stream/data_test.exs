@@ -23,8 +23,8 @@ defmodule Stream.DataTest do
     assert_raise FunctionClauseError, fn -> new(%{}) end
   end
 
-  test "fixed/1" do
-    for_many(fixed(:term), fn term ->
+  test "constant/1" do
+    for_many(constant(:term), fn term ->
       assert term == :term
     end)
   end
@@ -41,7 +41,7 @@ defmodule Stream.DataTest do
 
     data = bind_filter(int(1..5), fn int ->
       if Integer.is_even(int) do
-        {:pass, fixed(int)}
+        {:pass, constant(int)}
       else
         :skip
       end
@@ -54,7 +54,7 @@ defmodule Stream.DataTest do
   end
 
   test "bind/2" do
-    data = bind(int(1..5), &fixed(-&1))
+    data = bind(int(1..5), &constant(-&1))
     for_many(data, fn int ->
       assert int in -1..-5
     end)
@@ -72,7 +72,7 @@ defmodule Stream.DataTest do
       assert value in 0..10_000
     end)
 
-    data = filter(fixed(:term), &is_binary/1, 10)
+    data = filter(constant(:term), &is_binary/1, 10)
     assert_raise Stream.Data.FilterTooNarrowError, fn ->
       Enum.take(data, 1)
     end
@@ -87,8 +87,8 @@ defmodule Stream.DataTest do
   test "resize/2" do
     data = new(fn seed, size ->
       case Random.uniform_in_range(1..2, seed) do
-        1 -> LazyTree.pure(size)
-        2 -> LazyTree.pure(-size)
+        1 -> LazyTree.constant(size)
+        2 -> LazyTree.constant(-size)
       end
     end)
 
@@ -101,9 +101,9 @@ defmodule Stream.DataTest do
     data = sized(fn size ->
       bind(boolean(), fn bool ->
         if bool do
-          fixed(size)
+          constant(size)
         else
-          fixed(-size)
+          constant(-size)
         end
       end)
     end)
@@ -114,7 +114,7 @@ defmodule Stream.DataTest do
   end
 
   test "scale/2" do
-    size_data = sized(&fixed(&1))
+    size_data = sized(&constant(&1))
     data = scale(size_data, fn size -> size + 1000 end)
     for_many(data, fn int ->
       assert int >= 1000
@@ -123,8 +123,8 @@ defmodule Stream.DataTest do
 
   test "frequency/1" do
     data = frequency([
-      {1, fixed(:small_chance)},
-      {100, fixed(:big_chance)},
+      {1, constant(:small_chance)},
+      {100, constant(:big_chance)},
     ])
 
     values = Enum.take(data, 1000)
@@ -178,7 +178,7 @@ defmodule Stream.DataTest do
   end
 
   test "list_of/1" do
-    for_many(list_of(fixed(:term)), fn value ->
+    for_many(list_of(constant(:term)), fn value ->
       assert is_list(value)
       assert Enum.all?(value, &(&1 == :term))
     end)

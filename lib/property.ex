@@ -25,7 +25,7 @@ defmodule Property do
     quote do
       generated_values = Enum.reverse(var!(generated_values))
 
-      data = Stream.Data.fixed(fn ->
+      data = Stream.Data.constant(fn ->
         try do
           unquote(block)
         rescue
