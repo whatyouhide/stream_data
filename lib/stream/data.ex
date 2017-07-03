@@ -149,6 +149,14 @@ defmodule Stream.Data do
     end)
   end
 
+  @spec no_shrink(t(a)) :: t(a) when a: term
+  def no_shrink(%__MODULE__{} = data) do
+    new(fn seed, size ->
+      %LazyTree{root: root} = call(data, seed, size)
+      LazyTree.constant(root)
+    end)
+  end
+
   @spec frequency([{pos_integer, t(a)}]) :: t(a) when a: term
   def frequency(frequencies) when is_list(frequencies) do
     frequencies = Enum.sort_by(frequencies, &elem(&1, 0))
@@ -273,7 +281,6 @@ defmodule Stream.Data do
   # TODO: keyword lists
   # TODO: iodata (very interesting because recursive)
   # TODO: specific map
-  # TODO: noshrink
 
   ## Enumerable
 
