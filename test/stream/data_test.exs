@@ -14,7 +14,6 @@ defmodule Stream.DataTest do
     |> Enum.each(fun)
   end
 
-
   test "implementation of the Enumerable protocol" do
     integers = Enum.take(int(), 10)
     assert Enum.all?(integers, &is_integer/1)
@@ -37,6 +36,23 @@ defmodule Stream.DataTest do
     end)
   end
 
+  test "bind_filter/2" do
+    require Integer
+
+    data = bind_filter(int(1..5), fn int ->
+      if Integer.is_even(int) do
+        {:pass, fixed(int)}
+      else
+        :skip
+      end
+    end, 1000)
+
+    for_many(data, fn int ->
+      assert int in 1..5
+      assert Integer.is_even(int)
+    end)
+  end
+
   test "bind/2" do
     data = bind(int(1..5), &fixed(-&1))
     for_many(data, fn int ->
@@ -46,14 +62,14 @@ defmodule Stream.DataTest do
 
   test "filter/2,3" do
     values =
-      int(-5..5)
-      |> filter(&(&1 > 0), 990)
+      int(0..10_000)
+      |> filter(&(&1 > 0))
       |> Enum.take(1000)
 
     assert length(values) <= 1000
 
     Enum.each(values, fn value ->
-      assert value in 1..5
+      assert value in 0..10_000
     end)
 
     data = filter(fixed(:term), &is_binary/1, 10)

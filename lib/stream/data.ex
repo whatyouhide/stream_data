@@ -54,48 +54,54 @@ defmodule Stream.Data do
     end)
   end
 
+  @spec bind_filter(t(a), (a -> {:pass, t(b)} | :skip), non_neg_integer) :: t(b) when a: term, b: term
+  def bind_filter(%__MODULE__{} = data, fun, max_consecutive_failures \\ 10)
+      when is_function(fun, 1) and is_integer(max_consecutive_failures) and max_consecutive_failures >= 0 do
+    new(fn seed, size ->
+      case bind_filter(seed, size, data, fun, max_consecutive_failures) do
+        {:ok, lazy_tree} ->
+          lazy_tree
+        :too_many_failures ->
+          raise FilterTooNarrowError, max_consecutive_failures: max_consecutive_failures
+      end
+    end)
+  end
+
+  defp bind_filter(_seed, _size, _data, _mapper, _tries_left = 0) do
+    :too_many_failures
+  end
+
+  defp bind_filter(seed, size, data, mapper, tries_left) do
+    {seed1, seed2} = Random.split(seed)
+    lazy_tree = call(data, seed1, size)
+
+    case LazyTree.map_filter(lazy_tree, mapper) do
+      {:ok, map_filtered_tree} ->
+        tree =
+          map_filtered_tree
+          |> LazyTree.map(&call(&1, seed2, size))
+          |> LazyTree.flatten()
+        {:ok, tree}
+      :error ->
+        bind_filter(seed2, size, data, mapper, tries_left - 1)
+    end
+  end
+
   @spec bind(t(a), (a -> t(b))) :: t(b) when a: term, b: term
   def bind(%__MODULE__{} = data, fun) when is_function(fun, 1) do
-    new(fn seed, size ->
-      {seed1, seed2} = Random.split(seed)
-      lazy_tree = call(data, seed1, size)
-
-      bound_data = new(fn seed, size ->
-        lazy_tree
-        |> LazyTree.map(fn term -> call(_bound_data = fun.(term), seed, size) end) # tree of lazy trees
-        |> LazyTree.flatten()
-      end)
-
-      call(bound_data, seed2, size)
-    end)
+    bind_filter(data, fn generated_term -> {:pass, fun.(generated_term)} end)
   end
 
   @spec filter(t(a), (a -> as_boolean(term)), non_neg_integer) :: t(a) when a: term
   def filter(%__MODULE__{} = data, predicate, max_consecutive_failures \\ 10)
       when is_function(predicate, 1) and is_integer(max_consecutive_failures) and max_consecutive_failures >= 0 do
-    new(fn seed, size ->
-      case filter(seed, size, data, predicate, max_consecutive_failures) do
-        {:ok, lazy_tree} ->
-          lazy_tree
-        :no_tries_left ->
-          raise FilterTooNarrowError, data: data, max_consecutive_failures: max_consecutive_failures
+    bind_filter(data, fn term ->
+      if predicate.(term) do
+        {:pass, fixed(term)}
+      else
+        :skip
       end
     end)
-  end
-
-  defp filter(_seed, _size, _data, _predicate, _tries_left = 0) do
-    :no_tries_left
-  end
-
-  defp filter(seed, size, data, predicate, tries_left) do
-    {seed1, seed2} = Random.split(seed)
-    lazy_tree = call(data, seed1, size)
-
-    if predicate.(lazy_tree.root) do
-      {:ok, LazyTree.filter(lazy_tree, predicate)}
-    else
-      filter(seed2, size, data, predicate, tries_left - 1)
-    end
   end
 
   ### Rich API

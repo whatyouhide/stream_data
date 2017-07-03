@@ -14,7 +14,7 @@ defmodule Stream.Data.LazyTreeTest do
     assert realize_tree(tree).children == []
   end
 
-  test "fmap/2" do
+  test "map/2" do
     import LazyTree, only: [new: 2, pure: 1]
 
     tree = new(1, [pure(2), pure(3)])
@@ -24,7 +24,24 @@ defmodule Stream.Data.LazyTreeTest do
     assert realize_tree(mapped_tree) == realize_tree(expected)
   end
 
-  test "join/1" do
+  test "map_filter/2" do
+    import LazyTree, only: [new: 2, pure: 1]
+    require Integer
+
+    tree = new(1, [pure(2), pure(3)])
+    {:ok, mapped_tree} = LazyTree.map_filter(tree, fn int ->
+      if Integer.is_odd(int) do
+        {:pass, Integer.to_string(int)}
+      else
+        :skip
+      end
+    end)
+    expected = new("1", [pure("3")])
+
+    assert realize_tree(mapped_tree) == realize_tree(expected)
+  end
+
+  test "flatten/1" do
     import LazyTree, only: [new: 2, pure: 1]
 
     tree1 = new(:root1, [pure(:child1_a), pure(:child1_b)])

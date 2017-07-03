@@ -31,6 +31,23 @@ defmodule Stream.Data.LazyTree do
     new(fun.(root), Stream.map(children, &map(&1, fun)))
   end
 
+  @spec map_filter(t(a), (a -> {:pass, b} | :skip)) ::
+        {:ok, t(b)} | :error when a: term, b: term
+  def map_filter(%__MODULE__{} = tree, fun) when is_function(fun, 1) do
+    tree = map(tree, fun)
+
+    case tree.root do
+      {:pass, _} ->
+        tree =
+          tree
+          |> filter(&match?({:pass, _}, &1))
+          |> map(fn {:pass, elem} -> elem end)
+        {:ok, tree}
+      :skip ->
+        :error
+    end
+  end
+
   @spec flatten(t(t(a))) :: t(a) when a: term
   def flatten(%__MODULE__{root: %__MODULE__{}} = tree) do
     new(tree.root.root, Stream.concat(tree.root.children, Stream.map(tree.children, &flatten/1)))
