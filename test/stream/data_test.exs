@@ -192,7 +192,15 @@ defmodule Stream.DataTest do
     end)
   end
 
-  # TODO: map_of/2
+  test "map_of/2" do
+    for_many(map_of(binary(), int()), 50, fn map ->
+      assert is_map(map)
+      Enum.each(map, fn {key, value} ->
+        assert is_binary(key)
+        assert is_integer(value)
+      end)
+    end)
+  end
 
   test "keyword_of/1" do
     for_many(keyword_of(int()), 50, fn keyword ->
