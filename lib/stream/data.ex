@@ -333,11 +333,28 @@ defmodule Stream.Data do
 
   @spec unquoted_atom() :: t(atom)
   def unquoted_atom() do
-    member_of(Enum.concat([?a..?z, ?A..?Z, [?_]]))
-    |> bind(fn first_char ->
-      map(string_from_chars([?a..?z, ?A..?Z, ?0..?9, [?_, ?@]]), &(<<first_char>> <> &1))
+    data =
+      Enum.concat([?a..?z, ?A..?Z, [?_]])
+      |> member_of()
+      |> bind(fn first_char ->
+        map(string_from_chars([?a..?z, ?A..?Z, ?0..?9, [?_, ?@]]), &(<<first_char>> <> &1))
+      end)
+      |> scale(fn size ->
+        case trunc(:math.pow(size, 0.8)) do
+          smaller_size when smaller_size > 256 ->
+            256
+          smaller_size ->
+            smaller_size
+        end
+      end)
+      |> map(&String.to_atom/1)
+
+    sized(fn size ->
+      frequency([
+        {3, resize(data, trunc(:math.pow(size, 0.5)))},
+        {1, data},
+      ])
     end)
-    |> map(&String.to_atom/1)
   end
 
   # TODO: floats
