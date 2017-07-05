@@ -194,6 +194,13 @@ defmodule Stream.DataTest do
 
   # TODO: map_of/2
 
+  test "keyword_of/1" do
+    for_many(keyword_of(int()), 50, fn keyword ->
+      assert Keyword.keyword?(keyword)
+      assert Enum.all?(Keyword.values(keyword), &is_integer/1)
+    end)
+  end
+
   test "non_empty/1" do
     data = non_empty(list_of(constant(:term)))
     for_many(data, fn list ->

@@ -253,6 +253,12 @@ defmodule Stream.Data do
     map(list_of(key_value_pairs), &Map.new/1)
   end
 
+  @spec keyword_of(t(a)) :: t(keyword(a)) when a: term
+  def keyword_of(value_data) do
+    pairs = tuple({unquoted_atom(), value_data})
+    list_of(pairs)
+  end
+
   @spec non_empty(t(Enumerable.t)) :: t(Enumerable.t)
   def non_empty(enum_data) do
     filter(enum_data, &not(Enum.empty?(&1)))
@@ -358,7 +364,6 @@ defmodule Stream.Data do
   end
 
   # TODO: floats
-  # TODO: keyword lists
   # TODO: iodata (very interesting because recursive)
   # TODO: specific map
 
