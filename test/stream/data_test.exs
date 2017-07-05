@@ -235,4 +235,11 @@ defmodule Stream.DataTest do
       assert string =~ ~r/\A[a-zA-Z0-9]*\z/
     end)
   end
+
+  test "unquoted_atom/0" do
+    for_many(unquoted_atom(), fn atom ->
+      assert is_atom(atom)
+      refute String.starts_with?(inspect(atom), ":\"")
+    end)
+  end
 end

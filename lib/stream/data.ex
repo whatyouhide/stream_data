@@ -331,8 +331,16 @@ defmodule Stream.Data do
     string_from_chars([?a..?z, ?A..?Z, ?0..?9])
   end
 
+  @spec unquoted_atom() :: t(atom)
+  def unquoted_atom() do
+    member_of(Enum.concat([?a..?z, ?A..?Z, [?_]]))
+    |> bind(fn first_char ->
+      map(string_from_chars([?a..?z, ?A..?Z, ?0..?9, [?_, ?@]]), &(<<first_char>> <> &1))
+    end)
+    |> map(&String.to_atom/1)
+  end
+
   # TODO: floats
-  # TODO: atoms
   # TODO: keyword lists
   # TODO: iodata (very interesting because recursive)
   # TODO: specific map
