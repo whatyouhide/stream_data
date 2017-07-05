@@ -279,6 +279,38 @@ defmodule Stream.Data do
     filter(enum_data, &not(Enum.empty?(&1)))
   end
 
+  @spec tree((t(a) -> t(b)), t(a)) :: t(a | b) when a: term, b: term
+  def tree(subtree_fun, leaf_data) do
+    new(fn seed, size ->
+      leaf_data = resize(leaf_data, size)
+      {seed1, seed2} = Random.split(seed)
+      nodes_on_each_level = random_pseudofactors(trunc(:math.pow(size, 1.1)), seed1)
+      data = Enum.reduce(nodes_on_each_level, leaf_data, fn nodes_on_this_level, data_acc ->
+        frequency([
+          {1, data_acc},
+          {2, resize(subtree_fun.(data_acc), nodes_on_this_level)},
+        ])
+      end)
+
+      call(data, seed2, size)
+    end)
+  end
+
+  defp random_pseudofactors(n, _seed) when n < 2 do
+    [n]
+  end
+
+  defp random_pseudofactors(n, seed) do
+    {seed1, seed2} = Random.split(seed)
+    {factor, _seed} = :rand.uniform_s(trunc(:math.log2(n)), seed1)
+
+    if factor == 1 do
+      [n]
+    else
+      [factor | random_pseudofactors(div(n, factor), seed2)]
+    end
+  end
+
   # TODO: floats
   # TODO: printable binaries ("strings")
   # TODO: atoms

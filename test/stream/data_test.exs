@@ -200,4 +200,14 @@ defmodule Stream.DataTest do
       assert length(list) > 0
     end)
   end
+
+  test "tree/2" do
+    data = tree(&list_of/1, boolean())
+    for_many(data, 100, fn
+      tree when is_list(tree) ->
+        assert Enum.all?(List.flatten(tree), &is_boolean/1)
+      other ->
+        assert is_boolean(other)
+    end)
+  end
 end
