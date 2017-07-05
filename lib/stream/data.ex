@@ -157,6 +157,7 @@ defmodule Stream.Data do
     end)
   end
 
+  # TODO: tackle shrinking
   @spec frequency([{pos_integer, t(a)}]) :: t(a) when a: term
   def frequency(frequencies) when is_list(frequencies) do
     frequencies = Enum.sort_by(frequencies, &elem(&1, 0))
