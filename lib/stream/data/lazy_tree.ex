@@ -20,7 +20,6 @@ defmodule Stream.Data.LazyTree do
     %__MODULE__{root: root, children: children}
   end
 
-  # TODO: better name
   @spec constant(a) :: t(a) when a: term
   def constant(term) do
     new(term, [])
