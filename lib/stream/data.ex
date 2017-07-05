@@ -312,8 +312,26 @@ defmodule Stream.Data do
     map(list_of(byte()), &IO.iodata_to_binary/1)
   end
 
+  @spec string_from_chars([Enumerable.t]) :: t(String.t)
+  def string_from_chars(char_ranges) when is_list(char_ranges) do
+    char_ranges
+    |> Enum.concat()
+    |> member_of()
+    |> list_of()
+    |> map(&List.to_string/1)
+  end
+
+  @spec ascii_string() :: t(String.t)
+  def ascii_string() do
+    string_from_chars([?\s..?~])
+  end
+
+  @spec alphanumeric_string() :: t(String.t)
+  def alphanumeric_string() do
+    string_from_chars([?a..?z, ?A..?Z, ?0..?9])
+  end
+
   # TODO: floats
-  # TODO: printable binaries ("strings")
   # TODO: atoms
   # TODO: keyword lists
   # TODO: iodata (very interesting because recursive)

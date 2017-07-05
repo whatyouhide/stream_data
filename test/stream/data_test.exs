@@ -8,7 +8,7 @@ defmodule Stream.DataTest do
     Random,
   }
 
-  defp for_many(data, count \\ 1000, fun) do
+  defp for_many(data, count \\ 200, fun) do
     data
     |> Stream.take(count)
     |> Enum.each(fun)
@@ -208,6 +208,31 @@ defmodule Stream.DataTest do
         assert Enum.all?(List.flatten(tree), &is_boolean/1)
       other ->
         assert is_boolean(other)
+    end)
+  end
+
+  test "string_from_chars/1" do
+    data = string_from_chars([?a..?z, ?A..?K])
+    for_many(data, fn string ->
+      assert is_binary(string)
+      Enum.each(String.to_charlist(string), fn char ->
+        assert char in ?a..?z or char in ?A..?K
+      end)
+    end)
+  end
+
+  test "ascii_string/0" do
+    for_many(ascii_string(), fn string ->
+      assert is_binary(string)
+      Enum.each(String.to_charlist(string), fn char ->
+        assert char in ?\s..?~
+      end)
+    end)
+  end
+
+  test "alphanumeric_string/0" do
+    for_many(alphanumeric_string(), fn string ->
+      assert string =~ ~r/\A[a-zA-Z0-9]*\z/
     end)
   end
 end
