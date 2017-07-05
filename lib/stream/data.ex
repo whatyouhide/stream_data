@@ -197,28 +197,6 @@ defmodule Stream.Data do
     end)
   end
 
-  ## Data types
-
-  @spec boolean() :: t(boolean)
-  def boolean() do
-    member_of([false, true])
-  end
-
-  @spec int() :: t(integer)
-  def int() do
-    sized(fn size -> int(-size..size) end)
-  end
-
-  @spec byte() :: t(byte)
-  def byte() do
-    int(0..255)
-  end
-
-  @spec binary() :: t(binary)
-  def binary() do
-    map(list_of(byte()), &IO.iodata_to_binary/1)
-  end
-
   ## Compound data types
 
   # Shrinks by removing elements from the list.
@@ -310,6 +288,28 @@ defmodule Stream.Data do
     else
       [factor | random_pseudofactors(div(n, factor), seed2)]
     end
+  end
+
+  ## Data types
+
+  @spec boolean() :: t(boolean)
+  def boolean() do
+    member_of([false, true])
+  end
+
+  @spec int() :: t(integer)
+  def int() do
+    sized(fn size -> int(-size..size) end)
+  end
+
+  @spec byte() :: t(byte)
+  def byte() do
+    int(0..255)
+  end
+
+  @spec binary() :: t(binary)
+  def binary() do
+    map(list_of(byte()), &IO.iodata_to_binary/1)
   end
 
   # TODO: floats
