@@ -265,6 +265,18 @@ defmodule Stream.DataTest do
     end)
   end
 
+  test "iolist/0" do
+    for_many(iolist(), fn iolist ->
+      assert :erlang.iolist_size(iolist) >= 0
+    end)
+  end
+
+  test "iodata/0" do
+    for_many(iodata(), fn iodata ->
+      assert IO.iodata_length(iodata) >= 0
+    end)
+  end
+
   defp for_many(data, count \\ 200, fun) do
     data
     |> Stream.take(count)

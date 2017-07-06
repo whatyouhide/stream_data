@@ -378,8 +378,26 @@ defmodule Stream.Data do
     end)
   end
 
+  @spec iolist() :: t(iolist)
+  def iolist() do
+    # We try to use binaries that scale slower otherwise we end up with iodata with
+    # big binaries at many levels deep.
+    scaled_binary = scale(binary(), &trunc(:math.pow(&1, 0.6)))
+
+    improper_ending = one_of([scaled_binary, constant([])])
+    tree = tree(&maybe_improper_list_of(&1, improper_ending), one_of([byte(), scaled_binary]))
+    map(tree, &List.wrap/1)
+  end
+
+  @spec iodata() :: t(iodata)
+  def iodata() do
+    frequency([
+      {3, binary()},
+      {2, iolist()},
+    ])
+  end
+
   # TODO: floats
-  # TODO: iodata (very interesting because recursive)
   # TODO: specific map
 
   ## Enumerable
