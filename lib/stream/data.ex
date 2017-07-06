@@ -381,7 +381,7 @@ defmodule Stream.Data do
 
   @spec byte() :: t(byte)
   def byte() do
-    int(0..255)
+    no_shrink(int(0..255))
   end
 
   @spec binary() :: t(binary)
