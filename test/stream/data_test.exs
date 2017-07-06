@@ -1,3 +1,5 @@
+# TODO: test shrinking
+
 defmodule Stream.DataTest do
   use ExUnit.Case, async: true
 

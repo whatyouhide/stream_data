@@ -214,29 +214,47 @@ defmodule Stream.Data do
 
   ## Compound data types
 
-  # Shrinks by removing elements from the list.
+  # We could have an implementation that relies on fixed_list/1 and List.duplicate/2,
+  # it would look like this:
+  #
+  #     new(fn seed, size ->
+  #       {seed1, seed2} = Random.split(seed)
+  #       length = Random.uniform_in_range(0..size, seed1)
+  #       data
+  #       |> List.duplicate(length)
+  #       |> fixed_list()
+  #       |> call(seed2, size)
+  #       |> LazyTree.map(&list_lazy_tree/1)
+  #       |> LazyTree.flatten()
+  #     end)
+  #
   @spec list_of(t(a)) :: t([a]) when a: term
   def list_of(%__MODULE__{} = data) do
     new(fn seed, size ->
       {seed1, seed2} = Random.split(seed)
+      length = Random.uniform_in_range(0..size, seed1)
 
-      case Random.uniform_in_range(0..size, seed1) do
-        0 ->
-          LazyTree.constant([])
-        length ->
-          {list, _final_seed} =
-            Enum.map_reduce(1..length, seed2, fn _i, acc ->
-              {s1, s2} = Random.split(acc)
-              %LazyTree{root: next} = call(data, s1, size)
-              {next, s2}
-            end)
-
-          list_lazy_tree(list)
-      end
+      data
+      |> call_n_times(seed2, size, length, [])
+      |> LazyTree.zip()
+      |> LazyTree.map(&list_lazy_tree/1)
+      |> LazyTree.flatten()
     end)
   end
 
-  # TODO: improve
+  defp call_n_times(_data, _seed, _size, 0, acc) do
+    acc
+  end
+
+  defp call_n_times(data, seed, size, length, acc) do
+    {seed1, seed2} = Random.split(seed)
+    call_n_times(data, seed2, size, length - 1, [call(data, seed1, size) | acc])
+  end
+
+  defp list_lazy_tree([]) do
+    LazyTree.constant([])
+  end
+
   defp list_lazy_tree(list) do
     children =
       (0..length(list) - 1)
@@ -431,6 +449,8 @@ defmodule Stream.Data do
       {2, iolist()},
     ])
   end
+
+  # TODO: uniqueness
 
   ## Enumerable
 
