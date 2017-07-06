@@ -264,26 +264,38 @@ defmodule Stream.Data do
     ])
   end
 
-  @spec tuple(tuple) :: t(tuple)
-  def tuple(tuple_datas) when is_tuple(tuple_datas) do
-    datas = Tuple.to_list(tuple_datas)
-
+  @spec fixed_list([t(a)]) :: t([a]) when a: term
+  def fixed_list(datas) when is_list(datas) do
     new(fn seed, size ->
       {trees, _seed} = Enum.map_reduce(datas, seed, fn data, acc ->
         {seed1, seed2} = Random.split(acc)
         {call(data, seed1, size), seed2}
       end)
 
-      trees
-      |> LazyTree.zip()
-      |> LazyTree.map(&List.to_tuple/1)
+      LazyTree.zip(trees)
     end)
+  end
+
+  @spec tuple(tuple) :: t(tuple)
+  def tuple(tuple_datas) when is_tuple(tuple_datas) do
+    tuple_datas
+    |> Tuple.to_list()
+    |> fixed_list()
+    |> map(&List.to_tuple/1)
   end
 
   @spec map_of(t(key), t(value)) :: t(%{optional(key) => value}) when key: term, value: term
   def map_of(%__MODULE__{} = key_data, %__MODULE__{} = value_data) do
     key_value_pairs = tuple({key_data, value_data})
     map(list_of(key_value_pairs), &Map.new/1)
+  end
+
+  @spec fixed_map(map) :: t(map)
+  def fixed_map(data_map) when is_map(data_map) do
+    data_map
+    |> Enum.map(fn {key, data} -> tuple({constant(key), data}) end)
+    |> fixed_list()
+    |> map(&Map.new/1)
   end
 
   @spec keyword_of(t(a)) :: t(keyword(a)) when a: term
@@ -419,8 +431,6 @@ defmodule Stream.Data do
       {2, iolist()},
     ])
   end
-
-  # TODO: specific map
 
   ## Enumerable
 

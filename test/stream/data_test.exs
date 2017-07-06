@@ -216,6 +216,19 @@ defmodule Stream.DataTest do
     end)
   end
 
+  test "fixed_map/1" do
+    data = fixed_map(%{
+      int: int(),
+      binary: binary(),
+    })
+
+    for_many(data, fn map ->
+      assert map_size(map) == 2
+      assert is_integer(Map.fetch!(map, :int))
+      assert is_binary(Map.fetch!(map, :binary))
+    end)
+  end
+
   test "keyword_of/1" do
     for_many(keyword_of(int()), 50, fn keyword ->
       assert Keyword.keyword?(keyword)
