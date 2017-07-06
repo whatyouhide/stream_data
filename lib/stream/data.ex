@@ -157,24 +157,39 @@ defmodule Stream.Data do
     end)
   end
 
-  # TODO: tackle shrinking
+  # Right now, it shrinks by first shrinking the generated value, and then
+  # shrinking towards earlier generators in "frequencies". Clojure shrinks
+  # towards earlier generators *first*, and then shrinks the generated value.
+  # An implementation that does this can be:
+  #
+  #     new(fn seed, size ->
+  #       {seed1, seed2} = Random.split(seed)
+  #       frequency = Random.uniform_in_range(0..sum - 1, seed1)
+  #       index = pick_index(Enum.map(frequencies, &elem(&1, 0)), frequency)
+  #       {_frequency, data} = Enum.fetch!(frequencies, index)
+  #
+  #       tree = call(data, seed2, size)
+  #
+  #       earlier_children =
+  #         frequencies
+  #         |> Stream.take(index)
+  #         |> Stream.map(&call(elem(&1, 1), seed2, size))
+  #       LazyTree.new(tree.root, Stream.concat(earlier_children, tree.children))
+  #     end)
+  #
   @spec frequency([{pos_integer, t(a)}]) :: t(a) when a: term
   def frequency(frequencies) when is_list(frequencies) do
-    frequencies = Enum.sort_by(frequencies, &elem(&1, 0))
-    sum = frequencies |> Enum.map(&elem(&1, 0)) |> Enum.sum()
-
-    new(fn seed, size ->
-      {seed1, seed2} = Random.split(seed)
-      frequencies
-      |> find_frequency(Random.uniform_in_range(1..sum, seed1))
-      |> call(seed2, size)
-    end)
+    sum = Enum.reduce(frequencies, 0, fn {frequency, _data}, acc -> acc + frequency end)
+    bind(int(0..sum - 1), &pick_frequency(frequencies, &1))
   end
 
-  defp find_frequency([{frequency, data} | _], int) when int <= frequency,
-    do: data
-  defp find_frequency([{frequency, _data} | rest], int),
-    do: find_frequency(rest, frequency - int)
+  def pick_frequency([{frequency, data} | rest], int) do
+    if int < frequency do
+      data
+    else
+      pick_frequency(rest, int - frequency)
+    end
+  end
 
   @spec one_of([t(a)]) :: t(a) when a: term
   def one_of([_ | _] = datas) do
