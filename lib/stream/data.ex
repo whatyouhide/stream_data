@@ -341,6 +341,14 @@ defmodule Stream.Data do
     sized(fn size -> int(-size..size) end)
   end
 
+  @spec uniform_float() :: t(float)
+  def uniform_float() do
+    new(fn seed, _size ->
+      {float, _seed} = :rand.uniform_s(seed)
+      LazyTree.constant(float)
+    end)
+  end
+
   @spec byte() :: t(byte)
   def byte() do
     int(0..255)
@@ -412,7 +420,6 @@ defmodule Stream.Data do
     ])
   end
 
-  # TODO: floats
   # TODO: specific map
 
   ## Enumerable

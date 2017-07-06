@@ -158,6 +158,13 @@ defmodule Stream.DataTest do
 
   # TODO: int/0
 
+  test "uniform_float/0" do
+    for_many(uniform_float(), fn float ->
+      assert is_float(float)
+      assert float >= 0.0 and float <= 1.0
+    end)
+  end
+
   test "byte/0" do
     for_many(byte(), fn value ->
       assert value in 0..255
