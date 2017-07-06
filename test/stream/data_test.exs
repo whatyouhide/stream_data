@@ -156,7 +156,12 @@ defmodule Stream.DataTest do
     end)
   end
 
-  # TODO: int/0
+  test "int/0" do
+    for_many(int(), fn int ->
+      assert is_integer(int)
+      assert abs(int) < 1000
+    end)
+  end
 
   test "uniform_float/0" do
     for_many(uniform_float(), fn float ->
