@@ -8,12 +8,6 @@ defmodule Stream.DataTest do
     Random,
   }
 
-  defp for_many(data, count \\ 200, fun) do
-    data
-    |> Stream.take(count)
-    |> Enum.each(fun)
-  end
-
   test "implementation of the Enumerable protocol" do
     integers = Enum.take(int(), 10)
     assert Enum.all?(integers, &is_integer/1)
@@ -184,6 +178,19 @@ defmodule Stream.DataTest do
     end)
   end
 
+  test "nonempty_improper_list_of/2" do
+    for_many(nonempty_improper_list_of(int(), constant("")), fn list ->
+      assert list != []
+      each_improper_list(list, &assert(is_integer(&1)), &assert(&1 == ""))
+    end)
+  end
+
+  test "maybe_improper_list_of/2" do
+    for_many(maybe_improper_list_of(int(), constant("")), fn list ->
+      each_improper_list(list, &assert(is_integer(&1)), &assert(&1 == "" or is_integer(&1)))
+    end)
+  end
+
   test "tuple/1" do
     for_many(tuple({int(-1..-10), int(1..10)}), fn value ->
       assert {int1, int2} = value
@@ -256,5 +263,28 @@ defmodule Stream.DataTest do
       assert is_atom(atom)
       refute String.starts_with?(inspect(atom), ":\"")
     end)
+  end
+
+  defp for_many(data, count \\ 200, fun) do
+    data
+    |> Stream.take(count)
+    |> Enum.each(fun)
+  end
+
+  defp each_improper_list([], _head_fun, _tail_fun) do
+    :ok
+  end
+
+  defp each_improper_list([elem], _head_fun, tail_fun) do
+    tail_fun.(elem)
+  end
+
+  defp each_improper_list([head | tail], head_fun, tail_fun) do
+    head_fun.(head)
+    if is_list(tail) do
+      each_improper_list(tail, head_fun, tail_fun)
+    else
+      tail_fun.(tail)
+    end
   end
 end

@@ -231,6 +231,24 @@ defmodule Stream.Data do
     LazyTree.new(list, children)
   end
 
+  @spec nonempty_improper_list_of(t(a), t(b)) :: t(nonempty_improper_list(a, b)) when a: term, b: term
+  def nonempty_improper_list_of(first, improper) do
+    map(tuple({list_of(first), improper}), fn
+      {[], ending} ->
+        [ending]
+      {list, ending} ->
+        List.foldr(list, ending, &[&1 | &2])
+    end)
+  end
+
+  @spec maybe_improper_list_of(t(a), t(b)) :: t(maybe_improper_list(a, b)) when a: term, b: term
+  def maybe_improper_list_of(first, improper) do
+    frequency([
+      {2, list_of(first)},
+      {1, nonempty_improper_list_of(first, improper)},
+    ])
+  end
+
   @spec tuple(tuple) :: t(tuple)
   def tuple(tuple_datas) when is_tuple(tuple_datas) do
     datas = Tuple.to_list(tuple_datas)
