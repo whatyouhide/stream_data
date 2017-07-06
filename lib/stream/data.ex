@@ -339,27 +339,24 @@ defmodule Stream.Data do
 
   @spec unquoted_atom() :: t(atom)
   def unquoted_atom() do
-    data =
-      Enum.concat([?a..?z, ?A..?Z, [?_]])
-      |> member_of()
-      |> bind(fn first_char ->
-        map(string_from_chars([?a..?z, ?A..?Z, ?0..?9, [?_, ?@]]), &(<<first_char>> <> &1))
-      end)
-      |> scale(fn size ->
-        case trunc(:math.pow(size, 0.8)) do
-          smaller_size when smaller_size > 256 ->
-            256
-          smaller_size ->
-            smaller_size
-        end
-      end)
-      |> map(&String.to_atom/1)
+    starting_char = frequency([
+      {4, member_of(?a..?z)},
+      {2, member_of(?A..?Z)},
+      {1, constant(?_)},
+    ])
 
-    sized(fn size ->
-      frequency([
-        {3, resize(data, trunc(:math.pow(size, 0.5)))},
-        {1, data},
-      ])
+    # We limit the size to 255 so that adding the first character doesn't
+    # break the system limit of 256 chars in an atom.
+    rest = scale(string_from_chars([?a..?z, ?A..?Z, ?0..?9, [?_, ?@]]), &min(&1, 255))
+
+    tuple({starting_char, rest})
+    |> resize_atom_data()
+    |> map(fn {first, rest} -> String.to_atom(<<first>> <> rest) end)
+  end
+
+  defp resize_atom_data(data) do
+    scale(data, fn size ->
+      min(trunc(:math.pow(size, 0.5)), 256)
     end)
   end
 
