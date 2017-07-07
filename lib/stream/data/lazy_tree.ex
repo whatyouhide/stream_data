@@ -1,3 +1,5 @@
+# TODO: Inspect implementation
+
 defmodule Stream.Data.LazyTree do
   @moduledoc """
   A lazy tree structure.

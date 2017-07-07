@@ -192,6 +192,20 @@ defmodule Stream.DataTest do
     end)
   end
 
+  test "uniq_list_of/1" do
+    for_many(uniq_list_of(int(), &(&1), 100), fn list ->
+      assert Enum.uniq(list) == list
+    end)
+
+    for_many(uniq_list_of(int(), &abs/1, 100), fn list ->
+      assert Enum.uniq_by(list, &abs/1) == list
+    end)
+
+    assert_raise Stream.Data.TooManyDuplicatesError, fn ->
+      Enum.take(resize(uniq_list_of(boolean(), &(&1), 0), 10), 10)
+    end
+  end
+
   test "nonempty_improper_list_of/2" do
     for_many(nonempty_improper_list_of(int(), constant("")), fn list ->
       assert list != []

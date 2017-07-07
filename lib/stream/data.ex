@@ -22,6 +22,14 @@ defmodule Stream.Data do
     end
   end
 
+  defmodule TooManyDuplicatesError do
+    defexception [:message]
+
+    def exception(options) do
+      %__MODULE__{message: "too many duplicates: #{inspect(options)}"}
+    end
+  end
+
   ### Minimal interface
 
   ## Helpers
@@ -264,6 +272,41 @@ defmodule Stream.Data do
     LazyTree.new(list, children)
   end
 
+  @spec uniq_list_of(t(a), (a -> term), non_neg_integer) :: t([a]) when a: term
+  def uniq_list_of(data, uniq_fun \\ &(&1), max_tries \\ 10) do
+    new(fn seed, size ->
+      {seed1, seed2} = Random.split(seed)
+      length = Random.uniform_in_range(0..size, seed1)
+
+      data
+      |> uniq_list_of(uniq_fun, seed2, size, _seen = MapSet.new(), max_tries, max_tries, length, _acc = [])
+      |> LazyTree.zip()
+      |> LazyTree.map(&list_lazy_tree(Enum.uniq_by(&1, uniq_fun)))
+      |> LazyTree.flatten()
+    end)
+  end
+
+  defp uniq_list_of(_data, _uniq_fun, _seed, _size, seen, _tries_left = 0, max_tries, remaining, _acc) do
+    raise TooManyDuplicatesError, max_tries: max_tries, remaining_to_generate: remaining, generated: seen
+  end
+
+  defp uniq_list_of(_data, _uniq_fun, _seed, _size, _seen, _tries_left, _max_tries, _remaining = 0, acc) do
+    acc
+  end
+
+  defp uniq_list_of(data, uniq_fun, seed, size, seen, tries_left, max_tries, remaining, acc) do
+    {seed1, seed2} = Random.split(seed)
+    tree = call(data, seed1, size)
+
+    key = uniq_fun.(tree.root)
+
+    if MapSet.member?(seen, key) do
+      uniq_list_of(data, uniq_fun, seed2, size, seen, tries_left - 1, max_tries, remaining, acc)
+    else
+      uniq_list_of(data, uniq_fun, seed2, size, MapSet.put(seen, key), max_tries, max_tries, remaining - 1, [tree | acc])
+    end
+  end
+
   @spec nonempty_improper_list_of(t(a), t(b)) :: t(nonempty_improper_list(a, b)) when a: term, b: term
   def nonempty_improper_list_of(first, improper) do
     map(tuple({list_of(first), improper}), fn
@@ -450,7 +493,7 @@ defmodule Stream.Data do
     ])
   end
 
-  # TODO: uniqueness
+  # TODO: MapSets
 
   ## Enumerable
 
