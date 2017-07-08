@@ -85,6 +85,11 @@ defmodule Stream.Data.LazyTreeTest do
     assert realize_tree(zipped_tree).root == [11, 21]
   end
 
+  test "implementation of the Inspect protocol" do
+    assert inspect(LazyTree.constant(:root)) == "#LazyTree<:root, []>"
+    assert inspect(LazyTree.new(:root, [1, 2, 3])) == "#LazyTree<:root, [...]>"
+  end
+
   defp realize_tree(tree) do
     %{tree | children: Enum.map(tree.children, &realize_tree/1)}
   end

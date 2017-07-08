@@ -1,5 +1,3 @@
-# TODO: Inspect implementation
-
 defmodule Stream.Data.LazyTree do
   @moduledoc """
   A lazy tree structure.
@@ -82,5 +80,14 @@ defmodule Stream.Data.LazyTree do
     trees
     |> Stream.with_index()
     |> Stream.flat_map(fn {tree, index} -> Enum.map(tree.children, &List.replace_at(trees, index, &1)) end)
+  end
+
+  defimpl Inspect do
+    import Inspect.Algebra
+
+    def inspect(tree, options) do
+      children = if Enum.empty?(tree.children), do: "[]", else: "[...]"
+      concat(["#LazyTree<", to_doc(tree.root, options), ", #{children}>"])
+    end
   end
 end
