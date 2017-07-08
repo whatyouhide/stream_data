@@ -493,8 +493,6 @@ defmodule Stream.Data do
     ])
   end
 
-  # TODO: MapSets
-
   ## Enumerable
 
   defimpl Enumerable do
