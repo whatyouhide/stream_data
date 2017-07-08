@@ -11,8 +11,11 @@ defmodule Stream.DataTest do
   }
 
   test "implementation of the Enumerable protocol" do
-    integers = Enum.take(int(), 10)
-    assert Enum.all?(integers, &is_integer/1)
+    values = Enum.take(Stream.zip(int(), boolean()), 10)
+    Enum.each(values, fn {int, boolean} ->
+      assert is_integer(int)
+      assert is_boolean(boolean)
+    end)
   end
 
   test "new/1" do
