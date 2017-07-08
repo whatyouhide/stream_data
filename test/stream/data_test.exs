@@ -196,11 +196,12 @@ defmodule Stream.DataTest do
   end
 
   test "uniq_list_of/1" do
-    for_many(uniq_list_of(int(), &(&1), 100), fn list ->
+    for_many(uniq_list_of(int()), fn list ->
       assert Enum.uniq(list) == list
     end)
 
-    for_many(uniq_list_of(int(), &abs/1, 100), fn list ->
+    int = scale(int(), &(&1 * 2))
+    for_many(uniq_list_of(int, &abs/1), fn list ->
       assert Enum.uniq_by(list, &abs/1) == list
     end)
 
