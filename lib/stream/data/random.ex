@@ -1,4 +1,6 @@
 defmodule Stream.Data.Random do
+  @moduledoc false
+
   @algorithm :exs1024
 
   @type seed :: :rand.state
