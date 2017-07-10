@@ -1,8 +1,5 @@
 defmodule PropertyTest do
-  alias Stream.{
-    Data,
-    Data.Random,
-  }
+  alias StreamData.Random
 
   defmodule RunOptions do
     defstruct test_count: 100,
@@ -32,7 +29,7 @@ defmodule PropertyTest do
   defp run_property(property, seed, size, state, options) do
     {seed1, seed2} = Random.split(seed)
 
-    tree = Data.call(property, seed1, size)
+    tree = StreamData.call(property, seed1, size)
 
     case tree.root.() do
       %Property.Success{} ->

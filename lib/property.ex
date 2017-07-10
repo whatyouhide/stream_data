@@ -25,7 +25,7 @@ defmodule Property do
     quote do
       generated_values = Enum.reverse(var!(generated_values))
 
-      data = Stream.Data.constant(fn ->
+      data = StreamData.constant(fn ->
         try do
           unquote(block)
         rescue
@@ -44,7 +44,7 @@ defmodule Property do
 
   defp compile_clauses([{:<-, _meta, [pattern, generator]} = clause | rest], block) do
     quote do
-      data = Stream.Data.bind_filter(unquote(generator), fn unquote(pattern) = generated_value ->
+      data = StreamData.bind_filter(unquote(generator), fn unquote(pattern) = generated_value ->
         var!(generated_values) = [{unquote(Macro.to_string(clause)), generated_value} | var!(generated_values)]
         unquote(compile_clauses(rest, block))
       end)

@@ -1,7 +1,7 @@
-defmodule Stream.Data.RandomTest do
+defmodule StreamData.RandomTest do
   use ExUnit.Case, async: true
 
-  alias Stream.Data.Random
+  alias StreamData.Random
 
   test "new_seed/1" do
     assert Random.new_seed(1) == Random.new_seed(1)

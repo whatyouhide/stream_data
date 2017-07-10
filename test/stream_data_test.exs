@@ -1,11 +1,11 @@
 # TODO: test shrinking
 
-defmodule Stream.DataTest do
+defmodule StreamDataTest do
   use ExUnit.Case, async: true
 
-  import Stream.Data
+  import StreamData
 
-  alias Stream.Data.{
+  alias StreamData.{
     LazyTree,
     Random,
   }
@@ -72,7 +72,7 @@ defmodule Stream.DataTest do
     end)
 
     data = filter(constant(:term), &is_binary/1, 10)
-    assert_raise Stream.Data.FilterTooNarrowError, fn ->
+    assert_raise StreamData.FilterTooNarrowError, fn ->
       Enum.take(data, 1)
     end
   end
@@ -205,7 +205,7 @@ defmodule Stream.DataTest do
       assert Enum.uniq_by(list, &abs/1) == list
     end)
 
-    assert_raise Stream.Data.TooManyDuplicatesError, fn ->
+    assert_raise StreamData.TooManyDuplicatesError, fn ->
       Enum.take(resize(uniq_list_of(boolean(), &(&1), 0), 10), 10)
     end
   end

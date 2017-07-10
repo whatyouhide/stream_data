@@ -1,5 +1,5 @@
-defmodule Stream.Data do
-  alias Stream.Data.{
+defmodule StreamData do
+  alias StreamData.{
     LazyTree,
     Random,
   }

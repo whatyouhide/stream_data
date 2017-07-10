@@ -3,7 +3,7 @@ ExUnit.start()
 defmodule StdlibSamplesTest do
   use ExUnit.Case, async: true
 
-  import Stream.Data
+  import StreamData
   import PropertyTest
 
   test "my_starts_with?/1" do

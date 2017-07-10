@@ -1,7 +1,7 @@
-defmodule Stream.Data.LazyTreeTest do
+defmodule StreamData.LazyTreeTest do
   use ExUnit.Case
 
-  alias Stream.Data.LazyTree
+  alias StreamData.LazyTree
 
   test "new/2" do
     assert %LazyTree{} = tree = LazyTree.new(:root, [:child1, :child2])

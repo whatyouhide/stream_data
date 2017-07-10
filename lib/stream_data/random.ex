@@ -1,4 +1,4 @@
-defmodule Stream.Data.Random do
+defmodule StreamData.Random do
   @moduledoc false
 
   @algorithm :exs1024

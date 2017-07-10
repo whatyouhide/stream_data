@@ -1,4 +1,4 @@
-defmodule Stream.Data.LazyTree do
+defmodule StreamData.LazyTree do
   @moduledoc """
   A lazy tree structure.
 
