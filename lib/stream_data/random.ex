@@ -5,11 +5,23 @@ defmodule StreamData.Random do
 
   @type seed :: :rand.state
 
+  @doc """
+  Returns a new random seed from the given `int`.
+
+  If passed the same `int` this function will return the same seed.
+  """
+  # TODO: is {0, 0, ex_unit_seed} good?
   @spec new_seed(integer) :: seed
   def new_seed(int) when is_integer(int) do
     :rand.seed_s(@algorithm, {0, 0, int})
   end
 
+  @doc """
+  Takes a random `seed` and splits it into two different seeds.
+
+  Returns `{seed1, seed2}`. Splitting is deterministic, so when given the same
+  `seed` twice, this function will split it into the same two seeds.
+  """
   @spec split(seed) :: {seed, seed}
   def split(seed) do
     {int1, seed} = :rand.uniform_s(1_000_000_000, seed)
@@ -19,6 +31,11 @@ defmodule StreamData.Random do
     {new_seed, seed}
   end
 
+  @doc """
+  Returns a random integer in the (inclusive) range `range`.
+
+  The order of `range` (ascending or descending) doesn't matter.
+  """
   @spec uniform_in_range(Range.t(integer, integer), seed) :: integer
   def uniform_in_range(range, seed)
 
