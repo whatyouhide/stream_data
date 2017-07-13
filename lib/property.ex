@@ -1,4 +1,6 @@
 defmodule Property do
+  @moduledoc false
+
   defmodule Failure do
     @moduledoc false
     defstruct [:exception, :stacktrace, :generated_values]
@@ -9,6 +11,26 @@ defmodule Property do
     defstruct [:generated_values]
   end
 
+  @doc """
+  Takes the AST of a list of clauses and the AST for a block of code and returns
+  a property generator.
+
+  A property generator is a `StreamData` generator that generates either
+  `Property.Failure` or `Property.Success` structs.
+
+  Each clause in `clauses` can be:
+
+    * `pattern <- generator`: combines basically to
+      `StreamData.bind(generator, fn pattern -> ... end)`.
+
+    * `pattern = expression`: works exactly like `=` works, binding variables
+      and possibly failing with a `MatchError`.
+
+    * `expression`: works as a filter, that is, if it returns a truthy value then
+      the whole chain of generated values is considered valid, otherwise it's
+      not.
+
+  """
   def compile(clauses, block) do
     quote do
       var!(generated_values) = []

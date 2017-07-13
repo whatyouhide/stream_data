@@ -1,4 +1,8 @@
 defmodule PropertyTest do
+  @moduledoc """
+  Provides macros for property testing.
+  """
+
   alias StreamData.Random
 
   defmodule RunOptions do
@@ -40,6 +44,7 @@ defmodule PropertyTest do
     end
   end
 
+  # TODO: docs
   defmacro for_all({:with, _meta, options}) when is_list(options) do
     {clauses, [[do: block]]} = Enum.split(options, -1)
 
