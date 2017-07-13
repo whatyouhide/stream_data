@@ -17,10 +17,6 @@ defmodule Property do
     end
   end
 
-  # Compiles the list of clauses to code that will execute those clauses. Note
-  # that in the returned code, the "state" variable is available in the bindings
-  # (as var!(state)). This is also valid for updating the state, which can be
-  # done by assigning var!(state) = to_something.
   defp compile_clauses(clauses, block)
 
   defp compile_clauses([], block) do
@@ -31,7 +27,7 @@ defmodule Property do
         try do
           unquote(block)
         rescue
-          exception in [ExUnit.AssertionError, ExUnit.MultiError] ->
+          exception ->
             stacktrace = System.stacktrace()
             %Failure{exception: exception, stacktrace: stacktrace, generated_values: generated_values}
         else

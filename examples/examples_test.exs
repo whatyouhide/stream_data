@@ -28,6 +28,12 @@ defmodule StdlibSamplesTest do
      end)
   end
 
+  test "non-assertion error" do
+    for_all(with tuple <- tuple({constant(:ok), int()}) do
+      {:ok, :not_an_int} = tuple
+    end)
+  end
+
   defp my_starts_with?(a, "") when byte_size(a) > 0, do: false
   defp my_starts_with?(_, _), do: true
 end
