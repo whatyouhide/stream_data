@@ -265,7 +265,7 @@ defmodule StreamData do
 
   ## Shrinking
 
-  TODO: this shouldn't shrink towards 0 if not in the range
+  Shrinks towards with the smallest absolute value that still lie in `range`.
 
   ## Examples
 
@@ -276,8 +276,10 @@ defmodule StreamData do
   @spec int(Range.t) :: t(integer)
   def int(_lower.._upper = range) do
     new(fn seed, _size ->
-      int = Random.uniform_in_range(range, seed)
-      int_lazy_tree(int)
+      range
+      |> Random.uniform_in_range(seed)
+      |> int_lazy_tree()
+      |> LazyTree.filter(&(&1 in range))
     end)
   end
 
