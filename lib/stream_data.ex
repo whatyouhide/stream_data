@@ -720,11 +720,12 @@ defmodule StreamData do
     |> map(&List.to_tuple/1)
   end
 
-  # TODO: uniq_list_of
+  # TODO: docs
   @spec map_of(t(key), t(value)) :: t(%{optional(key) => value}) when key: term, value: term
-  def map_of(%__MODULE__{} = key_data, %__MODULE__{} = value_data) do
-    key_value_pairs = tuple({key_data, value_data})
-    map(list_of(key_value_pairs), &Map.new/1)
+  def map_of(%__MODULE__{} = key_data, %__MODULE__{} = value_data, max_tries \\ 10) do
+    tuple({key_data, value_data})
+    |> uniq_list_of(fn {key, _value} -> key end, max_tries)
+    |> map(&Map.new/1)
   end
 
   @doc """
