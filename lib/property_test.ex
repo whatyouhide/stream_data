@@ -2,6 +2,8 @@ defmodule PropertyTest do
   alias StreamData.Random
 
   defmodule RunOptions do
+    @moduledoc false
+
     defstruct test_count: 100,
               max_shrink_depth: 50
   end

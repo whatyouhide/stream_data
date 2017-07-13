@@ -1,9 +1,11 @@
 defmodule Property do
   defmodule Failure do
+    @moduledoc false
     defstruct [:exception, :stacktrace, :generated_values]
   end
 
   defmodule Success do
+    @moduledoc false
     defstruct [:generated_values]
   end
 
