@@ -363,6 +363,14 @@ defmodule StreamData do
       Enum.take(data, 3)
       #=> [0, 0, -1]
 
+  Another interesting example is creating a generator that has a maximum. For
+  example, say we want to generate binaries but we never want them to be larger
+  than 64 bytes:
+
+      small_binaries = StreamData.scale(StreamData.binary(), fn size ->
+        min(size, 64)
+      end)
+
   """
   @spec scale(t(a), (size -> size)) :: t(a) when a: term
   def scale(%__MODULE__{} = data, size_changer) when is_function(size_changer, 1) do
@@ -753,7 +761,24 @@ defmodule StreamData do
     |> map(&List.to_tuple/1)
   end
 
-  # TODO: docs
+  @doc """
+  Generates maps with keys from `key_data` and values from `value_data`.
+
+  Since maps require keys to be unique, this generator behaves similarly to
+  `uniq_list_of/3`: if more than `max_tries` duplicate keys are generated
+  consequently, it raises a `StreamData.TooManyDuplicatesError` exception.
+
+  ## Shrinking
+
+  Shrinks towards smallest maps and towards shrinking keys and values according
+  to the respective generators.
+
+  ## Examples
+
+      Enum.take(StreamData.map_of(StreamData.int(), StreamData.boolean()), 3)
+      #=> [%{}, %{1 => false}, %{-2 => true, -1 => false}]
+
+  """
   @spec map_of(t(key), t(value)) :: t(%{optional(key) => value}) when key: term, value: term
   def map_of(%__MODULE__{} = key_data, %__MODULE__{} = value_data, max_tries \\ 10) do
     tuple({key_data, value_data})
