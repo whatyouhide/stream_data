@@ -31,23 +31,23 @@ defmodule Property do
       not.
 
   """
-  def compile(clauses, block) do
+  def compile(clauses, body) do
     quote do
       var!(generated_values) = []
-      {:pass, data} = unquote(compile_clauses(clauses, block) |> (fn x -> IO.puts(Macro.to_string(x)); x end).())
+      {:pass, data} = unquote(compile_clauses(clauses, body))
       data
     end
   end
 
-  defp compile_clauses(clauses, block)
+  defp compile_clauses(clauses, body)
 
-  defp compile_clauses([], block) do
+  defp compile_clauses([], body) do
     quote do
       generated_values = Enum.reverse(var!(generated_values))
 
       data = StreamData.constant(fn ->
         try do
-          unquote(block)
+          unquote(body)
         rescue
           exception ->
             stacktrace = System.stacktrace()
@@ -62,28 +62,28 @@ defmodule Property do
     end
   end
 
-  defp compile_clauses([{:<-, _meta, [pattern, generator]} = clause | rest], block) do
+  defp compile_clauses([{:<-, _meta, [pattern, generator]} = clause | rest], body) do
     quote do
       data = StreamData.bind_filter(unquote(generator), fn unquote(pattern) = generated_value ->
         var!(generated_values) = [{unquote(Macro.to_string(clause)), generated_value} | var!(generated_values)]
-        unquote(compile_clauses(rest, block))
+        unquote(compile_clauses(rest, body))
       end)
 
       {:pass, data}
     end
   end
 
-  defp compile_clauses([{:=, _meta, [_left, _right]} = assignment | rest], block) do
+  defp compile_clauses([{:=, _meta, [_left, _right]} = assignment | rest], body) do
     quote do
       unquote(assignment)
-      unquote(compile_clauses(rest, block))
+      unquote(compile_clauses(rest, body))
     end
   end
 
-  defp compile_clauses([clause | rest], block) do
+  defp compile_clauses([clause | rest], body) do
     quote do
       if unquote(clause) do
-        unquote(compile_clauses(rest, block))
+        unquote(compile_clauses(rest, body))
       else
         :skip
       end

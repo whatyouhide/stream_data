@@ -45,11 +45,9 @@ defmodule PropertyTest do
   end
 
   # TODO: docs
-  defmacro for_all({:with, _meta, options}) when is_list(options) do
-    {clauses, [[do: block]]} = Enum.split(options, -1)
-
+  defmacro check({:all, _meta, clauses}, [do: body]) when is_list(clauses) do
     quote do
-      property = unquote(Property.compile(clauses, block))
+      property = unquote(Property.compile(clauses, body))
       starting_seed = Random.new_seed(ExUnit.configuration()[:seed])
       PropertyTest.run_property(property, starting_seed, _initial_size = 0, %RunOptions{})
     end
