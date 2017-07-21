@@ -16,14 +16,6 @@ defmodule PropertyTest do
 
   alias StreamData.Random
 
-  # TODO: We probably don't need this struct. A map will be fine.
-  defmodule RunOptions do
-    @moduledoc false
-
-    defstruct test_count: 100,
-              max_shrink_depth: 50
-  end
-
   defmodule Error do
     defexception [:original_failure, :shrinked_failure]
 
@@ -140,11 +132,12 @@ defmodule PropertyTest do
       end
 
   """
-  defmacro check({:all, _meta, clauses} = generation_clauses, [do: body] = block) when is_list(clauses) do
+  defmacro check({:all, _meta, clauses} = _generation_clauses, [do: body] = _block) when is_list(clauses) do
     quote do
       property = unquote(Property.compile(clauses, body))
       starting_seed = Random.new_seed(ExUnit.configuration()[:seed])
-      PropertyTest.run_property(property, starting_seed, _initial_size = 0, %RunOptions{})
+      run_options = %{test_count: 100, max_shrink_depth: 50}
+      PropertyTest.run_property(property, starting_seed, _initial_size = 0, run_options)
     end
   end
 
@@ -153,16 +146,15 @@ defmodule PropertyTest do
   # Stream.Data, ideally it should not.
 
   @doc false
-  def run_property(property, initial_seed, initial_size, %RunOptions{} = run_options) do
-    state = %{successes: 0}
-    run_property(property, initial_seed, initial_size, state, run_options)
+  def run_property(property, initial_seed, initial_size, run_options) do
+    run_property(property, initial_seed, initial_size, _state = %{successes: 0}, run_options)
   end
 
-  defp run_property(_property, _seed, _size, %{successes: n}, %RunOptions{test_count: n}) do
+  defp run_property(_property, _seed, _size, %{successes: n}, %{test_count: n}) do
     :ok
   end
 
-  defp run_property(property, seed, size, state, options) do
+  defp run_property(property, seed, size, state, run_options) do
     {seed1, seed2} = Random.split(seed)
 
     tree = StreamData.call(property, seed1, size)
@@ -170,9 +162,9 @@ defmodule PropertyTest do
     case tree.root.() do
       %Property.Success{} ->
         state = Map.update!(state, :successes, &(&1 + 1))
-        run_property(property, seed2, size + 1, state, options)
+        run_property(property, seed2, size + 1, state, run_options)
       %Property.Failure{} = original_failure ->
-        shrinked_failure = shrink_failure(tree.children, _smallest = original_failure, _nodes_visited = 0, _current_depth = 0, options.max_shrink_depth)
+        shrinked_failure = shrink_failure(tree.children, _smallest = original_failure, _nodes_visited = 0, _current_depth = 0, run_options.max_shrink_depth)
         raise Error, original_failure: original_failure, shrinked_failure: shrinked_failure
     end
   end
