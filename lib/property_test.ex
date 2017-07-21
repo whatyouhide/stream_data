@@ -5,8 +5,18 @@ defmodule PropertyTest do
 
   # TODO: moduledoc (overview of ptesting, shrinking)
 
+  # QUESTION: Should we support property and automatically include Stream.Data
+  # and check all in there? Something like:
+  #
+  #     property "foo bar and baz" do
+  #       check all ... do
+  #         ...
+  #       end
+  #     end
+
   alias StreamData.Random
 
+  # TODO: We probably don't need this struct. A map will be fine.
   defmodule RunOptions do
     @moduledoc false
 
@@ -137,6 +147,10 @@ defmodule PropertyTest do
       PropertyTest.run_property(property, starting_seed, _initial_size = 0, %RunOptions{})
     end
   end
+
+  # TODO: Is there a way for the function below to be implemented without
+  # relying on internals? While we can have ExUnit depend on internals in
+  # Stream.Data, ideally it should not.
 
   @doc false
   def run_property(property, initial_seed, initial_size, %RunOptions{} = run_options) do

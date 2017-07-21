@@ -1,6 +1,8 @@
 defmodule Property do
   @moduledoc false
 
+  # QUESTION: This can probably be moved inside PropertyTest?
+
   defmodule Failure do
     @moduledoc false
     defstruct [:exception, :stacktrace, :generated_values]
