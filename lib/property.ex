@@ -36,7 +36,7 @@ defmodule Property do
   def compile(clauses, body) do
     quote do
       var!(generated_values) = []
-      {:pass, data} = unquote(compile_clauses(clauses, body))
+      {:cont, data} = unquote(compile_clauses(clauses, body))
       data
     end
   end
@@ -60,7 +60,7 @@ defmodule Property do
         end
       end)
 
-      {:pass, data}
+      {:cont, data}
     end
   end
 
@@ -71,7 +71,7 @@ defmodule Property do
         unquote(compile_clauses(rest, body))
       end)
 
-      {:pass, data}
+      {:cont, data}
     end
   end
 

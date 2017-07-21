@@ -147,13 +147,9 @@ defmodule StreamData do
   end
 
   # TODO: should this be exposed?
-  # QUESTION: In Elixir, we would call this function filter_map,
-  # and have it return {:cont, value} | :skip or {:ok, value} | :error.
-  # Maybe we should standardize this return type and make this public?
-  # I would also likely call the underlying rose tree operation filter_map.
 
   @doc false
-  @spec bind_filter(t(a), (a -> {:pass, t(b)} | :skip), non_neg_integer) :: t(b) when a: term, b: term
+  @spec bind_filter(t(a), (a -> {:cont, t(b)} | :skip), non_neg_integer) :: t(b) when a: term, b: term
   def bind_filter(%__MODULE__{} = data, fun, max_consecutive_failures \\ 10)
       when is_function(fun, 1) and is_integer(max_consecutive_failures) and max_consecutive_failures >= 0 do
     __new__(fn seed, size ->
@@ -174,10 +170,10 @@ defmodule StreamData do
     {seed1, seed2} = Random.split(seed)
     lazy_tree = __call__(data, seed1, size)
 
-    case LazyTree.map_filter(lazy_tree, mapper) do
-      {:ok, map_filtered_tree} ->
+    case LazyTree.filter_map(lazy_tree, mapper) do
+      {:ok, filter_mapped_tree} ->
         tree =
-          map_filtered_tree
+          filter_mapped_tree
           |> LazyTree.map(&__call__(&1, seed2, size))
           |> LazyTree.flatten()
         {:ok, tree}
@@ -217,7 +213,7 @@ defmodule StreamData do
   """
   @spec bind(t(a), (a -> t(b))) :: t(b) when a: term, b: term
   def bind(%__MODULE__{} = data, fun) when is_function(fun, 1) do
-    bind_filter(data, fn generated_term -> {:pass, fun.(generated_term)} end)
+    bind_filter(data, fn generated_term -> {:cont, fun.(generated_term)} end)
   end
 
   @doc """
@@ -260,7 +256,7 @@ defmodule StreamData do
       when is_function(predicate, 1) and is_integer(max_consecutive_failures) and max_consecutive_failures >= 0 do
     bind_filter(data, fn term ->
       if predicate.(term) do
-        {:pass, constant(term)}
+        {:cont, constant(term)}
       else
         :skip
       end

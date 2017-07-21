@@ -63,8 +63,8 @@ defmodule StreamData.LazyTree do
   @doc """
   Maps and filters the given `lazy_tree` in one go using the given function `fun`.
 
-  `fun` can return either `{:pass, mapped_term}` or `:skip`. If it returns
-  `{:pass, mapped_term}`, then `mapped_term` will replace the original item passed
+  `fun` can return either `{:cont, mapped_term}` or `:skip`. If it returns
+  `{:cont, mapped_term}`, then `mapped_term` will replace the original item passed
   to `fun` in the given tree. If it returns `:skip`, the tree the item passed to
   `fun` belongs to is filtered out of the resulting tree (the whole tree is filtered
   out, not just the root).
@@ -72,26 +72,26 @@ defmodule StreamData.LazyTree do
   ## Examples
 
       tree = StreamData.LazyTree.new(1, [])
-      StreamData.LazyTree.map_filter(tree, fn integer ->
+      StreamData.LazyTree.filter_map(tree, fn integer ->
         if rem(integer, 2) == 0 do
-          {:pass, -integer}
+          {:cont, -integer}
         else
           :skip
         end
       end)
 
   """
-  @spec map_filter(t(a), (a -> {:pass, b} | :skip)) ::
+  @spec filter_map(t(a), (a -> {:cont, b} | :skip)) ::
         {:ok, t(b)} | :error when a: term, b: term
-  def map_filter(%__MODULE__{} = tree, fun) when is_function(fun, 1) do
+  def filter_map(%__MODULE__{} = tree, fun) when is_function(fun, 1) do
     %__MODULE__{root: root} = tree = map(tree, fun)
 
     case root do
-      {:pass, _} ->
+      {:cont, _} ->
         tree =
           tree
-          |> filter(&match?({:pass, _}, &1))
-          |> map(fn {:pass, elem} -> elem end)
+          |> filter(&match?({:cont, _}, &1))
+          |> map(fn {:cont, elem} -> elem end)
         {:ok, tree}
       :skip ->
         :error
