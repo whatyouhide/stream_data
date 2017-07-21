@@ -23,14 +23,14 @@ defmodule StreamData.LazyTreeTest do
     assert realize_tree(mapped_tree) == realize_tree(expected)
   end
 
-  test "map_filter/2" do
+  test "filter_map/2" do
     import LazyTree, only: [new: 2, constant: 1]
     require Integer
 
     tree = new(1, [constant(2), constant(3)])
-    {:ok, mapped_tree} = LazyTree.map_filter(tree, fn int ->
+    {:ok, mapped_tree} = LazyTree.filter_map(tree, fn int ->
       if Integer.is_odd(int) do
-        {:pass, Integer.to_string(int)}
+        {:cont, Integer.to_string(int)}
       else
         :skip
       end

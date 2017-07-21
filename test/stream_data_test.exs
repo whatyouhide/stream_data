@@ -40,7 +40,7 @@ defmodule StreamDataTest do
 
     data = bind_filter(int(1..5), fn int ->
       if Integer.is_even(int) do
-        {:pass, constant(int)}
+        {:cont, constant(int)}
       else
         :skip
       end
