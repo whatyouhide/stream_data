@@ -76,6 +76,12 @@ defmodule StreamData do
   Shrinking is used for property testing, where it's important to find the
   minimal value for which a property fails (since generated values are often
   bigger and full of garbage). See `PropertyTest` for more information.
+
+  Note that the generation size is not related in any way with shrinking: while
+  intuitively one may think that shrinking just means decreasing the generation
+  size, in reality the generation size is related to how generators generate
+  values, while shrinking is bound to each generated value and is a way to
+  shrink that particular value.
   """
 
   alias StreamData.{
@@ -339,14 +345,13 @@ defmodule StreamData do
 
   ## Generator modifiers
 
-  # TODO: We have functions about `size` but so far we haven't explained
-  # what `size` does and why it matters. Maybe we need to discuss them on
-  # the shrinking section in the module doc.
-
   @doc """
-  Resize the given generated `data` to have fixed size `new_size`.
+  Resize the given generated `data` to have fixed generation size `new_size`.
 
   The new generator will ignore the generation size and always use `new_size`.
+
+  See the "Generation size" section in the documentation for `StreamData` for
+  more information about the generation size.
 
   ## Examples
 
@@ -367,6 +372,9 @@ defmodule StreamData do
 
   `fun` takes the generation size and has to return a generator, that can use
   that size to its advantage.
+
+  See the "Generation size" section in the documentation for `StreamData` for
+  more information about the generation size.
 
   ## Examples
 
@@ -390,14 +398,16 @@ defmodule StreamData do
   end
 
   @doc """
-  Scales the size of the given generator `data` according to `size_changer`.
+  Scales the generation size of the given generator `data` according to
+  `size_changer`.
 
   When generating data from `data`, the generation size will be the result of
   calling `size_changer` with the generation size as its argument. This is
-  useful, for example, when a generator should needs to faster or slower than
+  useful, for example, when a generator needs to grow faster or slower than
   the default.
 
-  # TODO: The last sentence above is not readable.
+  See the "Generation size" section in the documentation for `StreamData` for
+  more information about the generation size.
 
   ## Examples
 
@@ -412,9 +422,9 @@ defmodule StreamData do
       Enum.take(data, 3)
       #=> [0, 0, -1]
 
-  Another interesting example is creating a generator that has a maximum. For
-  example, say we want to generate binaries but we never want them to be larger
-  than 64 bytes:
+  Another interesting example is creating a generator with a fixed maximum
+  generation size. For example, say we want to generate binaries but we never
+  want them to be larger than 64 bytes:
 
       small_binaries = StreamData.scale(StreamData.binary(), fn size ->
         min(size, 64)
