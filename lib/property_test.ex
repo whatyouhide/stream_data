@@ -157,7 +157,7 @@ defmodule PropertyTest do
   defp run_property(property, seed, size, state, run_options) do
     {seed1, seed2} = Random.split(seed)
 
-    tree = StreamData.call(property, seed1, size)
+    tree = StreamData.__call__(property, seed1, size)
 
     case tree.root.() do
       %Property.Success{} ->

@@ -19,7 +19,7 @@ defmodule StreamDataTest do
   end
 
   test "new/1" do
-    assert_raise FunctionClauseError, fn -> new(%{}) end
+    assert_raise FunctionClauseError, fn -> StreamData.__new__(%{}) end
   end
 
   test "constant/1" do
@@ -84,7 +84,7 @@ defmodule StreamDataTest do
   end
 
   test "resize/2" do
-    data = new(fn seed, size ->
+    data = StreamData.__new__(fn seed, size ->
       case Random.uniform_in_range(1..2, seed) do
         1 -> LazyTree.constant(size)
         2 -> LazyTree.constant(-size)
