@@ -135,7 +135,7 @@ defmodule PropertyTest do
 
     quote do
       options = [
-        initial_seed: ExUnit.configuration()[:seed],
+        initial_seed: {0, 0, ExUnit.configuration()[:seed]},
       ]
 
       case StreamData.check_all(unquote(property), options, &(&1.())) do
