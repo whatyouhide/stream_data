@@ -1259,52 +1259,61 @@ defmodule StreamData do
     ])
   end
 
+  @spec check_all(t(a), Keyword.t, (a -> {:ok, term} | {:error, b})) :: {:ok, map} | {:error, map}
+        when a: term, b: term
   def check_all(%__MODULE__{} = data, options, fun) when is_list(options) and is_function(fun, 1) do
-    initial_seed = Keyword.fetch!(options, :initial_seed)
-    initial_size = Keyword.get(options, :initial_size, 1)
+    seed = new_seed(Keyword.fetch!(options, :initial_seed))
+    size = Keyword.get(options, :initial_size, 1)
     max_shrinking_nodes = Keyword.get(options, :max_shrinking_nodes, 100)
-    runs = Keyword.get(options, :runs, 100)
+    total_runs = Keyword.get(options, :total_runs, 100)
 
-    check_all(data,
-              new_seed(initial_seed),
-              initial_size,
-              fun,
-              max_shrinking_nodes,
-              runs,
-              _runs = 0)
+    config = %{
+      total_runs: total_runs,
+      max_shrinking_nodes: max_shrinking_nodes,
+    }
+
+    check_all(data, seed, size, fun, _runs = 0, config)
   end
 
-  defp check_all(_data, _seed, _size, _fun, _max_shrinking_nodes, runs, runs) do
-    {:ok, %{TODO: :yes}}
+  defp check_all(_data, _seed, _size, _fun, runs, %{total_runs: runs}) do
+    {:ok, %{}}
   end
 
-  defp check_all(data, seed, size, fun, max_shrinking_nodes, runs, current_runs) do
+  defp check_all(data, seed, size, fun, runs, config) do
     {seed1, seed2} = split_seed(seed)
-    tree = call(data, seed1, size)
+    %LazyTree{root: root, children: children} = call(data, seed1, size)
 
-    case fun.(tree.root) do
-      :ok ->
-        check_all(data, seed2, size + 1, fun, max_shrinking_nodes, runs, current_runs + 1)
+    case fun.(root) do
+      {:ok, _term} ->
+        check_all(data, seed2, size + 1, fun, runs + 1, config)
       {:error, reason} ->
-        shrinked_failure = shrink_failure(tree.children, _smallest = reason, fun, _nodes_visited = 0, max_shrinking_nodes)
-        {:error, %{shrinked_failure: shrinked_failure, original_failure: reason}}
+        shrinking_result =
+          children
+          |> shrink_failure(reason, fun, 0, config)
+          |> Map.put(:original_failure, reason)
+        {:error, shrinking_result}
     end
   end
 
-  defp shrink_failure(nodes, smallest, fun, nodes_visited, max_shrinking_nodes) do
-    if Enum.empty?(nodes) do
-      %{failure: smallest, nodes_visited: nodes_visited}
-    else
-      [first_child] = Enum.take(nodes, 1)
+  defp shrink_failure(_nodes, smallest, _fun, nodes_visited, %{max_shrinking_nodes: nodes_visited}) do
+    %{shrinked_failure: smallest, nodes_visited: nodes_visited}
+  end
 
-      case fun.(first_child.root) do
-        :ok ->
-          shrink_failure(Stream.drop(nodes, 1), smallest, fun, nodes_visited + 1, max_shrinking_nodes)
+  # TODO: use Enumerable API instead of Enum.take/2 + Stream.drop/2
+  defp shrink_failure(nodes, smallest, fun, nodes_visited, config) do
+    if Enum.empty?(nodes) do
+      %{shrinked_failure: smallest, nodes_visited: nodes_visited}
+    else
+      [%LazyTree{root: root, children: children}] = Enum.take(nodes, 1)
+
+      case fun.(root) do
+        {:ok, _term} ->
+          shrink_failure(Stream.drop(nodes, 1), smallest, fun, nodes_visited + 1, config)
         {:error, reason} ->
-          if Enum.empty?(first_child.children) do
-            shrink_failure(Stream.drop(nodes, 1), reason, fun, nodes_visited + 1, max_shrinking_nodes)
+          if Enum.empty?(children) do
+            shrink_failure(Stream.drop(nodes, 1), reason, fun, nodes_visited + 1, config)
           else
-            shrink_failure(first_child.children, reason, fun, nodes_visited + 1, max_shrinking_nodes)
+            shrink_failure(children, reason, fun, nodes_visited + 1, config)
           end
       end
     end
