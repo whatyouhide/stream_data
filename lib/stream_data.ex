@@ -106,22 +106,26 @@ defmodule StreamData do
   defstruct [:generator]
 
   defmodule FilterTooNarrowError do
-    defexception [:message]
+    defexception [:max_consecutive_failures]
 
-    # FIX: A good error message says what went wrong, why it went wrong
-    # and possibly what can be done to fix it.
-    def exception(options) do
-      %__MODULE__{message: "too many failures: #{inspect(options)}"}
+    def message(%{max_consecutive_failures: max_consecutive_failures}) do
+      "too many (#{max_consecutive_failures}) consecutive elements were filtered out. " <>
+      "Make sure to avoid filters that are too strict and filter out too many elements " <>
+      "and make sure a small generation size doesn't affect the filter too heavily (such as " <>
+      "when empty lists are filtered out but small generation size forces generation of many " <>
+      "empty lists)"
     end
   end
 
   defmodule TooManyDuplicatesError do
-    defexception [:message]
+    defexception [:max_tries, :remaining_to_generate, :generated]
 
-    # FIX: A good error message says what went wrong, why it went wrong
-    # and possibly what can be done to fix it.
-    def exception(options) do
-      %__MODULE__{message: "too many duplicates: #{inspect(options)}"}
+    def message(%{max_tries: max_tries, remaining_to_generate: remaining, generated: generated}) do
+      "too many (#{max_tries}) non-unique elements were generated consecutively. " <>
+      "Make sure to avoid generating from a small space of data (such as only a " <>
+      "handful of terms) and make sure a small generation size doesn't affect " <>
+      "uniqueness too heavily. There were still #{remaining} elements left to " <>
+      "generate, while the generated elements were:\n\n#{inspect(generated)}"
     end
   end
 
