@@ -84,13 +84,11 @@ defmodule StreamData do
   shrink that particular value.
   """
 
-  alias StreamData.{
-    LazyTree,
-    Random,
-  }
+  alias StreamData.LazyTree
 
+  @typep seed :: :rand.state
   @typep size :: non_neg_integer
-  @typep generator_fun(a) :: (Random.seed, size -> LazyTree.t(a))
+  @typep generator_fun(a) :: (seed, size -> LazyTree.t(a))
 
   @typedoc """
   An opaque type that represents a `StreamData` generator that generates values
@@ -102,6 +100,8 @@ defmodule StreamData do
   @opaque t(a) :: %__MODULE__{
     generator: generator_fun(a),
   }
+
+  @rand_algorithm :exs1024
 
   defstruct [:generator]
 
@@ -137,7 +137,7 @@ defmodule StreamData do
     %__MODULE__{generator: generator}
   end
 
-  @spec __call__(t(a), Random.seed, non_neg_integer) :: a when a: term
+  @spec __call__(t(a), seed, non_neg_integer) :: a when a: term
   def __call__(%__MODULE__{generator: generator}, seed, size) do
     %LazyTree{} = generator.(seed, size)
   end
@@ -256,7 +256,7 @@ defmodule StreamData do
   end
 
   defp bind_filter(seed, size, data, mapper, tries_left) do
-    {seed1, seed2} = Random.split(seed)
+    {seed1, seed2} = split_seed(seed)
     lazy_tree = __call__(data, seed1, size)
 
     case LazyTree.filter_map(lazy_tree, mapper) do
@@ -372,7 +372,7 @@ defmodule StreamData do
   def int(_lower.._upper = range) do
     __new__(fn seed, _size ->
       range
-      |> Random.uniform_in_range(seed)
+      |> uniform_in_range(seed)
       |> int_lazy_tree()
       |> LazyTree.filter(&(&1 in range))
     end)
@@ -541,8 +541,8 @@ defmodule StreamData do
   # An implementation that does this can be:
   #
   #     __new__(fn seed, size ->
-  #       {seed1, seed2} = Random.split(seed)
-  #       frequency = Random.uniform_in_range(0..sum - 1, seed1)
+  #       {seed1, seed2} = split_seed(seed)
+  #       frequency = uniform_in_range(0..sum - 1, seed1)
   #       index = pick_index(Enum.map(frequencies, &elem(&1, 0)), frequency)
   #       {_frequency, data} = Enum.fetch!(frequencies, index)
   #
@@ -646,8 +646,8 @@ defmodule StreamData do
   # it would look like this:
   #
   #     __new__(fn seed, size ->
-  #       {seed1, seed2} = Random.split(seed)
-  #       length = Random.uniform_in_range(0..size, seed1)
+  #       {seed1, seed2} = split_seed(seed)
+  #       length = uniform_in_range(0..size, seed1)
   #       data
   #       |> List.duplicate(length)
   #       |> fixed_list()
@@ -659,8 +659,8 @@ defmodule StreamData do
   @spec list_of(t(a)) :: t([a]) when a: term
   def list_of(%__MODULE__{} = data) do
     __new__(fn seed, size ->
-      {seed1, seed2} = Random.split(seed)
-      length = Random.uniform_in_range(0..size, seed1)
+      {seed1, seed2} = split_seed(seed)
+      length = uniform_in_range(0..size, seed1)
 
       data
       |> call_n_times(seed2, size, length, [])
@@ -675,7 +675,7 @@ defmodule StreamData do
   end
 
   defp call_n_times(data, seed, size, length, acc) do
-    {seed1, seed2} = Random.split(seed)
+    {seed1, seed2} = split_seed(seed)
     call_n_times(data, seed2, size, length - 1, [__call__(data, seed1, size) | acc])
   end
 
@@ -720,8 +720,8 @@ defmodule StreamData do
   @spec uniq_list_of(t(a), (a -> term), non_neg_integer) :: t([a]) when a: term
   def uniq_list_of(data, uniq_fun \\ &(&1), max_tries \\ 10) do
     __new__(fn seed, size ->
-      {seed1, seed2} = Random.split(seed)
-      length = Random.uniform_in_range(0..size, seed1)
+      {seed1, seed2} = split_seed(seed)
+      length = uniform_in_range(0..size, seed1)
 
       data
       |> uniq_list_of(uniq_fun, seed2, size, _seen = MapSet.new(), max_tries, max_tries, length, _acc = [])
@@ -740,7 +740,7 @@ defmodule StreamData do
   end
 
   defp uniq_list_of(data, uniq_fun, seed, size, seen, tries_left, max_tries, remaining, acc) do
-    {seed1, seed2} = Random.split(seed)
+    {seed1, seed2} = split_seed(seed)
     tree = __call__(data, seed1, size)
 
     key = uniq_fun.(tree.root)
@@ -823,7 +823,7 @@ defmodule StreamData do
   def fixed_list(datas) when is_list(datas) do
     __new__(fn seed, size ->
       {trees, _seed} = Enum.map_reduce(datas, seed, fn data, acc ->
-        {seed1, seed2} = Random.split(acc)
+        {seed1, seed2} = split_seed(acc)
         {__call__(data, seed1, size), seed2}
       end)
 
@@ -997,7 +997,7 @@ defmodule StreamData do
   def tree(leaf_data, subtree_fun) do
     __new__(fn seed, size ->
       leaf_data = resize(leaf_data, size)
-      {seed1, seed2} = Random.split(seed)
+      {seed1, seed2} = split_seed(seed)
       nodes_on_each_level = random_pseudofactors(trunc(:math.pow(size, 1.1)), seed1)
       data = Enum.reduce(nodes_on_each_level, leaf_data, fn nodes_on_this_level, data_acc ->
         frequency([
@@ -1015,7 +1015,7 @@ defmodule StreamData do
   end
 
   defp random_pseudofactors(n, seed) do
-    {seed1, seed2} = Random.split(seed)
+    {seed1, seed2} = split_seed(seed)
     {factor, _seed} = :rand.uniform_s(trunc(:math.log2(n)), seed1)
 
     if factor == 1 do
@@ -1271,7 +1271,7 @@ defmodule StreamData do
     runs = Keyword.get(options, :runs, 100)
 
     check_all(data,
-              Random.new_seed(initial_seed),
+              new_seed(initial_seed),
               initial_size,
               fun,
               max_shrinking_nodes,
@@ -1284,7 +1284,7 @@ defmodule StreamData do
   end
 
   defp check_all(data, seed, size, fun, max_shrinking_nodes, runs, current_runs) do
-    {seed1, seed2} = Random.split(seed)
+    {seed1, seed2} = split_seed(seed)
     tree = __call__(data, seed1, size)
 
     case fun.(tree.root) do
@@ -1315,6 +1315,33 @@ defmodule StreamData do
     end
   end
 
+  defp new_seed(int) do
+    :rand.seed_s(@rand_algorithm, {0, 0, int})
+  end
+
+  # This has to be used from the Enumerable implementation.
+  def __split_seed__(seed) do
+    split_seed(seed)
+  end
+
+  defp split_seed(seed) do
+    {int1, seed} = :rand.uniform_s(1_000_000_000, seed)
+    {int2, seed} = :rand.uniform_s(1_000_000_000, seed)
+    {int3, seed} = :rand.uniform_s(1_000_000_000, seed)
+    new_seed = :rand.seed_s(@rand_algorithm, {int1, int2, int3})
+    {new_seed, seed}
+  end
+
+  defp uniform_in_range(left..right, seed) when left > right do
+    uniform_in_range(right..left, seed)
+  end
+
+  defp uniform_in_range(left..right, seed) do
+    width = right - left
+    {random_int, _seed} = :rand.uniform_s(width + 1, seed)
+    random_int - 1 + left
+  end
+
   ## Enumerable
 
   defimpl Enumerable do
@@ -1334,7 +1361,7 @@ defmodule StreamData do
     end
 
     defp reduce(data, {:cont, acc}, fun, seed, size) do
-      {seed1, seed2} = Random.split(seed)
+      {seed1, seed2} = @for.__split_seed__(seed)
       %LazyTree{root: next} = @for.__call__(data, seed1, size)
       size = if(size < @max_size, do: size + 1, else: size)
       reduce(data, fun.(next, acc), fun, seed2, size)
