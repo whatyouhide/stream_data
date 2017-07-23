@@ -129,16 +129,11 @@ defmodule StreamData do
 
   ## Helpers
 
-  # TODO: should these two functions be properly exposed, meaning
-  # users will have to know about the insides of a generator?
-
-  @spec __new__(generator_fun(a)) :: t(a) when a: term
-  def __new__(generator) when is_function(generator, 2) do
+  defp new(generator) when is_function(generator, 2) do
     %__MODULE__{generator: generator}
   end
 
-  @spec __call__(t(a), seed, non_neg_integer) :: a when a: term
-  def __call__(%__MODULE__{generator: generator}, seed, size) do
+  defp call(%__MODULE__{generator: generator}, seed, size) do
     %LazyTree{} = generator.(seed, size)
   end
 
@@ -158,7 +153,7 @@ defmodule StreamData do
   """
   @spec constant(a) :: t(a) when a: var
   def constant(term) do
-    __new__(fn _seed, _size -> LazyTree.constant(term) end)
+    new(fn _seed, _size -> LazyTree.constant(term) end)
   end
 
   ## Combinators
@@ -182,9 +177,9 @@ defmodule StreamData do
   """
   @spec map(t(a), (a -> b)) :: t(b) when a: term, b: term
   def map(%__MODULE__{} = data, fun) when is_function(fun, 1) do
-    __new__(fn seed, size ->
+    new(fn seed, size ->
       data
-      |> __call__(seed, size)
+      |> call(seed, size)
       |> LazyTree.map(fun)
     end)
   end
@@ -241,7 +236,7 @@ defmodule StreamData do
   @spec bind_filter(t(a), (a -> {:cont, t(b)} | :skip), non_neg_integer) :: t(b) when a: term, b: term
   def bind_filter(%__MODULE__{} = data, fun, max_consecutive_failures \\ 10)
       when is_function(fun, 1) and is_integer(max_consecutive_failures) and max_consecutive_failures >= 0 do
-    __new__(fn seed, size ->
+    new(fn seed, size ->
       case bind_filter(seed, size, data, fun, max_consecutive_failures) do
         {:ok, lazy_tree} ->
           lazy_tree
@@ -257,13 +252,13 @@ defmodule StreamData do
 
   defp bind_filter(seed, size, data, mapper, tries_left) do
     {seed1, seed2} = split_seed(seed)
-    lazy_tree = __call__(data, seed1, size)
+    lazy_tree = call(data, seed1, size)
 
     case LazyTree.filter_map(lazy_tree, mapper) do
       {:ok, filter_mapped_tree} ->
         tree =
           filter_mapped_tree
-          |> LazyTree.map(&__call__(&1, seed2, size))
+          |> LazyTree.map(&call(&1, seed2, size))
           |> LazyTree.flatten()
         {:ok, tree}
       :error ->
@@ -370,7 +365,7 @@ defmodule StreamData do
   """
   @spec int(Range.t) :: t(integer)
   def int(_lower.._upper = range) do
-    __new__(fn seed, _size ->
+    new(fn seed, _size ->
       range
       |> uniform_in_range(seed)
       |> int_lazy_tree()
@@ -408,8 +403,8 @@ defmodule StreamData do
   """
   @spec resize(t(a), size) :: t(a) when a: term
   def resize(%__MODULE__{} = data, new_size) when is_integer(new_size) and new_size >= 0 do
-    __new__(fn seed, _size ->
-      __call__(data, seed, new_size)
+    new(fn seed, _size ->
+      call(data, seed, new_size)
     end)
   end
 
@@ -437,9 +432,9 @@ defmodule StreamData do
   """
   @spec sized((size -> t(a))) :: t(a) when a: term
   def sized(fun) when is_function(fun, 1) do
-    __new__(fn seed, size ->
+    new(fn seed, size ->
       new_data = fun.(size)
-      __call__(new_data, seed, size)
+      call(new_data, seed, size)
     end)
   end
 
@@ -504,8 +499,8 @@ defmodule StreamData do
   """
   @spec no_shrink(t(a)) :: t(a) when a: term
   def no_shrink(%__MODULE__{} = data) do
-    __new__(fn seed, size ->
-      %LazyTree{root: root} = __call__(data, seed, size)
+    new(fn seed, size ->
+      %LazyTree{root: root} = call(data, seed, size)
       LazyTree.constant(root)
     end)
   end
@@ -540,18 +535,18 @@ defmodule StreamData do
   # towards earlier generators *first*, and then shrinks the generated value.
   # An implementation that does this can be:
   #
-  #     __new__(fn seed, size ->
+  #     new(fn seed, size ->
   #       {seed1, seed2} = split_seed(seed)
   #       frequency = uniform_in_range(0..sum - 1, seed1)
   #       index = pick_index(Enum.map(frequencies, &elem(&1, 0)), frequency)
   #       {_frequency, data} = Enum.fetch!(frequencies, index)
   #
-  #       tree = __call__(data, seed2, size)
+  #       tree = call(data, seed2, size)
   #
   #       earlier_children =
   #         frequencies
   #         |> Stream.take(index)
-  #         |> Stream.map(&__call__(elem(&1, 1), seed2, size))
+  #         |> Stream.map(&call(elem(&1, 1), seed2, size))
   #       LazyTree.new(tree.root, Stream.concat(earlier_children, tree.children))
   #     end)
   #
@@ -645,20 +640,20 @@ defmodule StreamData do
   # We could have an implementation that relies on fixed_list/1 and List.duplicate/2,
   # it would look like this:
   #
-  #     __new__(fn seed, size ->
+  #     new(fn seed, size ->
   #       {seed1, seed2} = split_seed(seed)
   #       length = uniform_in_range(0..size, seed1)
   #       data
   #       |> List.duplicate(length)
   #       |> fixed_list()
-  #       |> __call__(seed2, size)
+  #       |> call(seed2, size)
   #       |> LazyTree.map(&list_lazy_tree/1)
   #       |> LazyTree.flatten()
   #     end)
   #
   @spec list_of(t(a)) :: t([a]) when a: term
   def list_of(%__MODULE__{} = data) do
-    __new__(fn seed, size ->
+    new(fn seed, size ->
       {seed1, seed2} = split_seed(seed)
       length = uniform_in_range(0..size, seed1)
 
@@ -676,7 +671,7 @@ defmodule StreamData do
 
   defp call_n_times(data, seed, size, length, acc) do
     {seed1, seed2} = split_seed(seed)
-    call_n_times(data, seed2, size, length - 1, [__call__(data, seed1, size) | acc])
+    call_n_times(data, seed2, size, length - 1, [call(data, seed1, size) | acc])
   end
 
   defp list_lazy_tree([]) do
@@ -719,7 +714,7 @@ defmodule StreamData do
   """
   @spec uniq_list_of(t(a), (a -> term), non_neg_integer) :: t([a]) when a: term
   def uniq_list_of(data, uniq_fun \\ &(&1), max_tries \\ 10) do
-    __new__(fn seed, size ->
+    new(fn seed, size ->
       {seed1, seed2} = split_seed(seed)
       length = uniform_in_range(0..size, seed1)
 
@@ -741,7 +736,7 @@ defmodule StreamData do
 
   defp uniq_list_of(data, uniq_fun, seed, size, seen, tries_left, max_tries, remaining, acc) do
     {seed1, seed2} = split_seed(seed)
-    tree = __call__(data, seed1, size)
+    tree = call(data, seed1, size)
 
     key = uniq_fun.(tree.root)
 
@@ -821,10 +816,10 @@ defmodule StreamData do
   """
   @spec fixed_list([t(a)]) :: t([a]) when a: term
   def fixed_list(datas) when is_list(datas) do
-    __new__(fn seed, size ->
+    new(fn seed, size ->
       {trees, _seed} = Enum.map_reduce(datas, seed, fn data, acc ->
         {seed1, seed2} = split_seed(acc)
-        {__call__(data, seed1, size), seed2}
+        {call(data, seed1, size), seed2}
       end)
 
       LazyTree.zip(trees)
@@ -995,7 +990,7 @@ defmodule StreamData do
   """
   @spec tree(t(a), (t(a) -> t(b))) :: t(a | b) when a: term, b: term
   def tree(leaf_data, subtree_fun) do
-    __new__(fn seed, size ->
+    new(fn seed, size ->
       leaf_data = resize(leaf_data, size)
       {seed1, seed2} = split_seed(seed)
       nodes_on_each_level = random_pseudofactors(trunc(:math.pow(size, 1.1)), seed1)
@@ -1006,7 +1001,7 @@ defmodule StreamData do
         ])
       end)
 
-      __call__(data, seed2, size)
+      call(data, seed2, size)
     end)
   end
 
@@ -1091,7 +1086,7 @@ defmodule StreamData do
   """
   @spec uniform_float() :: t(float)
   def uniform_float() do
-    __new__(fn seed, _size ->
+    new(fn seed, _size ->
       {float, _seed} = :rand.uniform_s(seed)
       LazyTree.constant(float)
     end)
@@ -1285,7 +1280,7 @@ defmodule StreamData do
 
   defp check_all(data, seed, size, fun, max_shrinking_nodes, runs, current_runs) do
     {seed1, seed2} = split_seed(seed)
-    tree = __call__(data, seed1, size)
+    tree = call(data, seed1, size)
 
     case fun.(tree.root) do
       :ok ->
@@ -1319,10 +1314,7 @@ defmodule StreamData do
     :rand.seed_s(@rand_algorithm, {0, 0, int})
   end
 
-  # This has to be used from the Enumerable implementation.
-  def __split_seed__(seed) do
-    split_seed(seed)
-  end
+
 
   defp split_seed(seed) do
     {int1, seed} = :rand.uniform_s(1_000_000_000, seed)
@@ -1341,6 +1333,10 @@ defmodule StreamData do
     {random_int, _seed} = :rand.uniform_s(width + 1, seed)
     random_int - 1 + left
   end
+
+  # These have to be used from the Enumerable implementation.
+  def __split_seed__(seed), do: split_seed(seed)
+  def __call__(data, seed, size), do: call(data, seed, size)
 
   ## Enumerable
 
