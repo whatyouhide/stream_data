@@ -14,8 +14,6 @@ defmodule PropertyTest do
   #       end
   #     end
 
-  alias StreamData.Random
-
   defmodule Error do
     defexception [:original_failure, :shrinked_failure]
 
@@ -43,7 +41,7 @@ defmodule PropertyTest do
 
       #{formatted_values}
 
-      (visited a total of #{shrinked_failure.nodes_visited}, #{shrinked_failure.current_depth} level(s) deep)
+      (visited a total of #{shrinked_failure.nodes_visited} nodes)
       """
     end
   end
@@ -133,57 +131,73 @@ defmodule PropertyTest do
 
   """
   defmacro check({:all, _meta, clauses} = _generation_clauses, [do: body] = _block) when is_list(clauses) do
+    property = compile(clauses, body)
+
     quote do
-      property = unquote(Property.compile(clauses, body))
-      starting_seed = Random.new_seed(ExUnit.configuration()[:seed])
-      run_options = %{test_count: 100, max_shrink_depth: 50}
-      PropertyTest.run_property(property, starting_seed, _initial_size = 0, run_options)
+      options = [
+        initial_seed: ExUnit.configuration()[:seed],
+      ]
+
+      case StreamData.check_all(unquote(property), options, &(&1.())) do
+        {:ok, _} ->
+          :ok
+        {:error, %{shrinked_failure: shrinked_failure, original_failure: original_failure}} ->
+          raise Error, shrinked_failure: shrinked_failure, original_failure: original_failure
+      end
     end
   end
 
-  # TODO: Is there a way for the function below to be implemented without
-  # relying on internals? While we can have ExUnit depend on internals in
-  # Stream.Data, ideally it should not.
-
-  @doc false
-  def run_property(property, initial_seed, initial_size, run_options) do
-    run_property(property, initial_seed, initial_size, _state = %{successes: 0}, run_options)
-  end
-
-  defp run_property(_property, _seed, _size, %{successes: n}, %{test_count: n}) do
-    :ok
-  end
-
-  defp run_property(property, seed, size, state, run_options) do
-    {seed1, seed2} = Random.split(seed)
-
-    tree = StreamData.__call__(property, seed1, size)
-
-    case tree.root.() do
-      %Property.Success{} ->
-        state = Map.update!(state, :successes, &(&1 + 1))
-        run_property(property, seed2, size + 1, state, run_options)
-      %Property.Failure{} = original_failure ->
-        shrinked_failure = shrink_failure(tree.children, _smallest = original_failure, _nodes_visited = 0, _current_depth = 0, run_options.max_shrink_depth)
-        raise Error, original_failure: original_failure, shrinked_failure: shrinked_failure
+  defp compile(clauses, body) do
+    quote do
+      var!(generated_values) = []
+      {:cont, data} = unquote(compile_clauses(clauses, body))
+      data
     end
   end
 
-  defp shrink_failure(nodes, smallest, nodes_visited, current_depth, max_depth) do
-    if current_depth == max_depth or Enum.empty?(nodes) do
-      %{failure: smallest, nodes_visited: nodes_visited, current_depth: current_depth}
-    else
-      [first_child] = Enum.take(nodes, 1)
+  defp compile_clauses([], body) do
+    quote do
+      generated_values = Enum.reverse(var!(generated_values))
 
-      case first_child.root.() do
-        %Property.Success{} ->
-          shrink_failure(Stream.drop(nodes, 1), smallest, nodes_visited + 1, current_depth, max_depth)
-        %Property.Failure{} = failure ->
-          if Enum.empty?(first_child.children) do
-            shrink_failure(Stream.drop(nodes, 1), failure, nodes_visited + 1, current_depth, max_depth)
-          else
-            shrink_failure(first_child.children, failure, nodes_visited + 1, current_depth + 1, max_depth)
-          end
+      data = StreamData.constant(fn ->
+        try do
+          unquote(body)
+        rescue
+          exception ->
+            {:error, %{exception: exception, stacktrace: System.stacktrace(), generated_values: generated_values}}
+        else
+          _result -> :ok
+        end
+      end)
+
+      {:cont, data}
+    end
+  end
+
+  defp compile_clauses([{:<-, _meta, [pattern, generator]} = clause | rest], body) do
+    quote do
+      data = StreamData.bind_filter(unquote(generator), fn unquote(pattern) = generated_value ->
+        var!(generated_values) = [{unquote(Macro.to_string(clause)), generated_value} | var!(generated_values)]
+        unquote(compile_clauses(rest, body))
+      end)
+
+      {:cont, data}
+    end
+  end
+
+  defp compile_clauses([{:=, _meta, [_left, _right]} = assignment | rest], body) do
+    quote do
+      unquote(assignment)
+      unquote(compile_clauses(rest, body))
+    end
+  end
+
+  defp compile_clauses([clause | rest], body) do
+    quote do
+      if unquote(clause) do
+        unquote(compile_clauses(rest, body))
+      else
+        :skip
       end
     end
   end

@@ -530,7 +530,6 @@ defmodule StreamData do
       Enum.take(ints_and_some_bins, 3)
       #=> ["", -2, -1]
 
-
   ## Shrinking
 
   Each generated value is shrinked, and then this generator shrinks towards
@@ -1263,6 +1262,57 @@ defmodule StreamData do
       {3, binary()},
       {2, iolist()},
     ])
+  end
+
+  def check_all(%__MODULE__{} = data, options, fun) when is_list(options) and is_function(fun, 1) do
+    initial_seed = Keyword.fetch!(options, :initial_seed)
+    initial_size = Keyword.get(options, :initial_size, 1)
+    max_shrinking_nodes = Keyword.get(options, :max_shrinking_nodes, 100)
+    runs = Keyword.get(options, :runs, 100)
+
+    check_all(data,
+              Random.new_seed(initial_seed),
+              initial_size,
+              fun,
+              max_shrinking_nodes,
+              runs,
+              _runs = 0)
+  end
+
+  defp check_all(_data, _seed, _size, _fun, _max_shrinking_nodes, runs, runs) do
+    {:ok, %{TODO: :yes}}
+  end
+
+  defp check_all(data, seed, size, fun, max_shrinking_nodes, runs, current_runs) do
+    {seed1, seed2} = Random.split(seed)
+    tree = __call__(data, seed1, size)
+
+    case fun.(tree.root) do
+      :ok ->
+        check_all(data, seed2, size + 1, fun, max_shrinking_nodes, runs, current_runs + 1)
+      {:error, reason} ->
+        shrinked_failure = shrink_failure(tree.children, _smallest = reason, fun, _nodes_visited = 0, max_shrinking_nodes)
+        {:error, %{shrinked_failure: shrinked_failure, original_failure: reason}}
+    end
+  end
+
+  defp shrink_failure(nodes, smallest, fun, nodes_visited, max_shrinking_nodes) do
+    if Enum.empty?(nodes) do
+      %{failure: smallest, nodes_visited: nodes_visited}
+    else
+      [first_child] = Enum.take(nodes, 1)
+
+      case fun.(first_child.root) do
+        :ok ->
+          shrink_failure(Stream.drop(nodes, 1), smallest, fun, nodes_visited + 1, max_shrinking_nodes)
+        {:error, reason} ->
+          if Enum.empty?(first_child.children) do
+            shrink_failure(Stream.drop(nodes, 1), reason, fun, nodes_visited + 1, max_shrinking_nodes)
+          else
+            shrink_failure(first_child.children, reason, fun, nodes_visited + 1, max_shrinking_nodes)
+          end
+      end
+    end
   end
 
   ## Enumerable
