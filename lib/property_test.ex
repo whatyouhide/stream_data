@@ -1,9 +1,12 @@
 defmodule PropertyTest do
   @moduledoc """
   Provides macros for property testing.
+
+  TODO: better overview of property testing and shrinking.
   """
 
-  # TODO: moduledoc (overview of ptesting, shrinking)
+  # TODO: how do we customize number of tests to run and such when writing
+  # tests?
 
   defmodule Error do
     defexception [:message]
@@ -63,6 +66,7 @@ defmodule PropertyTest do
     end
 
   """
+  # TODO: is it fine to not support rescue/after stuff?
   defmacro property(message, context \\ quote(do: _), [do: block] = _body) do
     ExUnit.plural_rule("property", "properties")
 
