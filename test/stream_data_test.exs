@@ -15,10 +15,6 @@ defmodule StreamDataTest do
     end)
   end
 
-  test "new/1" do
-    assert_raise FunctionClauseError, fn -> StreamData.__new__(%{}) end
-  end
-
   test "constant/1" do
     for_many(constant(:term), fn term ->
       assert term == :term
@@ -81,14 +77,14 @@ defmodule StreamDataTest do
   end
 
   test "resize/2" do
-    data = StreamData.__new__(fn seed, size ->
+    generator = fn seed, size ->
       case :rand.uniform_s(2, seed) do
         {1, _seed} -> LazyTree.constant(size)
         {2, _seed} -> LazyTree.constant(-size)
       end
-    end)
+    end
 
-    for_many(resize(data, 10), fn int ->
+    for_many(resize(%StreamData{generator: generator}, 10), fn int ->
       assert int in [-10, 10]
     end)
   end
