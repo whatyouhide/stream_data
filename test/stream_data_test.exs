@@ -5,10 +5,7 @@ defmodule StreamDataTest do
 
   import StreamData
 
-  alias StreamData.{
-    LazyTree,
-    Random,
-  }
+  alias StreamData.LazyTree
 
   test "implementation of the Enumerable protocol" do
     values = Enum.take(Stream.zip(int(), boolean()), 10)
@@ -85,9 +82,9 @@ defmodule StreamDataTest do
 
   test "resize/2" do
     data = StreamData.__new__(fn seed, size ->
-      case Random.uniform_in_range(1..2, seed) do
-        1 -> LazyTree.constant(size)
-        2 -> LazyTree.constant(-size)
+      case :rand.uniform_s(2, seed) do
+        {1, _seed} -> LazyTree.constant(size)
+        {2, _seed} -> LazyTree.constant(-size)
       end
     end)
 
