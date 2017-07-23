@@ -1314,8 +1314,6 @@ defmodule StreamData do
     :rand.seed_s(@rand_algorithm, {0, 0, int})
   end
 
-
-
   defp split_seed(seed) do
     {int1, seed} = :rand.uniform_s(1_000_000_000, seed)
     {int2, seed} = :rand.uniform_s(1_000_000_000, seed)
@@ -1334,37 +1332,31 @@ defmodule StreamData do
     random_int - 1 + left
   end
 
-  # These have to be used from the Enumerable implementation.
-  def __split_seed__(seed), do: split_seed(seed)
-  def __call__(data, seed, size), do: call(data, seed, size)
+  # This is the implementation of Enumerable.reduce/3. It's here because it
+  # needs split_seed/1 and call/3 which are private.
+  def __reduce__(%__MODULE__{} = data, acc, fun) do
+    reduce(data, acc, fun, new_seed(System.unique_integer()), _initial_size = 1, _max_size = 100)
+  end
+
+  defp reduce(_data, {:halt, acc}, _fun, _seed, _size, _max_size) do
+    {:halted, acc}
+  end
+
+  defp reduce(data, {:suspend, acc}, fun, seed, size, max_size) do
+    {:suspended, acc, &reduce(data, &1, fun, seed, size, max_size)}
+  end
+
+  defp reduce(data, {:cont, acc}, fun, seed, size, max_size) do
+    {seed1, seed2} = split_seed(seed)
+    %LazyTree{root: next} = call(data, seed1, size)
+    reduce(data, fun.(next, acc), fun, seed2, min(max_size, size + 1), max_size)
+  end
 
   ## Enumerable
 
   defimpl Enumerable do
-    @initial_size 1
-    @max_size 100
-
-    def reduce(data, acc, fun) do
-      reduce(data, acc, fun, :rand.seed_s(:exs64), @initial_size)
-    end
-
-    defp reduce(_data, {:halt, acc}, _fun, _seed, _size) do
-      {:halted, acc}
-    end
-
-    defp reduce(data, {:suspend, acc}, fun, seed, size) do
-      {:suspended, acc, &reduce(data, &1, fun, seed, size)}
-    end
-
-    defp reduce(data, {:cont, acc}, fun, seed, size) do
-      {seed1, seed2} = @for.__split_seed__(seed)
-      %LazyTree{root: next} = @for.__call__(data, seed1, size)
-      size = if(size < @max_size, do: size + 1, else: size)
-      reduce(data, fun.(next, acc), fun, seed2, size)
-    end
-
+    def reduce(data, acc, fun), do: @for.__reduce__(data, acc, fun)
     def count(_data), do: {:error, __MODULE__}
-
     def member?(_data, _term), do: {:error, __MODULE__}
   end
 end
