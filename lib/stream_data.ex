@@ -1310,8 +1310,9 @@ defmodule StreamData do
     end
   end
 
-  defp new_seed(int) do
-    :rand.seed_s(@rand_algorithm, {0, 0, int})
+  defp new_seed({int1, int2, int3} = tuple)
+       when is_integer(int1) and is_integer(int2) and is_integer(int3) do
+    :rand.seed_s(@rand_algorithm, tuple)
   end
 
   defp split_seed(seed) do
@@ -1335,7 +1336,7 @@ defmodule StreamData do
   # This is the implementation of Enumerable.reduce/3. It's here because it
   # needs split_seed/1 and call/3 which are private.
   def __reduce__(%__MODULE__{} = data, acc, fun) do
-    reduce(data, acc, fun, new_seed(System.unique_integer()), _initial_size = 1, _max_size = 100)
+    reduce(data, acc, fun, new_seed(:os.timestamp()), _initial_size = 1, _max_size = 100)
   end
 
   defp reduce(_data, {:halt, acc}, _fun, _seed, _size, _max_size) do
