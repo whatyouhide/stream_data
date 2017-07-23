@@ -15,16 +15,20 @@ defmodule PropertyTest do
   #     end
 
   defmodule Error do
-    defexception [:original_failure, :shrinked_failure]
+    defexception [:message]
 
-    def message(%{original_failure: original_failure, shrinked_failure: shrinked_failure}) do
+    def exception(test_result) when is_map(test_result) do
+      %__MODULE__{message: format_message(test_result)}
+    end
+
+    defp format_message(%{original_failure: original_failure, shrinked_failure: shrinked_failure, nodes_visited: nodes_visited}) do
       formatted_original = Exception.format_banner(:error, original_failure.exception, original_failure.stacktrace)
       formatted_original_indented = "  " <> String.replace(formatted_original, "\n", "\n  ")
 
-      formatted_shrinked = Exception.format_banner(:error, shrinked_failure.failure.exception, shrinked_failure.failure.stacktrace)
+      formatted_shrinked = Exception.format_banner(:error, shrinked_failure.exception, shrinked_failure.stacktrace)
       formatted_shrinked_indented = "  " <> String.replace(formatted_shrinked, "\n", "\n  ")
 
-      formatted_values = "  " <> Enum.map_join(shrinked_failure.failure.generated_values, "\n\n  ", fn {gen_string, value} ->
+      formatted_values = "  " <> Enum.map_join(shrinked_failure.generated_values, "\n\n  ", fn {gen_string, value} ->
         gen_string <> "\n  #=> " <> inspect(value)
       end)
 
@@ -41,7 +45,7 @@ defmodule PropertyTest do
 
       #{formatted_values}
 
-      (visited a total of #{shrinked_failure.nodes_visited} nodes)
+      (visited a total of #{nodes_visited} nodes)
       """
     end
   end
@@ -131,18 +135,14 @@ defmodule PropertyTest do
 
   """
   defmacro check({:all, _meta, clauses} = _generation_clauses, [do: body] = _block) when is_list(clauses) do
-    property = compile(clauses, body)
-
     quote do
       options = [
         initial_seed: {0, 0, ExUnit.configuration()[:seed]},
       ]
 
-      case StreamData.check_all(unquote(property), options, &(&1.())) do
-        {:ok, _} ->
-          :ok
-        {:error, %{shrinked_failure: shrinked_failure, original_failure: original_failure}} ->
-          raise Error, shrinked_failure: shrinked_failure, original_failure: original_failure
+      case StreamData.check_all(_property = unquote(compile(clauses, body)), options, &(&1.())) do
+        {:ok, _result} -> :ok
+        {:error, result} -> raise Error, result
       end
     end
   end
@@ -166,7 +166,8 @@ defmodule PropertyTest do
           exception ->
             {:error, %{exception: exception, stacktrace: System.stacktrace(), generated_values: generated_values}}
         else
-          _result -> :ok
+          _result ->
+            {:ok, nil}
         end
       end)
 
