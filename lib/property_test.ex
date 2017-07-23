@@ -5,15 +5,6 @@ defmodule PropertyTest do
 
   # TODO: moduledoc (overview of ptesting, shrinking)
 
-  # QUESTION: Should we support property and automatically include Stream.Data
-  # and check all in there? Something like:
-  #
-  #     property "foo bar and baz" do
-  #       check all ... do
-  #         ...
-  #       end
-  #     end
-
   defmodule Error do
     defexception [:message]
 
@@ -47,6 +38,47 @@ defmodule PropertyTest do
 
       (visited a total of #{nodes_visited} nodes)
       """
+    end
+  end
+
+  @doc """
+  Defines a property and imports property-testing facilities in the body.
+
+  This macro is very similar to `ExUnit.Case.test/3`, except that it denotes a
+  "property". In the given body, all the functions exposed by `StreamData` are
+  imported as well as `check/2`.
+
+  When defining a test whose body only consists of one or more `check/2` calls,
+  it's advised to use `property/3` so as to clearly denote and scope properties.
+  Doing so will also improve reporting.
+
+  ## Examples
+
+    import PropertyTest
+
+    property "reversing a list doesn't change its length" do
+      check all list <- list_of(int()) do
+        assert length(list) == length(:lists.reverse(list))
+      end
+    end
+
+  """
+  defmacro property(message, context \\ quote(do: _), [do: block] = _body) do
+    ExUnit.plural_rule("property", "properties")
+
+    block =
+      quote do
+        import StreamData
+        import unquote(__MODULE__), only: [check: 2]
+        unquote(block)
+      end
+
+    context = Macro.escape(context)
+    contents = Macro.escape(block, unquote: true)
+
+    quote bind_quoted: [context: context, contents: contents, message: message] do
+      name = ExUnit.Case.register_test(__ENV__, :property, message, [])
+      def unquote(name)(unquote(context)), do: unquote(contents)
     end
   end
 

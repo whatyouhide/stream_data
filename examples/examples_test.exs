@@ -3,23 +3,22 @@ ExUnit.start()
 defmodule StdlibSamplesTest do
   use ExUnit.Case, async: true
 
-  import StreamData
   import PropertyTest
 
-  test "my_starts_with?/1" do
+  property "my_starts_with?/1" do
     check all bin1 <- binary(),
               bin2 <- binary() do
       assert my_starts_with?(bin1 <> bin2, bin1)
     end
   end
 
-  test "element not in list" do
+  property "element not in list" do
     check all list <- list_of(int()) do
       assert 22 not in list
     end
   end
 
-  test "something with filter" do
+  property "something with filter" do
     check all a <- int(),
               b <- int(),
               a + b >= 0,
@@ -29,6 +28,7 @@ defmodule StdlibSamplesTest do
   end
 
   test "non-assertion error" do
+    import StreamData
     check all tuple <- tuple({constant(:ok), int()}) do
       failing_tuple_match(tuple)
     end
