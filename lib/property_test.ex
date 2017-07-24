@@ -15,14 +15,14 @@ defmodule PropertyTest do
       %__MODULE__{message: format_message(test_result)}
     end
 
-    defp format_message(%{original_failure: original_failure, shrinked_failure: shrinked_failure, nodes_visited: nodes_visited}) do
+    defp format_message(%{original_failure: original_failure, shrunk_failure: shrunk_failure, nodes_visited: nodes_visited}) do
       formatted_original = Exception.format_banner(:error, original_failure.exception, original_failure.stacktrace)
       formatted_original_indented = "  " <> String.replace(formatted_original, "\n", "\n  ")
 
-      formatted_shrinked = Exception.format_banner(:error, shrinked_failure.exception, shrinked_failure.stacktrace)
-      formatted_shrinked_indented = "  " <> String.replace(formatted_shrinked, "\n", "\n  ")
+      formatted_shrunk = Exception.format_banner(:error, shrunk_failure.exception, shrunk_failure.stacktrace)
+      formatted_shrunk_indented = "  " <> String.replace(formatted_shrunk, "\n", "\n  ")
 
-      formatted_values = "  " <> Enum.map_join(shrinked_failure.generated_values, "\n\n  ", fn {gen_string, value} ->
+      formatted_values = "  " <> Enum.map_join(shrunk_failure.generated_values, "\n\n  ", fn {gen_string, value} ->
         gen_string <> "\n  #=> " <> inspect(value)
       end)
 
@@ -31,11 +31,11 @@ defmodule PropertyTest do
 
       #{formatted_original_indented}
 
-      Failure from shrinked data:
+      Failure from shrunk data:
 
-      #{formatted_shrinked_indented}
+      #{formatted_shrunk_indented}
 
-      Shrinked generated values:
+      Shrunk generated values:
 
       #{formatted_values}
 
