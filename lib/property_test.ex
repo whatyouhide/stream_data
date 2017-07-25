@@ -81,7 +81,7 @@ defmodule PropertyTest do
     contents = Macro.escape(block, unquote: true)
 
     quote bind_quoted: [context: context, contents: contents, message: message] do
-      name = ExUnit.Case.register_test(__ENV__, :property, message, [])
+      name = ExUnit.Case.register_test(__ENV__, :property, message, [:property])
       def unquote(name)(unquote(context)), do: unquote(contents)
     end
   end
