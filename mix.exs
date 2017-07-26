@@ -6,7 +6,7 @@ defmodule StreamData.Mixfile do
       app: :stream_data,
       version: "0.1.0",
       elixir: "~> 1.5-rc.2",
-      start_permanent: Mix.env == :prod,
+      start_permanent: Mix.env() == :prod,
       deps: deps(),
     ]
   end
@@ -15,6 +15,11 @@ defmodule StreamData.Mixfile do
   def application() do
     [
       extra_applications: [],
+      env: [
+        initial_size: 1,
+        total_runs: 100,
+        max_shrinking_steps: 100,
+      ]
     ]
   end
 

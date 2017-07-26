@@ -196,9 +196,9 @@ defmodule PropertyTest do
     quote bind_quoted: [options: options, property: compile(clauses, body)] do
       options = [
         initial_seed: {0, 0, ExUnit.configuration()[:seed]},
-        initial_size: Keyword.get(options, :initial_size, 1),
-        max_shrinking_steps: Keyword.get(options, :max_shrinking_steps, 100),
-        total_runs: Keyword.get(options, :total_runs, 100),
+        initial_size: options[:initial_size] || Application.fetch_env!(:stream_data, :initial_size),
+        total_runs: options[:total_runs] || Application.fetch_env!(:stream_data, :total_runs),
+        max_shrinking_steps: options[:max_shrinking_steps] || Application.fetch_env!(:stream_data, :max_shrinking_steps),
       ]
 
       case StreamData.check_all(property, options, &(&1.())) do
