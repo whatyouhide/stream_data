@@ -1404,7 +1404,7 @@ defmodule StreamData do
   defp shrink_failure(cont, parent_cont, smallest, fun, nodes_visited, config) do
     case cont.({:cont, []}) do
       {state, _} when state in [:halted, :done] and is_function(parent_cont) ->
-        shrink_failure(parent_cont, nil, smallest, fun, nodes_visited + 1, config)
+        shrink_failure(parent_cont, nil, smallest, fun, nodes_visited, config)
       {state, _} when state in [:halted, :done] ->
         %{shrunk_failure: smallest, nodes_visited: nodes_visited}
       {:suspended, [child], cont} ->
@@ -1412,7 +1412,7 @@ defmodule StreamData do
           {:ok, _term} ->
             shrink_failure(cont, nil, smallest, fun, nodes_visited + 1, config)
           {:error, reason} ->
-            shrink_failure(shrink_initial_cont(child.children), cont, reason, fun, nodes_visited, config)
+            shrink_failure(shrink_initial_cont(child.children), cont, reason, fun, nodes_visited + 1, config)
         end
     end
   end
