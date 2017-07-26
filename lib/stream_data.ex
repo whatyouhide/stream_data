@@ -1378,35 +1378,42 @@ defmodule StreamData do
       {:ok, _term} ->
         check_all(data, seed2, size + 1, fun, runs + 1, config)
       {:error, reason} ->
-        shrinking_result =
-          children
-          |> shrink_failure(reason, fun, 1, config)
-          |> Map.put(:original_failure, reason)
+        shrinking_result = shrink_failure(shrink_initial_cont(children), nil, reason, fun, 1, config)
+        shrinking_result = Map.put(shrinking_result, :original_failure, reason)
         {:error, shrinking_result}
     end
   end
 
-  defp shrink_failure(_nodes, smallest, _fun, nodes_visited, %{max_shrinking_steps: nodes_visited}) do
+  defp shrink_initial_cont(nodes) do
+    &Enumerable.reduce(nodes, &1, fn elem, acc -> {:suspend, [elem | acc]} end)
+  end
+
+  defp shrink_failure(_cont, _parent_cont, smallest, _fun, nodes_visited, %{max_shrinking_steps: nodes_visited}) do
     %{shrunk_failure: smallest, nodes_visited: nodes_visited}
   end
 
-  # TODO: use Enumerable API instead of Enum.take/2 + Stream.drop/2
-  defp shrink_failure(nodes, smallest, fun, nodes_visited, config) do
-    if Enum.empty?(nodes) do
-      %{shrunk_failure: smallest, nodes_visited: nodes_visited}
-    else
-      [%LazyTree{root: root, children: children}] = Enum.take(nodes, 1)
+  # We try to get the next element out of the current nodes. If the current
+  # nodes are finished, we check if this was the first check: if it was, it
+  # means we were visiting children of a node and this node has no children, so
+  # we recurse on the siblings of that node. Otherwise, we return the smallest
+  # failure. If we get the next nodes out of the current nodes, we check if it
+  # also fails: if it does, we "go down" and recurse on the children of that
+  # node but only if it has children, otherwise we move to the siblings. If it
+  # doesn't fail, we move to the siblings.
 
-      case fun.(root) do
-        {:ok, _term} ->
-          shrink_failure(Stream.drop(nodes, 1), smallest, fun, nodes_visited + 1, config)
-        {:error, reason} ->
-          if Enum.empty?(children) do
-            shrink_failure(Stream.drop(nodes, 1), reason, fun, nodes_visited + 1, config)
-          else
-            shrink_failure(children, reason, fun, nodes_visited + 1, config)
-          end
-      end
+  defp shrink_failure(cont, parent_cont, smallest, fun, nodes_visited, config) do
+    case cont.({:cont, []}) do
+      {state, _} when state in [:halted, :done] and is_function(parent_cont) ->
+        shrink_failure(parent_cont, nil, smallest, fun, nodes_visited + 1, config)
+      {state, _} when state in [:halted, :done] ->
+        %{shrunk_failure: smallest, nodes_visited: nodes_visited}
+      {:suspended, [child], cont} ->
+        case fun.(child.root) do
+          {:ok, _term} ->
+            shrink_failure(cont, nil, smallest, fun, nodes_visited + 1, config)
+          {:error, reason} ->
+            shrink_failure(shrink_initial_cont(child.children), cont, reason, fun, nodes_visited, config)
+        end
     end
   end
 
