@@ -5,9 +5,6 @@ defmodule PropertyTest do
   TODO: better overview of property testing and shrinking.
   """
 
-  # TODO: how do we customize number of tests to run and such when writing
-  # tests?
-
   defmodule Error do
     defexception [:message]
 
