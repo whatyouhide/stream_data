@@ -13,12 +13,8 @@ defmodule PropertyTest do
     end
 
     defp format_message(%{original_failure: original_failure, shrunk_failure: shrunk_failure, nodes_visited: nodes_visited}) do
-      formatted_original = Exception.format(:error, original_failure.exception, original_failure.stacktrace)
-      formatted_original_indented = "  " <> String.replace(formatted_original, "\n", "\n  ")
-
-      formatted_shrunk = Exception.format(:error, shrunk_failure.exception, shrunk_failure.stacktrace)
-      formatted_shrunk_indented = "  " <> String.replace(formatted_shrunk, "\n", "\n  ")
-
+      formatted_original = indent(Exception.format(:error, original_failure.exception, original_failure.stacktrace))
+      formatted_shrunk = indent(Exception.format(:error, shrunk_failure.exception, shrunk_failure.stacktrace))
       formatted_values = "  " <> Enum.map_join(shrunk_failure.generated_values, "\n\n  ", fn {gen_string, value} ->
         gen_string <> "\n  #=> " <> inspect(value)
       end)
@@ -26,11 +22,11 @@ defmodule PropertyTest do
       """
       property failed. Original failure:
 
-      #{formatted_original_indented}
+      #{formatted_original}
 
       Failure from shrunk data:
 
-      #{formatted_shrunk_indented}
+      #{formatted_shrunk}
 
       Shrunk generated values:
 
@@ -39,6 +35,8 @@ defmodule PropertyTest do
       (visited a total of #{nodes_visited} nodes)
       """
     end
+
+    defp indent(string), do: "  " <> String.replace(string, "\n", "\n" <> "  ")
   end
 
   @doc """
