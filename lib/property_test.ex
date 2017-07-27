@@ -149,7 +149,7 @@ defmodule PropertyTest do
       on each iteration. See the "Generation size" section of the `StreamData`
       documentation for more information on generation size. Defaults to `1`.
 
-    * `:total_runs` - (non-negative integer) the total number of generations to
+    * `:max_runs` - (non-negative integer) the total number of generations to
       run. Defaults to `100`.
 
     * `:max_shrinking_steps` - (non-negative integer) the maximum numbers of
@@ -184,7 +184,7 @@ defmodule PropertyTest do
 
       check all list <- list_of(int()),
                 member <- member_of(list),
-                total_runs: 50 do
+                max_runs: 50 do
         assert member in list
       end
 
@@ -201,7 +201,7 @@ defmodule PropertyTest do
       options = [
         initial_seed: {0, 0, ExUnit.configuration()[:seed]},
         initial_size: options[:initial_size] || Application.fetch_env!(:stream_data, :initial_size),
-        total_runs: options[:total_runs] || Application.fetch_env!(:stream_data, :total_runs),
+        max_runs: options[:max_runs] || Application.fetch_env!(:stream_data, :max_runs),
         max_shrinking_steps: options[:max_shrinking_steps] || Application.fetch_env!(:stream_data, :max_shrinking_steps),
       ]
 

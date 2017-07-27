@@ -17,7 +17,7 @@ defmodule StreamData.Mixfile do
       extra_applications: [],
       env: [
         initial_size: 1,
-        total_runs: 100,
+        max_runs: 100,
         max_shrinking_steps: 100,
       ]
     ]

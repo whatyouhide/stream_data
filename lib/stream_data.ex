@@ -1312,7 +1312,7 @@ defmodule StreamData do
       on each iteration. See the "Generation size" section of the module
       documentation for more information on generation size. Defaults to `1`.
 
-    * `:total_runs` - (non-negative integer) the total number of elements to
+    * `:max_runs` - (non-negative integer) the total number of elements to
       generate out of `data` and check through `fun`. Defaults to `100`.
 
     * `:max_shrinking_steps` - (non-negative integer) the maximum numbers of
@@ -1356,17 +1356,17 @@ defmodule StreamData do
     seed = new_seed(Keyword.fetch!(options, :initial_seed))
     size = Keyword.get(options, :initial_size, 1)
     max_shrinking_steps = Keyword.get(options, :max_shrinking_steps, 100)
-    total_runs = Keyword.get(options, :total_runs, 100)
+    max_runs = Keyword.get(options, :max_runs, 100)
 
     config = %{
-      total_runs: total_runs,
+      max_runs: max_runs,
       max_shrinking_steps: max_shrinking_steps,
     }
 
     check_all(data, seed, size, fun, _runs = 0, config)
   end
 
-  defp check_all(_data, _seed, _size, _fun, runs, %{total_runs: runs}) do
+  defp check_all(_data, _seed, _size, _fun, runs, %{max_runs: runs}) do
     {:ok, %{}}
   end
 
