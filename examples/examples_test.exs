@@ -12,8 +12,10 @@ defmodule StdlibSamplesTest do
     end
   end
 
-  property "element not in list" do
-    check all list <- list_of(int()) do
+  property "element not in list (with options)" do
+    check all list <- list_of(int()),
+              initial_size: 5,
+              max_size: 50 do
       assert 22 not in list
     end
   end

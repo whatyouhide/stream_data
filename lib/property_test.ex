@@ -16,10 +16,10 @@ defmodule PropertyTest do
     end
 
     defp format_message(%{original_failure: original_failure, shrunk_failure: shrunk_failure, nodes_visited: nodes_visited}) do
-      formatted_original = Exception.format_banner(:error, original_failure.exception, original_failure.stacktrace)
+      formatted_original = Exception.format(:error, original_failure.exception, original_failure.stacktrace)
       formatted_original_indented = "  " <> String.replace(formatted_original, "\n", "\n  ")
 
-      formatted_shrunk = Exception.format_banner(:error, shrunk_failure.exception, shrunk_failure.stacktrace)
+      formatted_shrunk = Exception.format(:error, shrunk_failure.exception, shrunk_failure.stacktrace)
       formatted_shrunk_indented = "  " <> String.replace(formatted_shrunk, "\n", "\n  ")
 
       formatted_values = "  " <> Enum.map_join(shrunk_failure.generated_values, "\n\n  ", fn {gen_string, value} ->
@@ -144,17 +144,21 @@ defmodule PropertyTest do
 
   ## Options
 
-  * `:initial_size` - (non-negative integer) the initial generation size used
-    to start generating values. The generation size is then incremented by `1`
-    on each iteration. See the "Generation size" section of the `StreamData`
-    documentation for more information on generation size. Defaults to `1`.
+    * `:initial_size` - (non-negative integer) the initial generation size used
+      to start generating values. The generation size is then incremented by `1`
+      on each iteration. See the "Generation size" section of the `StreamData`
+      documentation for more information on generation size. Defaults to `1`.
 
-  * `:total_runs` - (non-negative integer) the total number of generations to
-    run. Defaults to `100`.
+    * `:total_runs` - (non-negative integer) the total number of generations to
+      run. Defaults to `100`.
 
-  * `:max_shrinking_steps` - (non-negative integer) the maximum numbers of
-    shrinking steps to perform in case a failing case is found. Defaults to
-    `100`.
+    * `:max_shrinking_steps` - (non-negative integer) the maximum numbers of
+      shrinking steps to perform in case a failing case is found. Defaults to
+      `100`.
+
+    * `:max_generation_size` - (non-negative integer) the maximum generation
+      size to reach. Note that the size is increased by one on each run. By
+      default, the generation size is unbounded.
 
   ## Examples
 
@@ -200,6 +204,13 @@ defmodule PropertyTest do
         total_runs: options[:total_runs] || Application.fetch_env!(:stream_data, :total_runs),
         max_shrinking_steps: options[:max_shrinking_steps] || Application.fetch_env!(:stream_data, :max_shrinking_steps),
       ]
+
+      property =
+        if max_size = options[:max_generation_size] do
+          StreamData.scale(property, &min(max_size, &1))
+        else
+          property
+        end
 
       case StreamData.check_all(property, options, &(&1.())) do
         {:ok, _result} -> :ok
