@@ -188,8 +188,10 @@ defmodule PropertyTest do
            when is_list(clauses) and is_list(options) do
     {body, options} =
       case Keyword.pop(options, :do) do
-        {nil, _rest} -> raise ArgumentError, "no :do body was passed to check all"
-        {_body, _rest} = result -> result
+        {nil, _rest} ->
+          raise ArgumentError, "no :do body was passed to check all"
+        {_body, _rest} = result ->
+          result
       end
 
     quote bind_quoted: [options: options, property: compile(clauses, body)] do
@@ -208,8 +210,10 @@ defmodule PropertyTest do
         end
 
       case StreamData.check_all(property, options, &(&1.())) do
-        {:ok, _result} -> :ok
-        {:error, result} -> raise Error, result
+        {:ok, _result} ->
+          :ok
+        {:error, result} ->
+          raise Error, result
       end
     end
   end
