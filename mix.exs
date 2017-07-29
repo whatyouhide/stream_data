@@ -19,7 +19,7 @@ defmodule StreamData.Mixfile do
         initial_size: 1,
         max_runs: 100,
         max_shrinking_steps: 100,
-      ]
+      ],
     ]
   end
 
