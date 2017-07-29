@@ -821,10 +821,11 @@ defmodule StreamData do
   @spec fixed_list([t(a)]) :: t([a]) when a: term
   def fixed_list(datas) when is_list(datas) do
     new(fn seed, size ->
-      {trees, _seed} = Enum.map_reduce(datas, seed, fn data, acc ->
-        {seed1, seed2} = split_seed(acc)
-        {call(data, seed1, size), seed2}
-      end)
+      {trees, _seed} =
+        Enum.map_reduce(datas, seed, fn data, acc ->
+          {seed1, seed2} = split_seed(acc)
+          {call(data, seed1, size), seed2}
+        end)
 
       LazyTree.zip(trees)
     end)
