@@ -15,6 +15,24 @@ defmodule StreamDataTest do
     end)
   end
 
+  test "terms used as generators" do
+    for_many(map(:foo, &(&1)), fn term ->
+      assert term == :foo
+    end)
+
+    data = map({int(), boolean()}, &(&1))
+    for_many(data, fn {int, boolean} ->
+      assert is_integer(int)
+      assert is_boolean(boolean)
+    end)
+
+    data = map({:ok, int()}, &(&1))
+    for_many(data, fn {atom, int} ->
+      assert atom == :ok
+      assert is_integer(int)
+    end)
+  end
+
   test "constant/1" do
     for_many(constant(:term), fn term ->
       assert term == :term
@@ -189,12 +207,12 @@ defmodule StreamDataTest do
   end
 
   test "uniq_list_of/1" do
-    for_many(uniq_list_of(int()), fn list ->
+    for_many(uniq_list_of(int(), &(&1), 1000), fn list ->
       assert Enum.uniq(list) == list
     end)
 
     int = scale(int(), &(&1 * 2))
-    for_many(uniq_list_of(int, &abs/1), fn list ->
+    for_many(uniq_list_of(int, &abs/1, 1000), fn list ->
       assert Enum.uniq_by(list, &abs/1) == list
     end)
 
