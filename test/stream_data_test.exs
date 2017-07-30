@@ -15,6 +15,20 @@ defmodule StreamDataTest do
     end)
   end
 
+  test "atoms are generators" do
+    for_many(map(:foo, &(&1)), fn term ->
+      assert term == :foo
+    end)
+  end
+
+  test "tuples are generators" do
+    data = map({int(), boolean()}, &(&1))
+    for_many(data, fn {int, boolean} ->
+      assert is_integer(int)
+      assert is_boolean(boolean)
+    end)
+  end
+
   test "constant/1" do
     for_many(constant(:term), fn term ->
       assert term == :term
