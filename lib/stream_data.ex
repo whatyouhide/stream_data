@@ -788,7 +788,7 @@ defmodule StreamData do
 
       data = StreamData.maybe_improper_list_of(StreamData.byte(), StreamData.binary())
       Enum.take(data, 3)
-      #=> [[60 | "\""], [], [<<212>>]]
+      #=> [[60 | "."], [], [<<212>>]]
 
   ## Shrinking
 
