@@ -99,43 +99,11 @@ defmodule PropertyTest do
   are used to specify the values to generate in order to test the properties.
   The actual tests that the properties hold live in the `do` block.
 
-  ### Clauses
-
-  As seen in the example above, clauses can be of three types:
-
-    * value generation - they have the form `pattern <- generator` where
-      `generator` must be a `StreamData` struct. These clauses take a value out
-      of `generator` on each run and match it against `pattern`. Variables bound
-      in `pattern` can be then used throughout subsequent clauses and in the
-      `do` body.
-
-    * binding - they have the form `pattern = expression`. They are exactly like
-      assignment through the `=` operator: if `pattern` doesn't match
-      `expression`, an error is raised. They can be used to bind values for use
-      in subsequent clauses and in the `do` block.
-
-    * filtering - they have the form `expression`. If a filtering clause returns
-      a truthy value, then the set of generated values that appear before the
-      filtering clause is considered valid and the execution of the current run
-      is continued. If the filtering clause returns a falsey value, then the
-      current run is considered invalid and a new run is started. Note that
-      filtering clauses should not filter out too many times; in case they do, a
-      `StreamData.FilterTooNarrowError` error is raised.
-
-  ### Body
+  Clauses work exactly like they work in the `StreamData.gen/2` macro.
 
   The body passed in the `do` block is where you test that the property holds
   for the generated values. The body is just like the body of a test: use
   `ExUnit.Assertions.assert/2` (and friends) to assert whatever you want.
-
-  ## Shrinking
-
-  See the module documentation for more information on shrinking. Clauses affect
-  shrinking in the following way:
-
-    * binding clauses don't affect shrinking
-    * filtering clauses affect shrinking like `StreamData.filter/3`
-    * value generation clauses affect shrinking similarly to `StreamData.bind/2`
 
   ## Options
 

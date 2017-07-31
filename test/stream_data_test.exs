@@ -333,6 +333,22 @@ defmodule StreamDataTest do
     end)
   end
 
+  test "gen all" do
+    data =
+      gen all list <- non_empty(list_of(int())),
+              elem <- member_of(list),
+              elem != 5,
+              elem_not_five = elem do
+        {Integer.to_string(elem_not_five), list}
+      end
+
+    for_many(data, fn {string, list} ->
+      assert is_binary(string)
+      assert is_list(list)
+      assert String.to_integer(string) != 5
+    end)
+  end
+
   defp for_many(data, count \\ 200, fun) do
     data
     |> Stream.take(count)
