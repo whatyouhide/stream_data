@@ -184,23 +184,34 @@ defmodule PropertyTest do
       end
 
   """
-  defmacro check({:all, _meta, clauses} = _generation_clauses, options)
-           when is_list(clauses) and is_list(options) do
-    {body, options} =
-      case Keyword.pop(options, :do) do
-        {nil, _rest} ->
-          raise ArgumentError, "no :do body was passed to check all"
-        {_body, _rest} = result ->
-          result
-      end
+  defmacro check({:all, _meta, clauses_and_options} = _generation_clauses, [do: body] = _block)
+           when is_list(clauses_and_options) do
+    {options, clauses} = Enum.split_with(clauses_and_options, &match?({key, _value} when is_atom(key), &1))
 
-    quote bind_quoted: [options: options, property: compile(clauses, body)] do
+    quote do
+      options = unquote(options)
       options = [
         initial_seed: {0, 0, ExUnit.configuration()[:seed]},
         initial_size: options[:initial_size] || Application.fetch_env!(:stream_data, :initial_size),
         max_runs: options[:max_runs] || Application.fetch_env!(:stream_data, :max_runs),
         max_shrinking_steps: options[:max_shrinking_steps] || Application.fetch_env!(:stream_data, :max_shrinking_steps),
       ]
+
+      property =
+        StreamData.gen all unquote_splicing(clauses) do
+          generated_values = var!(generated_values, StreamData)
+          fn ->
+            try do
+              unquote(body)
+            rescue
+              exception ->
+                {:error, %{exception: exception, stacktrace: System.stacktrace(), generated_values: generated_values}}
+            else
+              _result ->
+                {:ok, nil}
+            end
+          end
+        end
 
       property =
         if max_size = options[:max_generation_size] do
@@ -214,62 +225,6 @@ defmodule PropertyTest do
           :ok
         {:error, result} ->
           raise Error, result
-      end
-    end
-  end
-
-  defp compile(clauses, body) do
-    quote do
-      var!(generated_values) = []
-      {:cont, data} = unquote(compile_clauses(clauses, body))
-      data
-    end
-  end
-
-  defp compile_clauses([], body) do
-    quote do
-      generated_values = Enum.reverse(var!(generated_values))
-
-      data = StreamData.constant(fn ->
-        try do
-          unquote(body)
-        rescue
-          exception ->
-            {:error, %{exception: exception, stacktrace: System.stacktrace(), generated_values: generated_values}}
-        else
-          _result ->
-            {:ok, nil}
-        end
-      end)
-
-      {:cont, data}
-    end
-  end
-
-  defp compile_clauses([{:<-, _meta, [pattern, generator]} = clause | rest], body) do
-    quote do
-      data = StreamData.bind_filter(unquote(generator), fn unquote(pattern) = generated_value ->
-        var!(generated_values) = [{unquote(Macro.to_string(clause)), generated_value} | var!(generated_values)]
-        unquote(compile_clauses(rest, body))
-      end)
-
-      {:cont, data}
-    end
-  end
-
-  defp compile_clauses([{:=, _meta, [_left, _right]} = assignment | rest], body) do
-    quote do
-      unquote(assignment)
-      unquote(compile_clauses(rest, body))
-    end
-  end
-
-  defp compile_clauses([clause | rest], body) do
-    quote do
-      if unquote(clause) do
-        unquote(compile_clauses(rest, body))
-      else
-        :skip
       end
     end
   end

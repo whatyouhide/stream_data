@@ -1458,6 +1458,54 @@ defmodule StreamData do
     end
   end
 
+  defmacro gen({:all, _meta, clauses} = _generation_clauses, [do: body] = _block) do
+    compile(clauses, body)
+  end
+
+  defp compile(clauses, body) do
+    quote do
+      var!(generated_values, unquote(__MODULE__)) = []
+      {:cont, data} = unquote(compile_clauses(clauses, body))
+      data
+    end
+  end
+
+  defp compile_clauses([], body) do
+    quote do
+      generated_values = Enum.reverse(var!(generated_values, unquote(__MODULE__)))
+      {:cont, StreamData.constant(unquote(body))}
+    end
+  end
+
+  defp compile_clauses([{:<-, _meta, [pattern, generator]} = clause | rest], body) do
+    quote do
+      data = StreamData.bind_filter(unquote(generator), fn unquote(pattern) = generated_value ->
+        var!(generated_values, unquote(__MODULE__)) =
+          [{unquote(Macro.to_string(clause)), generated_value} | var!(generated_values, unquote(__MODULE__))]
+        unquote(compile_clauses(rest, body))
+      end)
+
+      {:cont, data}
+    end
+  end
+
+  defp compile_clauses([{:=, _meta, [_left, _right]} = assignment | rest], body) do
+    quote do
+      unquote(assignment)
+      unquote(compile_clauses(rest, body))
+    end
+  end
+
+  defp compile_clauses([clause | rest], body) do
+    quote do
+      if unquote(clause) do
+        unquote(compile_clauses(rest, body))
+      else
+        :skip
+      end
+    end
+  end
+
   defp new_seed({int1, int2, int3} = tuple)
        when is_integer(int1) and is_integer(int2) and is_integer(int3) do
     :rand.seed_s(@rand_algorithm, tuple)
