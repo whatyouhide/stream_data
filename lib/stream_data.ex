@@ -1039,12 +1039,13 @@ defmodule StreamData do
       leaf_data = resize(leaf_data, size)
       {seed1, seed2} = split_seed(seed)
       nodes_on_each_level = random_pseudofactors(trunc(:math.pow(size, 1.1)), seed1)
-      data = Enum.reduce(nodes_on_each_level, leaf_data, fn nodes_on_this_level, data_acc ->
-        frequency([
-          {1, data_acc},
-          {2, resize(subtree_fun.(data_acc), nodes_on_this_level)},
-        ])
-      end)
+      data =
+        Enum.reduce(nodes_on_each_level, leaf_data, fn nodes_on_this_level, data_acc ->
+          frequency([
+            {1, data_acc},
+            {2, resize(subtree_fun.(data_acc), nodes_on_this_level)},
+          ])
+        end)
 
       call(data, seed2, size)
     end)
@@ -1235,11 +1236,12 @@ defmodule StreamData do
   """
   @spec unquoted_atom() :: t(atom)
   def unquoted_atom() do
-    starting_char = frequency([
-      {4, member_of(?a..?z)},
-      {2, member_of(?A..?Z)},
-      {1, constant(?_)},
-    ])
+    starting_char =
+      frequency([
+        {4, member_of(?a..?z)},
+        {2, member_of(?A..?Z)},
+        {1, constant(?_)},
+      ])
 
     # We limit the size to 255 so that adding the first character doesn't
     # break the system limit of 256 chars in an atom.
