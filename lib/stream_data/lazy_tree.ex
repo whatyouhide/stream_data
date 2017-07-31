@@ -135,13 +135,14 @@ defmodule StreamData.LazyTree do
   """
   @spec filter(t(a), (a -> as_boolean(term))) :: t(a) when a: term
   def filter(%__MODULE__{} = tree, predicate) when is_function(predicate, 1) do
-    children = Stream.flat_map(tree.children, fn child ->
-      if predicate.(child.root) do
-        [filter(child, predicate)]
-      else
-        []
-      end
-    end)
+    children =
+      Stream.flat_map(tree.children, fn child ->
+        if predicate.(child.root) do
+          [filter(child, predicate)]
+        else
+          []
+        end
+      end)
 
     %{tree | children: children}
   end
