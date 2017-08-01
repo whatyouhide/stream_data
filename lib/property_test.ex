@@ -5,38 +5,10 @@ defmodule PropertyTest do
   TODO: better overview of property testing and shrinking.
   """
 
+  alias ExUnit.AssertionError
+
   defmodule Error do
     defexception [:message]
-
-    def exception(test_result) when is_map(test_result) do
-      %__MODULE__{message: format_message(test_result)}
-    end
-
-    defp format_message(%{original_failure: original_failure, shrunk_failure: shrunk_failure, nodes_visited: nodes_visited}) do
-      formatted_original = indent(Exception.format(:error, original_failure.exception, original_failure.stacktrace))
-      formatted_shrunk = indent(Exception.format(:error, shrunk_failure.exception, shrunk_failure.stacktrace))
-      formatted_values = "  " <> Enum.map_join(shrunk_failure.generated_values, "\n\n  ", fn {gen_string, value} ->
-        gen_string <> "\n  #=> " <> inspect(value)
-      end)
-
-      """
-      property failed. Original failure:
-
-      #{formatted_original}
-
-      Failure from shrunk data:
-
-      #{formatted_shrunk}
-
-      Shrunk generated values:
-
-      #{formatted_values}
-
-      (visited a total of #{nodes_visited} nodes)
-      """
-    end
-
-    defp indent(string), do: "  " <> String.replace(string, "\n", "\n" <> "  ")
   end
 
   @doc """
@@ -167,13 +139,17 @@ defmodule PropertyTest do
 
       property =
         StreamData.gen all unquote_splicing(clauses) do
-          generated_values = var!(generated_values, StreamData)
           fn ->
             try do
               unquote(body)
             rescue
               exception ->
-                {:error, %{exception: exception, stacktrace: System.stacktrace(), generated_values: generated_values}}
+                result = %{
+                  exception: exception,
+                  stacktrace: System.stacktrace(),
+                  generated_values: var!(generated_values, StreamData),
+                }
+                {:error, result}
             else
               _result ->
                 {:ok, nil}
@@ -191,9 +167,48 @@ defmodule PropertyTest do
       case StreamData.check_all(property, options, &(&1.())) do
         {:ok, _result} ->
           :ok
-        {:error, result} ->
-          raise Error, result
+        {:error, test_result} ->
+          PropertyTest.__raise__(test_result)
       end
     end
   end
+
+  def __raise__(test_result) do
+    %{original_failure: original_failure,
+      shrunk_failure: shrunk_failure,
+      nodes_visited: nodes_visited} = test_result
+    choose_error_and_raise(original_failure, shrunk_failure, nodes_visited)
+  end
+
+  defp choose_error_and_raise(_, %{exception: %AssertionError{}} = shrunk_failure, nodes_visited) do
+    reraise enrich_assertion_error(shrunk_failure, nodes_visited), shrunk_failure.stacktrace
+  end
+
+  defp choose_error_and_raise(%{exception: %AssertionError{}} = original_failure, _, nodes_visited) do
+    reraise enrich_assertion_error(original_failure, nodes_visited), original_failure.stacktrace
+  end
+
+  defp choose_error_and_raise(_original_failure, shrunk_failure, _nodes_visited) do
+    formatted = indent(Exception.format(:error, shrunk_failure.exception, shrunk_failure.stacktrace))
+    message = "failed with generated values:\n\n#{format_generated_values(shrunk_failure.generated_values)}\n\n#{formatted}"
+    raise Error, message: message
+  end
+
+  defp enrich_assertion_error(%{exception: exception, generated_values: generated_values}, _nodes_visited) do
+    message =
+      "Failed with generated values:\n\n#{format_generated_values(generated_values)}" <>
+      if(is_binary(exception.message), do: "\n\n" <> exception.message, else: "")
+
+    %{exception | message: message}
+  end
+
+  defp format_generated_values(values) do
+    formatted =
+      Enum.map_join(values, "\n\n  ", fn {gen_string, value} ->
+        gen_string <> "\n  #=> " <> inspect(value)
+      end)
+    "  " <> formatted
+  end
+
+  defp indent(string), do: "  " <> String.replace(string, "\n", "\n" <> "  ")
 end

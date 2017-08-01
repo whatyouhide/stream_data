@@ -1536,7 +1536,7 @@ defmodule StreamData do
 
   defp compile_clauses([], body) do
     quote do
-      generated_values = Enum.reverse(var!(generated_values, unquote(__MODULE__)))
+      var!(generated_values, unquote(__MODULE__)) = Enum.reverse(var!(generated_values, unquote(__MODULE__)))
       {:cont, StreamData.constant(unquote(body))}
     end
   end
