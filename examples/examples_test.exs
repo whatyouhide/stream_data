@@ -31,7 +31,7 @@ defmodule StdlibSamplesTest do
 
   test "non-assertion error" do
     import StreamData
-    check all tuple <- tuple({constant(:ok), int()}) do
+    check all tuple <- {:ok, int()} do
       failing_tuple_match(tuple)
     end
   end
