@@ -219,7 +219,7 @@ defmodule PropertyTest do
   """
   defmacro check({:all, _meta, clauses_and_options} = _generation_clauses, [do: body] = _block)
            when is_list(clauses_and_options) do
-    {options, clauses} = Enum.split_with(clauses_and_options, &match?({key, _value} when is_atom(key), &1))
+    {clauses, options} = split_clauses_and_options(clauses_and_options)
 
     quote do
       options = unquote(options)
@@ -281,12 +281,18 @@ defmodule PropertyTest do
     reraise enrich_assertion_error(original_failure, nodes_visited), original_failure.stacktrace
   end
 
+<<<<<<< HEAD
   defp choose_error_and_raise(_original_failure, shrunk_failure, nodes_visited) do
-    formatted = indent(Exception.format_banner(:error, shrunk_failure.exception, shrunk_failure.stacktrace), "  ")
+    formatted = indent(Exception.format_banner(:error, shrunk_failure.exception, shrunk_failure.stacktrace), "    ")
     message =
       "failed with generated values (after #{nodes_visited} attempt(s)):\n\n" <>
-      "#{indent(format_generated_values(shrunk_failure.generated_values), "    ")}\n\n" <>
+      "#{format_generated_values(shrunk_failure.generated_values)}\n\n" <>
       formatted
+=======
+  defp choose_error_and_raise(_original_failure, shrunk_failure, _nodes_visited) do
+    formatted = indent(Exception.format_banner(:error, shrunk_failure.exception, shrunk_failure.stacktrace))
+    message = "failed with generated values:\n\n#{format_generated_values(shrunk_failure.generated_values)}\n\n#{formatted}"
+>>>>>>> Reraise
     reraise Error, [message: message], shrunk_failure.stacktrace
   end
 
@@ -307,5 +313,14 @@ defmodule PropertyTest do
 
   defp indent(string, indentation) do
     indentation <> String.replace(string, "\n", "\n" <> indentation)
+  end
+
+  defp split_clauses_and_options(clauses_and_options) do
+    case Enum.split_while(clauses_and_options, &match?({:<-, _, _}, &1)) do
+      {_clauses, []} = result ->
+        result
+      {clauses, [options]} ->
+        {clauses, options}
+    end
   end
 end
