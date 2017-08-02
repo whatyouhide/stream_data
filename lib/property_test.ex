@@ -2,7 +2,100 @@ defmodule PropertyTest do
   @moduledoc """
   Provides macros for property testing.
 
-  TODO: better overview of property testing and shrinking.
+  This module provides two main macros that can be used for property testing.
+  The core is `check/3`, which allows to execute arbitrary tests on many pieces
+  of generated data. The other macro that is provided is `property/3`, which is
+  meant as a utility to replace the `ExUnit.Case.test/3` macro when writing
+  properties. Generators to be used when writing properties can be found in the
+  `StreamData` module.
+
+  ## Overview of property testing
+
+  One of the most common ways of writing tests (in Elixir and many other
+  languages) is to write tests by hand. For example, say that we want to write a
+  `starts_with?/2` function that takes two binaries and returns `true` if the
+  first starts with the second and `false` otherwise. We would likely test such
+  function with something like this:
+
+      test "starts_with?/2" do
+        assert starts_with?("foo", "f")
+        refute starts_with?("foo", "b")
+        assert starts_with?("foo", "")
+        assert starts_with?("", "")
+        refute starts_with?("", "something")
+      end
+
+  This test  highlights the method used to write such kind of tests: they're
+  written from the developer by hand. The process usually consists in testing an
+  expected output on a set of expected inputs. This works especially well for
+  edge cases but the robustness of this test could be improved. This is what
+  property testing aims to solve. Property testing is based on two ideas:
+
+    * specify a set of **properties** that a piece of code should satisfy
+    * test those properties on a very large number of randomly generated data
+
+  The point of specifying **properties** instead of testing manual scenarios is
+  that properties should hold for all the data that the piece of code should be
+  able to deal with, and in turn this plays well with generating data at random.
+  Writing properties has the added benefit of forcing the programmer to think
+  about their code differently: they have to think about which are invariant
+  properties that their code satisfies.
+
+  To go back to the `starts_with?/2` example above, let's come up with a
+  property that this function should hold. Since we know that the `Kernel.<>/2`
+  operator concatenates two binaries, we can say that a property of
+  `starts_with?/2` is that the concatenation of binaries `a` and `b` always
+  starts with `a`. This is easy to model as a property using the `check/3` macro
+  from this module and generators taken from the `StreamData` module:
+
+      test "starts_with?/2" do
+        check all a <- StreamData.binary(),
+                  b <- StreamData.binary() do
+          assert starts_with?(a <> b, a)
+        end
+      end
+
+  When run, this piece of code will generate a random binary and assign it to
+  `a`, do the same for `b`, and then run the assertion. This step will be
+  repeated for a large number of times (`100` by default, but it's
+  configurable), hence generating many combinations of random `a` and `b`. If
+  the body passes for all the generated data, then we consider the property to
+  hold. If a combination of random generated terms fails the body of the
+  property, then `PropertyTest` tries to find the smallest set of random
+  generated terms that still fails the property and reports that; this step is
+  called shrinking.
+
+  ### Shrinking
+
+  Say that our `starts_with?/2` function blidnly returns false when the second
+  argument is the empty binary (such as `starts_with?("foo", "")`). It's likely
+  that in 100 runs an empty binary will be generated and bound to `b`. When that
+  happens, the body of the property fails but `a` is a random generated binary
+  and this might be inconvenient: for example, `a` could be `<<0, 74, 192, 99,
+  24, 26>>`. In this case, the `check/3` macro tries to **shrink** `a` to the
+  smallest term that still fails the property (`b` is not shrunk because `""` is
+  the smallest binary possible). Doing so will lead to `a = ""` and `b = ""`
+  which is the "minimal" failing case for our function.
+
+  The example above is a contrived example but shrinking is a very powerful tool
+  that aims at taking the noise out of the failing data.
+
+  For detailed information on shrinking, see also the "Shrinking" section in the
+  documentation for `StreamData`.
+
+  ## Resources on property testing
+
+  There are many resources available online on property testing. An interesting
+  read is the original paper that introduced QuickCheck, ["QuickCheck: A
+  Lightweight Tool for Random Testing of Haskell
+  Programs"](http://www.cs.tufts.edu/~nr/cs257/archive/john-hughes/quick.pdf), a
+  property-testing tool for the Haskell programming language. Another very
+  useful resource especially geared towards Erlang and the BEAM is
+  [propertesting.com](http://propertesting.com), a website created by Fred
+  Hebert: it's a great explanation of property testing that includes many
+  examples. Fred's website uses an Erlang property testing tool called
+  [PropEr](https://github.com/manopapad/proper) but many of the things he talks
+  about apply to `PropertyTest` as well.
   """
 
   defmodule Error do
