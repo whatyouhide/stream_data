@@ -188,15 +188,19 @@ defmodule PropertyTest do
     reraise enrich_assertion_error(original_failure, nodes_visited), original_failure.stacktrace
   end
 
-  defp choose_error_and_raise(_original_failure, shrunk_failure, _nodes_visited) do
+  defp choose_error_and_raise(_original_failure, shrunk_failure, nodes_visited) do
     formatted = indent(Exception.format_banner(:error, shrunk_failure.exception, shrunk_failure.stacktrace))
-    message = "failed with generated values:\n\n#{format_generated_values(shrunk_failure.generated_values)}\n\n#{formatted}"
+    message =
+      "failed with generated values (after #{nodes_visited} attempt(s)):\n\n" <>
+      "#{format_generated_values(shrunk_failure.generated_values)}\n\n" <>
+      formatted
     reraise Error, [message: message], shrunk_failure.stacktrace
   end
 
-  defp enrich_assertion_error(%{exception: exception, generated_values: generated_values}, _nodes_visited) do
+  defp enrich_assertion_error(%{exception: exception, generated_values: generated_values}, nodes_visited) do
     message =
-      "Failed with generated values:\n\n#{format_generated_values(generated_values)}" <>
+      "Failed with generated values (after #{nodes_visited} attempt(s)):\n\n" <>
+      format_generated_values(generated_values) <>
       if(is_binary(exception.message), do: "\n\n" <> exception.message, else: "")
 
     %{exception | message: message}
