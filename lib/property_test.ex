@@ -189,9 +189,9 @@ defmodule PropertyTest do
   end
 
   defp choose_error_and_raise(_original_failure, shrunk_failure, _nodes_visited) do
-    formatted = indent(Exception.format(:error, shrunk_failure.exception, shrunk_failure.stacktrace))
+    formatted = indent(Exception.format_banner(:error, shrunk_failure.exception, shrunk_failure.stacktrace))
     message = "failed with generated values:\n\n#{format_generated_values(shrunk_failure.generated_values)}\n\n#{formatted}"
-    raise Error, message: message
+    reraise Error, [message: message], shrunk_failure.stacktrace
   end
 
   defp enrich_assertion_error(%{exception: exception, generated_values: generated_values}, _nodes_visited) do
