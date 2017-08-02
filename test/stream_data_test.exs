@@ -333,6 +333,25 @@ defmodule StreamDataTest do
     end)
   end
 
+  test "check_all/3" do
+    options = [initial_seed: :os.timestamp()]
+
+    property = fn list ->
+      if 5 in list do
+        {:error, list}
+      else
+        {:ok, nil}
+      end
+    end
+
+    assert {:error, info} = check_all(list_of(int()), options, property)
+    assert is_list(info.original_failure) and 5 in info.original_failure
+    assert info.shrunk_failure == [5]
+    assert is_integer(info.nodes_visited) and info.nodes_visited >= 0
+
+    assert check_all(list_of(boolean()), options, property) == {:ok, %{}}
+  end
+
   test "gen all" do
     data =
       gen all list <- non_empty(list_of(int())),
