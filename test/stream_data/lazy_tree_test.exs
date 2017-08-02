@@ -1,5 +1,5 @@
 defmodule StreamData.LazyTreeTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias StreamData.LazyTree
 
