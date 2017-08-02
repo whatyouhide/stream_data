@@ -49,13 +49,14 @@ defmodule StreamDataTest do
   test "bind_filter/2" do
     require Integer
 
-    data = bind_filter(int(1..5), fn int ->
-      if Integer.is_even(int) do
-        {:cont, constant(int)}
-      else
-        :skip
-      end
-    end, 1000)
+    data =
+      bind_filter(int(1..5), fn int ->
+        if Integer.is_even(int) do
+          {:cont, constant(int)}
+        else
+          :skip
+        end
+      end, 1000)
 
     for_many(data, fn int ->
       assert int in 1..5
@@ -132,10 +133,11 @@ defmodule StreamDataTest do
   end
 
   test "frequency/1" do
-    data = frequency([
-      {1, constant(:small_chance)},
-      {100, constant(:big_chance)},
-    ])
+    data =
+      frequency([
+        {1, constant(:small_chance)},
+        {100, constant(:big_chance)},
+      ])
 
     values = Enum.take(data, 1000)
 
@@ -253,10 +255,11 @@ defmodule StreamDataTest do
   end
 
   test "fixed_map/1" do
-    data = fixed_map(%{
-      int: int(),
-      binary: binary(),
-    })
+    data =
+      fixed_map(%{
+        int: int(),
+        binary: binary(),
+      })
 
     for_many(data, fn map ->
       assert map_size(map) == 2

@@ -264,15 +264,16 @@ defmodule StreamData do
 
       list_data = StreamData.non_empty(StreamData.list_of(StreamData.int()))
 
-      data = StreamData.bind_filter(list_data, fn
-        list when Integer.is_even(length(list)) ->
-          inner_data = StreamData.bind(StreamData.member_of(list), fn member ->
-            StreamData.constant({list, member})
-          end)
-          {:cont, inner_data}
-        _odd_list ->
-          :skip
-      end)
+      data =
+        StreamData.bind_filter(list_data, fn
+          list when Integer.is_even(length(list)) ->
+            inner_data = StreamData.bind(StreamData.member_of(list), fn member ->
+              StreamData.constant({list, member})
+            end)
+            {:cont, inner_data}
+          _odd_list ->
+            :skip
+        end)
 
       Enum.at(data, 0)
       #=> {[-6, -7, -4, 5, -9, 8, 7, -9], 5}
@@ -1542,11 +1543,12 @@ defmodule StreamData do
 
   defp compile_clauses([{:<-, _meta, [pattern, generator]} = clause | rest], body) do
     quote do
-      data = StreamData.bind_filter(unquote(generator), fn unquote(pattern) = generated_value ->
-        var!(generated_values, unquote(__MODULE__)) =
-          [{unquote(Macro.to_string(clause)), generated_value} | var!(generated_values, unquote(__MODULE__))]
-        unquote(compile_clauses(rest, body))
-      end)
+      data =
+        StreamData.bind_filter(unquote(generator), fn unquote(pattern) = generated_value ->
+          var!(generated_values, unquote(__MODULE__)) =
+            [{unquote(Macro.to_string(clause)), generated_value} | var!(generated_values, unquote(__MODULE__))]
+          unquote(compile_clauses(rest, body))
+        end)
 
       {:cont, data}
     end
