@@ -189,10 +189,10 @@ defmodule PropertyTest do
   end
 
   defp choose_error_and_raise(_original_failure, shrunk_failure, nodes_visited) do
-    formatted = indent(Exception.format_banner(:error, shrunk_failure.exception, shrunk_failure.stacktrace))
+    formatted = indent(Exception.format_banner(:error, shrunk_failure.exception, shrunk_failure.stacktrace), "  ")
     message =
       "failed with generated values (after #{nodes_visited} attempt(s)):\n\n" <>
-      "#{format_generated_values(shrunk_failure.generated_values)}\n\n" <>
+      "#{indent(format_generated_values(shrunk_failure.generated_values), "    ")}\n\n" <>
       formatted
     reraise Error, [message: message], shrunk_failure.stacktrace
   end
@@ -200,19 +200,19 @@ defmodule PropertyTest do
   defp enrich_assertion_error(%{exception: exception, generated_values: generated_values}, nodes_visited) do
     message =
       "Failed with generated values (after #{nodes_visited} attempt(s)):\n\n" <>
-      format_generated_values(generated_values) <>
+      indent(format_generated_values(generated_values), "    ") <>
       if(is_binary(exception.message), do: "\n\n" <> exception.message, else: "")
 
     %{exception | message: message}
   end
 
   defp format_generated_values(values) do
-    formatted =
-      Enum.map_join(values, "\n\n  ", fn {gen_string, value} ->
-        gen_string <> "\n  #=> " <> inspect(value)
-      end)
-    "  " <> formatted
+    Enum.map_join(values, "\n\n", fn {gen_string, value} ->
+      gen_string <> "\n#=> " <> inspect(value)
+    end)
   end
 
-  defp indent(string), do: "  " <> String.replace(string, "\n", "\n" <> "  ")
+  defp indent(string, indentation) do
+    indentation <> String.replace(string, "\n", "\n" <> indentation)
+  end
 end
