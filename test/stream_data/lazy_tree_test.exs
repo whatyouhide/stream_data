@@ -28,13 +28,14 @@ defmodule StreamData.LazyTreeTest do
     require Integer
 
     tree = new(1, [constant(2), constant(3)])
-    {:ok, mapped_tree} = LazyTree.filter_map(tree, fn int ->
-      if Integer.is_odd(int) do
-        {:cont, Integer.to_string(int)}
-      else
-        :skip
-      end
-    end)
+    {:ok, mapped_tree} =
+      LazyTree.filter_map(tree, fn int ->
+        if Integer.is_odd(int) do
+          {:cont, Integer.to_string(int)}
+        else
+          :skip
+        end
+      end)
     expected = new("1", [constant("3")])
 
     assert realize_tree(mapped_tree) == realize_tree(expected)
@@ -49,11 +50,12 @@ defmodule StreamData.LazyTreeTest do
 
     assert %LazyTree{} = joined_tree = LazyTree.flatten(tree)
 
-    expected = new(:root1, [
-      constant(:child1_a),
-      constant(:child1_b),
-      new(:root2, [constant(:child2_a), constant(:child2_b)]),
-    ])
+    expected =
+      new(:root1, [
+        constant(:child1_a),
+        constant(:child1_b),
+        new(:root2, [constant(:child2_a), constant(:child2_b)]),
+      ])
 
     assert realize_tree(joined_tree) == realize_tree(expected)
   end
@@ -61,16 +63,15 @@ defmodule StreamData.LazyTreeTest do
   test "filter/2" do
     import LazyTree, only: [new: 2, constant: 1]
 
-    tree = new(1, [
-      new(1, [constant(-1), constant(2)]), # here only an inner child is removed since it doesn't pass the filter
-      new(-1, [constant(1), constant(2)]), # this whole branch is cut since the root doesn't pass the filter
-    ])
+    tree =
+      new(1, [
+        new(1, [constant(-1), constant(2)]), # here only an inner child is removed since it doesn't pass the filter
+        new(-1, [constant(1), constant(2)]), # this whole branch is cut since the root doesn't pass the filter
+      ])
 
     filtered_tree = LazyTree.filter(tree, &(&1 > 0))
 
-    expected = new(1, [
-      new(1, [constant(2)]),
-    ])
+    expected = new(1, [new(1, [constant(2)])])
 
     assert realize_tree(filtered_tree) == realize_tree(expected)
   end

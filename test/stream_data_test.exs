@@ -109,15 +109,16 @@ defmodule StreamDataTest do
   end
 
   test "sized/1" do
-    data = sized(fn size ->
-      bind(boolean(), fn bool ->
-        if bool do
-          constant(size)
-        else
-          constant(-size)
-        end
+    data =
+      sized(fn size ->
+        bind(boolean(), fn bool ->
+          if bool do
+            constant(size)
+          else
+            constant(-size)
+          end
+        end)
       end)
-    end)
 
     for_many(data, fn int ->
       assert is_integer(int)
