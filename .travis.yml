@@ -1,5 +1,5 @@
 sudo: false
 language: elixir
 
-elixir: 1.5.0-rc.2
+elixir: 1.5.1
 otp_release: 20.0
