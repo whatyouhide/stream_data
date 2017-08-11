@@ -67,7 +67,7 @@ defmodule PropertyTest do
 
   ### Shrinking
 
-  Say that our `starts_with?/2` function blidnly returns false when the second
+  Say that our `starts_with?/2` function blindly returns false when the second
   argument is the empty binary (such as `starts_with?("foo", "")`). It's likely
   that in 100 runs an empty binary will be generated and bound to `b`. When that
   happens, the body of the property fails but `a` is a random generated binary
@@ -117,13 +117,13 @@ defmodule PropertyTest do
 
   ## Examples
 
-    import PropertyTest
+      import PropertyTest
 
-    property "reversing a list doesn't change its length" do
-      check all list <- list_of(int()) do
-        assert length(list) == length(:lists.reverse(list))
+      property "reversing a list doesn't change its length" do
+        check all list <- list_of(int()) do
+          assert length(list) == length(:lists.reverse(list))
+        end
       end
-    end
 
   """
   # TODO: is it fine to not support rescue/after stuff?
@@ -201,10 +201,10 @@ defmodule PropertyTest do
   concatenated strings:
 
       check all start <- binary(),
-                end <- binary(),
-                concat = start <> end do
+                finish <- binary(),
+                concat = start <> finish do
         assert String.starts_with?(concat, start)
-        assert String.ends_with?(concat, end)
+        assert String.ends_with?(concat, finish)
       end
 
   Check that `Kernel.in/2` returns `true` when checking if an element taken out
