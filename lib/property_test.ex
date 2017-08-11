@@ -67,7 +67,7 @@ defmodule PropertyTest do
 
   ### Shrinking
 
-  Say that our `starts_with?/2` function blidnly returns false when the second
+  Say that our `starts_with?/2` function blindly returns false when the second
   argument is the empty binary (such as `starts_with?("foo", "")`). It's likely
   that in 100 runs an empty binary will be generated and bound to `b`. When that
   happens, the body of the property fails but `a` is a random generated binary
