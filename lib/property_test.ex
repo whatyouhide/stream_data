@@ -117,13 +117,13 @@ defmodule PropertyTest do
 
   ## Examples
 
-    import PropertyTest
+      import PropertyTest
 
-    property "reversing a list doesn't change its length" do
-      check all list <- list_of(int()) do
-        assert length(list) == length(:lists.reverse(list))
+      property "reversing a list doesn't change its length" do
+        check all list <- list_of(int()) do
+          assert length(list) == length(:lists.reverse(list))
+        end
       end
-    end
 
   """
   # TODO: is it fine to not support rescue/after stuff?
