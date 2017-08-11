@@ -16,7 +16,7 @@ defp deps() do
 end
 ```
 
-and run `mix deps.get`. `stream_data` is usually added only to the `:test` environment since it's used in tests and test data generation.
+and run `mix deps.get`. StreamData is usually added only to the `:test` environment since it's used in tests and test data generation.
 
 ## Usage
 
@@ -68,6 +68,8 @@ end
 ```
 
 To know more about property testing, read the `PropertyTest` documentation. Another great resource about property testing in Erlang (but with most ideas that apply to Elixir as well) is Fred Hebert's website [propertesting.com](http://propertesting.com).
+
+The property testing side of this library is heavily inspired by the [original QuickCheck paper](http://www.cs.tufts.edu/~nr/cs257/archive/john-hughes/quick.pdf) (which targeted Haskell) as well as Clojure's take on property testing, [test.check](https://github.com/clojure/test.check).
 
 ## License
 
