@@ -1,6 +1,7 @@
 # StreamData
 
 [![Build Status](https://travis-ci.org/whatyouhide/stream_data.svg?branch=master)](https://travis-ci.org/whatyouhide/stream_data)
+[![Hex.pm](https://img.shields.io/hexpm/v/stream_data.svg)](https://hex.pm/packages/stream_data)
 
 > StreamData is an Elixir library for **data generation** and **property testing**.
 
@@ -12,13 +13,15 @@ Add `stream_data` to your list of dependencies:
 
 ```elixir
 defp deps() do
-  [{:stream_data, github: "whatyouhide/stream_data", only: :test}]
+  [{:stream_data, "~> 0.1", only: :test}]
 end
 ```
 
 and run `mix deps.get`. StreamData is usually added only to the `:test` environment since it's used in tests and test data generation.
 
 ## Usage
+
+The documentation is [available online](https://hexdocs.pm/stream_data/).
 
 StreamData is made of two main components: data generation and property testing. The `StreamData` module provides tools to work with data generation. The `PropertyTest` module takes care of the property testing functionality.
 

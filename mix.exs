@@ -1,13 +1,32 @@
 defmodule StreamData.Mixfile do
   use Mix.Project
 
+  @version "0.1.0"
+  @repo_url "https://github.com/whatyouhide/stream_data"
+
   def project() do
     [
       app: :stream_data,
-      version: "0.1.0",
+      version: @version,
       elixir: "~> 1.5",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+
+      # Docs
+      name: "StreamData",
+      docs: [
+        source_ref: "v#{@version}",
+        main: "StreamData",
+        source_url: @repo_url,
+      ],
+
+      # Hex
+      description: "Data generation and property testing for Elixir",
+      package: [
+        maintainers: ["Andrea Leopardi"],
+        licenses: ["Apache 2.0"],
+        links: %{"GitHub" => @repo_url},
+      ],
     ]
   end
 
