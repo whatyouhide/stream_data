@@ -201,10 +201,10 @@ defmodule PropertyTest do
   concatenated strings:
 
       check all start <- binary(),
-                end <- binary(),
-                concat = start <> end do
+                finish <- binary(),
+                concat = start <> finish do
         assert String.starts_with?(concat, start)
-        assert String.ends_with?(concat, end)
+        assert String.ends_with?(concat, finish)
       end
 
   Check that `Kernel.in/2` returns `true` when checking if an element taken out
