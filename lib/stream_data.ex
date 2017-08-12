@@ -394,7 +394,7 @@ defmodule StreamData do
       else
         :skip
       end
-    end)
+    end, max_consecutive_failures)
   end
 
   ### Rich API
