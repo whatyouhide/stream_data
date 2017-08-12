@@ -84,7 +84,12 @@ defmodule StreamDataTest do
     end)
 
     data = filter(constant(:term), &is_binary/1, 10)
-    assert_raise StreamData.FilterTooNarrowError, fn ->
+    assert_raise StreamData.FilterTooNarrowError, ~r/too many \(10\) consecutive elements were filtered out/, fn ->
+      Enum.take(data, 1)
+    end
+
+    data = filter(constant(:term), &is_binary/1, 2)
+    assert_raise StreamData.FilterTooNarrowError, ~r/too many \(2\) consecutive elements were filtered out/, fn ->
       Enum.take(data, 1)
     end
   end
