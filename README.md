@@ -21,7 +21,7 @@ and run `mix deps.get`. StreamData is usually added only to the `:test` environm
 
 ## Usage
 
-The documentation is [available online](https://hexdocs.pm/stream_data/).
+[The documentation is available online.](https://hexdocs.pm/stream_data/)
 
 StreamData is made of two main components: data generation and property testing. The `StreamData` module provides tools to work with data generation. The `PropertyTest` module takes care of the property testing functionality.
 
