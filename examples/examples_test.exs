@@ -19,15 +19,15 @@ defmodule StdlibSamplesTest do
       assert 22 not in list
     end
   end
-  #
-  # property "something with filter" do
-  #   check all a <- int(),
-  #             b <- int(),
-  #             a + b >= 0,
-  #             sum = a + b do
-  #     assert sum > 0
-  #   end
-  # end
+
+  property "something with filter" do
+    check all a <- int(),
+              b <- int(),
+              a + b >= 0,
+              sum = a + b do
+      assert sum > 0
+    end
+  end
 
   test "non-assertion error" do
     import StreamData
