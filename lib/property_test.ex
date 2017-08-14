@@ -310,7 +310,7 @@ defmodule PropertyTest do
   end
 
   defp split_clauses_and_options(clauses_and_options) do
-    case Enum.split_while(clauses_and_options, &match?({:<-, _, _}, &1)) do
+    case Enum.split_while(clauses_and_options, &not(Keyword.keyword?(&1))) do
       {_clauses, []} = result ->
         result
       {clauses, [options]} ->

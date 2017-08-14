@@ -29,4 +29,19 @@ defmodule PropertyTestTest do
 
     assert Agent.get(counter, &(&1)) == 10
   end
+
+  describe "check all" do
+    property "can do assignment" do
+      {:ok, counter} = Agent.start_link(fn -> 0 end)
+
+      check all i <- int(),
+                string_i = Integer.to_string(i),
+                max_runs: 10 do
+        Agent.update(counter, &(&1 + 1))
+        assert String.to_integer(string_i) == i
+      end
+
+      assert Agent.get(counter, &(&1)) == 10
+    end
+  end
 end
