@@ -1179,50 +1179,82 @@ defmodule StreamData do
     map(list_of(byte()), &IO.iodata_to_binary/1)
   end
 
-  @doc """
-  Generates a string from the given list of character ranges.
+  @ascii_chars ?\s..?~
+  @alphanumeric_chars Enum.concat([?a..?z, ?A..?Z, ?0..?9])
 
-  `char_ranges` has to be a list of enumerables where each enumerable has to be
-  an enumerable of characters (`t:char/0`).
+  @doc """
+  Generates a string of the given kind or from the given characters.
+
+  `kind_or_chars` can be:
+
+    * `:ascii` - strings containing only ASCII characters are generated. Such
+      strings shrink towards lower codepoints.
+
+    * `:alphanumeric` - strings containing only alphanumeric characters
+      (`?a..?z`, `?A..?Z`, `?0..?9`) are generated. Such strings shrink towards
+      `?a` following the order shown previously.
+
+    * a list of characters - strings with only characters present in the given
+      list are generated. Such strings shrink towards characters that appear
+      earlier in the list.
 
   ## Examples
 
-      Enum.take(StreamData.string_from_chars([?a..?c, ?l..?o]), 3)
+      Enum.take(StreamData.string(:ascii), 3)
+      #=> ["c", "9A", ""]
+
+      Enum.take(StreamData.string(Enum.concat([?a..?c, ?l..?o])), 3)
       #=> ["c", "oa", "lb"]
 
   ## Shrinking
 
-  Shrinks towards smaller strings and towards choosing characters that appear
-  earlier in `char_ranges`.
+  Shrinks towards smaller strings and as described in the description of the
+  possible values of `kind_or_chars` above.
   """
-  @spec string_from_chars([Enumerable.t]) :: t(String.t)
-  def string_from_chars(char_ranges) when is_list(char_ranges) do
-    char_ranges
-    |> Enum.concat()
+  @spec string(:ascii | :alphanumeric | Enumerable.t) :: t(String.t)
+  def string(kind_or_chars) do
+    chars =
+      case kind_or_chars do
+        :ascii ->
+          @ascii_chars
+        :alphanumeric ->
+          @alphanumeric_chars
+        chars when is_list(chars) ->
+          chars
+        other ->
+          raise ArgumentError, "unsupported string kind, has to be one of :ascii, " <>
+                               ":alphanumeric, or a list of characters, got: " <>
+                               inspect(other)
+      end
+
+    chars
     |> member_of()
     |> list_of()
     |> map(&List.to_string/1)
   end
 
-  @doc ~S"""
-  Generates strings with ascii characters in them.
+  @doc false
+  @spec string_from_chars([Enumerable.t]) :: t(String.t)
+  def string_from_chars(char_ranges) when is_list(char_ranges) do
+    IO.warn("string_from_chars/1 is deprecated, use string/1 instead")
+    string(Enum.concat(char_ranges))
+  end
 
-  Equivalent to `string_from_chars([?\s..?~])`.
-  """
+  @doc false
   @spec ascii_string() :: t(String.t)
   def ascii_string() do
-    string_from_chars([?\s..?~])
+    IO.warn("ascii_string/0 is deprecated, use string(:ascii)")
+    string(:ascii)
   end
 
-  @doc ~S"""
-  Generates strings with ascii characters in them.
-
-  Equivalent to `string_from_chars([?a..?z, ?A..?Z, ?0..?9])`.
-  """
+  @doc false
   @spec alphanumeric_string() :: t(String.t)
   def alphanumeric_string() do
-    string_from_chars([?a..?z, ?A..?Z, ?0..?9])
+    IO.warn("alphanumeric_string/0 is deprecated, use string(:alphanumeric)")
+    string(:alphanumeric)
   end
+
+  unquoted_atom_characters = Enum.concat([?a..?z, ?A..?Z, ?0..?9, [?_, ?@]])
 
   @doc """
   Generates atoms that don't need to be quoted when written as literals.
@@ -1247,7 +1279,7 @@ defmodule StreamData do
 
     # We limit the size to 255 so that adding the first character doesn't
     # break the system limit of 256 chars in an atom.
-    rest = scale(string_from_chars([?a..?z, ?A..?Z, ?0..?9, [?_, ?@]]), &min(&1, 255))
+    rest = scale(string(unquote(unquoted_atom_characters)), &min(&1, 255))
 
     {starting_char, rest}
     |> resize_atom_data()

@@ -298,27 +298,22 @@ defmodule StreamDataTest do
     end)
   end
 
-  test "string_from_chars/1" do
-    data = string_from_chars([?a..?z, ?A..?K])
-    for_many(data, fn string ->
+  test "string/1" do
+    for_many(string(Enum.concat([?a..?z, ?A..?K])), fn string ->
       assert is_binary(string)
       Enum.each(String.to_charlist(string), fn char ->
         assert char in ?a..?z or char in ?A..?K
       end)
     end)
-  end
 
-  test "ascii_string/0" do
-    for_many(ascii_string(), fn string ->
+    for_many(string(:ascii), fn string ->
       assert is_binary(string)
       Enum.each(String.to_charlist(string), fn char ->
         assert char in ?\s..?~
       end)
     end)
-  end
 
-  test "alphanumeric_string/0" do
-    for_many(alphanumeric_string(), fn string ->
+    for_many(string(:alphanumeric), fn string ->
       assert string =~ ~r/\A[a-zA-Z0-9]*\z/
     end)
   end
