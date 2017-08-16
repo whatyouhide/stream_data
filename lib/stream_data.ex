@@ -262,7 +262,7 @@ defmodule StreamData do
 
       require Integer
 
-      list_data = StreamData.non_empty(StreamData.list_of(StreamData.int()))
+      list_data = StreamData.nonempty(StreamData.list_of(StreamData.int()))
 
       data =
         StreamData.bind_filter(list_data, fn
@@ -974,17 +974,17 @@ defmodule StreamData do
   Constrains the given `enum_data` to be non-empty.
 
   `enum_data` must be a generator that emits enumerables, such as lists
-  and maps. `non_empty/1` will filter out enumerables that are empty
+  and maps. `nonempty/1` will filter out enumerables that are empty
   (`Enum.empty?/1` returns `true`).
 
   ## Examples
 
-      Enum.take(StreamData.non_empty(StreamData.list_of(StreamData.int())), 3)
+      Enum.take(StreamData.nonempty(StreamData.list_of(StreamData.int())), 3)
       #=> [[1], [-1, 0], [2, 1, -2]]
 
   """
-  @spec non_empty(t(Enumerable.t)) :: t(Enumerable.t)
-  def non_empty(enum_data) do
+  @spec nonempty(t(Enumerable.t)) :: t(Enumerable.t)
+  def nonempty(enum_data) do
     filter(enum_data, &not(Enum.empty?(&1)))
   end
 
