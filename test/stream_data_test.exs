@@ -281,8 +281,8 @@ defmodule StreamDataTest do
     end)
   end
 
-  test "non_empty/1" do
-    data = non_empty(list_of(constant(:term)))
+  test "nonempty/1" do
+    data = nonempty(list_of(constant(:term)))
     for_many(data, fn list ->
       assert length(list) > 0
     end)
@@ -358,7 +358,7 @@ defmodule StreamDataTest do
 
   test "gen all" do
     data =
-      gen all list <- non_empty(list_of(int())),
+      gen all list <- nonempty(list_of(int())),
               elem <- member_of(list),
               elem != 5,
               elem_not_five = elem do
