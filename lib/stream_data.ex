@@ -931,7 +931,7 @@ defmodule StreamData do
   ## Examples
 
       data = StreamData.fixed_map(%{
-        int: StreamData.integer(),
+        integer: StreamData.integer(),
         binary: StreamData.binary(),
       })
       Enum.take(data, 3)

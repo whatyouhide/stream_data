@@ -263,13 +263,13 @@ defmodule StreamDataTest do
   test "fixed_map/1" do
     data =
       fixed_map(%{
-        int: integer(),
+        integer: integer(),
         binary: binary(),
       })
 
     for_many(data, fn map ->
       assert map_size(map) == 2
-      assert is_integer(Map.fetch!(map, :int))
+      assert is_integer(Map.fetch!(map, :integer))
       assert is_binary(Map.fetch!(map, :binary))
     end)
   end
