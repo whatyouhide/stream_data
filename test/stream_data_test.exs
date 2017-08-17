@@ -8,7 +8,7 @@ defmodule StreamDataTest do
   alias StreamData.LazyTree
 
   test "implementation of the Enumerable protocol" do
-    values = Enum.take(Stream.zip(int(), boolean()), 10)
+    values = Enum.take(Stream.zip(integer(), boolean()), 10)
     Enum.each(values, fn {int, boolean} ->
       assert is_integer(int)
       assert is_boolean(boolean)
@@ -20,13 +20,13 @@ defmodule StreamDataTest do
       assert term == :foo
     end)
 
-    data = map({int(), boolean()}, &(&1))
+    data = map({integer(), boolean()}, &(&1))
     for_many(data, fn {int, boolean} ->
       assert is_integer(int)
       assert is_boolean(boolean)
     end)
 
-    data = map({:ok, int()}, &(&1))
+    data = map({:ok, integer()}, &(&1))
     for_many(data, fn {atom, int} ->
       assert atom == :ok
       assert is_integer(int)
@@ -40,7 +40,7 @@ defmodule StreamDataTest do
   end
 
   test "map/1" do
-    data = map(int(1..5), &(-&1))
+    data = map(integer(1..5), &(-&1))
     for_many(data, fn int ->
       assert int in -1..-5
     end)
@@ -50,7 +50,7 @@ defmodule StreamDataTest do
     require Integer
 
     data =
-      bind_filter(int(1..5), fn int ->
+      bind_filter(integer(1..5), fn int ->
         if Integer.is_even(int) do
           {:cont, constant(int)}
         else
@@ -65,7 +65,7 @@ defmodule StreamDataTest do
   end
 
   test "bind/2" do
-    data = bind(int(1..5), &constant(-&1))
+    data = bind(integer(1..5), &constant(-&1))
     for_many(data, fn int ->
       assert int in -1..-5
     end)
@@ -73,7 +73,7 @@ defmodule StreamDataTest do
 
   test "filter/2,3" do
     values =
-      int(0..10_000)
+      integer(0..10_000)
       |> filter(&(&1 > 0))
       |> Enum.take(1000)
 
@@ -94,8 +94,8 @@ defmodule StreamDataTest do
     end
   end
 
-  test "int/1" do
-    for_many(int(-10..10), fn int ->
+  test "integer/1" do
+    for_many(integer(-10..10), fn int ->
       assert int in -10..10
     end)
   end
@@ -153,7 +153,7 @@ defmodule StreamDataTest do
   end
 
   test "one_of/1" do
-    data = one_of([int(1..5), int(-1..-5)])
+    data = one_of([integer(1..5), integer(-1..-5)])
 
     for_many(data, fn int ->
       assert int in 1..5 or int in -1..-5
@@ -180,8 +180,8 @@ defmodule StreamDataTest do
     end)
   end
 
-  test "int/0" do
-    for_many(int(), fn int ->
+  test "integer/0" do
+    for_many(integer(), fn int ->
       assert is_integer(int)
       assert abs(int) < 1000
     end)
@@ -215,11 +215,11 @@ defmodule StreamDataTest do
   end
 
   test "uniq_list_of/1" do
-    for_many(uniq_list_of(int(), &(&1), 1000), fn list ->
+    for_many(uniq_list_of(integer(), &(&1), 1000), fn list ->
       assert Enum.uniq(list) == list
     end)
 
-    int = scale(int(), &(&1 * 2))
+    int = scale(integer(), &(&1 * 2))
     for_many(uniq_list_of(int, &abs/1, 1000), fn list ->
       assert Enum.uniq_by(list, &abs/1) == list
     end)
@@ -230,20 +230,20 @@ defmodule StreamDataTest do
   end
 
   test "nonempty_improper_list_of/2" do
-    for_many(nonempty_improper_list_of(int(), constant("")), fn list ->
+    for_many(nonempty_improper_list_of(integer(), constant("")), fn list ->
       assert list != []
       each_improper_list(list, &assert(is_integer(&1)), &assert(&1 == ""))
     end)
   end
 
   test "maybe_improper_list_of/2" do
-    for_many(maybe_improper_list_of(int(), constant("")), fn list ->
+    for_many(maybe_improper_list_of(integer(), constant("")), fn list ->
       each_improper_list(list, &assert(is_integer(&1)), &assert(&1 == "" or is_integer(&1)))
     end)
   end
 
   test "tuple/1" do
-    for_many(tuple({int(-1..-10), int(1..10)}), fn value ->
+    for_many(tuple({integer(-1..-10), integer(1..10)}), fn value ->
       assert {int1, int2} = value
       assert int1 in -1..-10
       assert int2 in 1..10
@@ -251,7 +251,7 @@ defmodule StreamDataTest do
   end
 
   test "map_of/2" do
-    for_many(map_of(binary(), int()), 50, fn map ->
+    for_many(map_of(binary(), integer()), 50, fn map ->
       assert is_map(map)
       Enum.each(map, fn {key, value} ->
         assert is_binary(key)
@@ -263,19 +263,19 @@ defmodule StreamDataTest do
   test "fixed_map/1" do
     data =
       fixed_map(%{
-        int: int(),
+        integer: integer(),
         binary: binary(),
       })
 
     for_many(data, fn map ->
       assert map_size(map) == 2
-      assert is_integer(Map.fetch!(map, :int))
+      assert is_integer(Map.fetch!(map, :integer))
       assert is_binary(Map.fetch!(map, :binary))
     end)
   end
 
   test "keyword_of/1" do
-    for_many(keyword_of(int()), 50, fn keyword ->
+    for_many(keyword_of(integer()), 50, fn keyword ->
       assert Keyword.keyword?(keyword)
       assert Enum.all?(Keyword.values(keyword), &is_integer/1)
     end)
@@ -348,7 +348,7 @@ defmodule StreamDataTest do
       end
     end
 
-    assert {:error, info} = check_all(list_of(int()), options, property)
+    assert {:error, info} = check_all(list_of(integer()), options, property)
     assert is_list(info.original_failure) and 5 in info.original_failure
     assert info.shrunk_failure == [5]
     assert is_integer(info.nodes_visited) and info.nodes_visited >= 0
@@ -358,7 +358,7 @@ defmodule StreamDataTest do
 
   test "gen all" do
     data =
-      gen all list <- nonempty(list_of(int())),
+      gen all list <- nonempty(list_of(integer())),
               elem <- member_of(list),
               elem != 5,
               elem_not_five = elem do

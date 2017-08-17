@@ -13,7 +13,7 @@ defmodule StdlibSamplesTest do
   end
 
   property "element not in list (with options)" do
-    check all list <- list_of(int()),
+    check all list <- list_of(integer()),
               initial_size: 5,
               max_size: 50 do
       assert 22 not in list
@@ -21,8 +21,8 @@ defmodule StdlibSamplesTest do
   end
 
   property "something with filter" do
-    check all a <- int(),
-              b <- int(),
+    check all a <- integer(),
+              b <- integer(),
               a + b >= 0,
               sum = a + b do
       assert sum > 0
@@ -31,7 +31,7 @@ defmodule StdlibSamplesTest do
 
   test "non-assertion error" do
     import StreamData
-    check all tuple <- {:ok, int()} do
+    check all tuple <- {:ok, integer()} do
       failing_tuple_match(tuple)
     end
   end

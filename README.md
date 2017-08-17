@@ -30,7 +30,7 @@ StreamData is made of two main components: data generation and property testing.
 All data generation functionality is provided in the `StreamData` module. `StreamData` provides "generators" and functions to combine those generators and create new ones. Since generators implement the `Enumerable` protocol, it's easy to use them as infinite streams of data:
 
 ```elixir
-StreamData.int() |> Stream.map(&abs/1) |> Enum.take(3)
+StreamData.integer() |> Stream.map(&abs/1) |> Enum.take(3)
 #=> [1, 0, 2]
 ```
 

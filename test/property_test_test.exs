@@ -5,7 +5,7 @@ defmodule PropertyTestTest do
 
   property "shrinking" do
     assert_raise ExUnit.AssertionError, fn ->
-      check all list <- list_of(int()) do
+      check all list <- list_of(integer()) do
         assert 5 not in list
       end
     end
@@ -34,7 +34,7 @@ defmodule PropertyTestTest do
     property "can do assignment" do
       {:ok, counter} = Agent.start_link(fn -> 0 end)
 
-      check all i <- int(),
+      check all i <- integer(),
                 string_i = Integer.to_string(i),
                 max_runs: 10 do
         Agent.update(counter, &(&1 + 1))
