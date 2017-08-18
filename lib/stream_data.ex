@@ -684,15 +684,11 @@ defmodule StreamData do
     * `:length` - (integer or range) if an integer, the exact length the
       generated lists should be; if a range, the range in which the length of
       the generated lists should be. If provided, `:min_length` and
-      `:max_length` cannot be provided.
+      `:max_length` are ignored.
 
     * `:min_length` - (integer) the minimum length of the generated lists.
-      Cannot be provided alongside `:max_length` (use `length: min..max` in case
-      you want to specify both).
 
     * `:max_length` - (integer) the maximum length of the generated lists.
-      Cannot be provided alongside `:max_length` (use `length: min..max` in case
-      you want to specify both).
 
   ## Examples
 
