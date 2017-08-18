@@ -773,10 +773,6 @@ defmodule StreamData do
     call_n_times(data, seed2, size, length - 1, [call(data, seed1, size) | acc])
   end
 
-  defp list_lazy_tree([], _min_length) do
-    LazyTree.constant([])
-  end
-
   defp list_lazy_tree(list, min_length) do
     length = length(list)
 
