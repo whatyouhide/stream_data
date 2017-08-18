@@ -538,17 +538,17 @@ defmodule StreamData do
   build this on top of `integer/1`, but for our purposes, it doesn't make sense for
   a byte to shrink towards `0`:
 
-      byte = StreamData.no_shrink(StreamData.integer(0..255))
+      byte = StreamData.unshrinkable(StreamData.integer(0..255))
       Enum.take(byte, 3)
       #=> [190, 181, 178]
 
   ## Shrinking
 
-  The generator returned by `no_shrink/1` generates the same values as `data`,
+  The generator returned by `unshrinkable/1` generates the same values as `data`,
   but such values will not shrink.
   """
-  @spec no_shrink(t(a)) :: t(a) when a: term
-  def no_shrink(data) do
+  @spec unshrinkable(t(a)) :: t(a) when a: term
+  def unshrinkable(data) do
     new(fn seed, size ->
       %LazyTree{root: root} = call(data, seed, size)
       LazyTree.constant(root)
