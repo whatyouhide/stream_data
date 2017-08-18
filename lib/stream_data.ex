@@ -724,7 +724,7 @@ defmodule StreamData do
   #
   @spec list_of(t(a), keyword) :: t([a]) when a: term
   def list_of(data, options \\ []) do
-    list_length_range_fun = list_length_range_fun(Keyword.take(options, [:length, :min_length, :max_length]))
+    list_length_range_fun = list_length_range_fun(options)
 
     new(fn seed, size ->
       {seed1, seed2} = split_seed(seed)
@@ -741,12 +741,15 @@ defmodule StreamData do
 
   defp list_length_range_fun(options) do
     {min, max} =
-      case options[:length] do
-        length when is_integer(length) and length >= 0 ->
+      case Keyword.fetch(options, :length) do
+        {:ok, length} when is_integer(length) and length >= 0 ->
           {length, length}
-        min..max when min >= 0 and max >= 0 ->
+        {:ok, min..max} when min >= 0 and max >= 0 ->
           {min(min, max), max(min, max)}
-        nil ->
+        {:ok, other} ->
+          raise ArgumentError, ":length must be a positive integer or a range " <>
+                               "of positive integers, got: #{inspect(other)}"
+        :error ->
           min_length = options[:min_length] || 0
           max_length = options[:max_length] || :infinity
           unless is_integer(min_length) and min_length >= 0 do
@@ -756,12 +759,9 @@ defmodule StreamData do
             raise ArgumentError, ":max_length must be a positive integer, got: #{inspect(max_length)}"
           end
           {min_length, max_length}
-        other ->
-          raise ArgumentError, ":length must be a positive integer or a range " <>
-                               "of positive integers, got: #{inspect(other)}"
       end
 
-    &(min..(max |> min(_size = &1) |> max(min)))
+    fn size -> min..(max |> min(size) |> max(min)) end
   end
 
   defp call_n_times(_data, _seed, _size, 0, acc) do
@@ -816,17 +816,14 @@ defmodule StreamData do
 
   @spec uniq_list_of(t(a), (a -> term), non_neg_integer) :: t([a]) when a: term
   def uniq_list_of(data, uniq_fun \\ &(&1), max_tries \\ 10) do
-    list_length_range_fun = list_length_range_fun(Keyword.take([], [:length, :min_length, :max_length]))
-
     new(fn seed, size ->
       {seed1, seed2} = split_seed(seed)
-      min_length.._ = length_range = list_length_range_fun.(size)
-      length = uniform_in_range(length_range, seed1)
+      length = uniform_in_range(0..size, seed1)
 
       data
       |> uniq_list_of(uniq_fun, seed2, size, _seen = MapSet.new(), max_tries, max_tries, length, _acc = [])
       |> LazyTree.zip()
-      |> LazyTree.map(&list_lazy_tree(Enum.uniq_by(&1, uniq_fun), min_length))
+      |> LazyTree.map(&list_lazy_tree(Enum.uniq_by(&1, uniq_fun), 0))
       |> LazyTree.flatten()
     end)
   end
