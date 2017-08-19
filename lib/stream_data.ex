@@ -675,17 +675,38 @@ defmodule StreamData do
 
   Each generated list can contain duplicate elements. The length of the
   generated list is bound by the generation size. If the generation size is `0`,
-  the empty list will always be generated.
+  the empty list will always be generated. Note that the accepted options
+  provide finer control over the size of the generated list. See the "Options"
+  section below.
+
+  ## Options
+
+    * `:length` - (integer or range) if an integer, the exact length the
+      generated lists should be; if a range, the range in which the length of
+      the generated lists should be. If provided, `:min_length` and
+      `:max_length` are ignored.
+
+    * `:min_length` - (integer) the minimum length of the generated lists.
+
+    * `:max_length` - (integer) the maximum length of the generated lists.
 
   ## Examples
 
       Enum.take(StreamData.list_of(StreamData.binary()), 3)
       #=> [[""], [], ["", "w"]
 
+      Enum.take(StreamData.list_of(StreamData.integer(), length: 3), 3)
+      #=> [[0, 0, -1], [2, -1, 1], [0, 3, -3]]
+
+      Enum.take(StreamData.list_of(StreamData.integer(), max_length: 1), 3)
+      #=> [[1], [], []]
+
   ## Shrinking
 
   This generator shrinks by taking elements out of the generated list and also
-  by shrinking the elements of the generated list.
+  by shrinking the elements of the generated list. Shrinking still respects any
+  possible length-related option: for example, if `:min_length` is provided, all
+  shrinked list will have more than `:min_length` elements.
   """
   # We could have an implementation that relies on fixed_list/1 and List.duplicate/2,
   # it would look like this:
@@ -701,18 +722,46 @@ defmodule StreamData do
   #       |> LazyTree.flatten()
   #     end)
   #
-  @spec list_of(t(a)) :: t([a]) when a: term
-  def list_of(data) do
+  @spec list_of(t(a), keyword) :: t([a]) when a: term
+  def list_of(data, options \\ []) do
+    list_length_range_fun = list_length_range_fun(options)
+
     new(fn seed, size ->
       {seed1, seed2} = split_seed(seed)
-      length = uniform_in_range(0..size, seed1)
+      min_length.._ = length_range = list_length_range_fun.(size)
+      length = uniform_in_range(length_range, seed1)
 
       data
       |> call_n_times(seed2, size, length, [])
       |> LazyTree.zip()
-      |> LazyTree.map(&list_lazy_tree/1)
+      |> LazyTree.map(&list_lazy_tree(&1, min_length))
       |> LazyTree.flatten()
     end)
+  end
+
+  defp list_length_range_fun(options) do
+    {min, max} =
+      case Keyword.fetch(options, :length) do
+        {:ok, length} when is_integer(length) and length >= 0 ->
+          {length, length}
+        {:ok, min..max} when min >= 0 and max >= 0 ->
+          {min(min, max), max(min, max)}
+        {:ok, other} ->
+          raise ArgumentError, ":length must be a positive integer or a range " <>
+                               "of positive integers, got: #{inspect(other)}"
+        :error ->
+          min_length = Keyword.get(options, :min_length, 0)
+          max_length = Keyword.get(options, :max_length, :infinity)
+          unless is_integer(min_length) and min_length >= 0 do
+            raise ArgumentError, ":min_length must be a positive integer, got: #{inspect(min_length)}"
+          end
+          unless (is_integer(max_length) and max_length >= 0) or max_length == :infinity do
+            raise ArgumentError, ":max_length must be a positive integer, got: #{inspect(max_length)}"
+          end
+          {min_length, max_length}
+      end
+
+    fn size -> min..(max |> min(size) |> max(min)) end
   end
 
   defp call_n_times(_data, _seed, _size, 0, acc) do
@@ -724,17 +773,19 @@ defmodule StreamData do
     call_n_times(data, seed2, size, length - 1, [call(data, seed1, size) | acc])
   end
 
-  defp list_lazy_tree([]) do
-    LazyTree.constant([])
-  end
+  defp list_lazy_tree(list, min_length) do
+    length = length(list)
 
-  defp list_lazy_tree(list) do
-    children =
-      (0..length(list) - 1)
-      |> Stream.map(&List.delete_at(list, &1))
-      |> Stream.map(&list_lazy_tree/1)
+    if length == min_length do
+      LazyTree.constant(list)
+    else
+      children =
+        0..length - 1
+        |> Stream.map(&List.delete_at(list, &1))
+        |> Stream.map(&list_lazy_tree(&1, min_length))
 
-    LazyTree.new(list, children)
+      LazyTree.new(list, children)
+    end
   end
 
   @doc """
@@ -762,6 +813,7 @@ defmodule StreamData do
   This generator shrinks like `list_of/1`, but the shrunk values are unique
   according to `uniq_fun` as well.
   """
+
   @spec uniq_list_of(t(a), (a -> term), non_neg_integer) :: t([a]) when a: term
   def uniq_list_of(data, uniq_fun \\ &(&1), max_tries \\ 10) do
     new(fn seed, size ->
@@ -771,7 +823,7 @@ defmodule StreamData do
       data
       |> uniq_list_of(uniq_fun, seed2, size, _seen = MapSet.new(), max_tries, max_tries, length, _acc = [])
       |> LazyTree.zip()
-      |> LazyTree.map(&list_lazy_tree(Enum.uniq_by(&1, uniq_fun)))
+      |> LazyTree.map(&list_lazy_tree(Enum.uniq_by(&1, uniq_fun), 0))
       |> LazyTree.flatten()
     end)
   end
@@ -1284,6 +1336,17 @@ defmodule StreamData do
     {starting_char, rest}
     |> resize_atom_data()
     |> map(fn {first, rest} -> String.to_atom(<<first>> <> rest) end)
+  end
+
+  def module_alias() do
+    chars = string(unquote(Enum.concat([?a..?z, ?A..?Z, ?0..?9, [?_]])))
+
+    {member_of(?A..?Z), scale(chars, &min(&1, 255))}
+    |> map(fn {first, rest} -> <<first>> <> rest end)
+    |> list_of()
+    |> nonempty()
+    |> map(&Module.concat/1)
+    |> scale(&trunc(:math.pow(&1, 0.5)))
   end
 
   defp resize_atom_data(data) do

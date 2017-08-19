@@ -207,11 +207,57 @@ defmodule StreamDataTest do
     end)
   end
 
-  test "list_of/1" do
-    for_many(list_of(constant(:term)), fn value ->
-      assert is_list(value)
-      assert Enum.all?(value, &(&1 == :term))
-    end)
+  describe "list_of/2" do
+    test "generates lists" do
+      for_many(list_of(constant(:term)), fn value ->
+        assert is_list(value)
+        assert Enum.all?(value, &(&1 == :term))
+      end)
+    end
+
+    test "with the :length option as a integer" do
+      for_many(list_of(constant(:term), length: 10), fn value ->
+        assert value == List.duplicate(:term, 10)
+      end)
+    end
+
+    test "with the :length option as a min..max range" do
+      for_many(list_of(constant(:term), length: 5..10), fn value ->
+        assert Enum.all?(value, &(&1 == :term))
+        assert length(value) in 5..10
+      end)
+
+      for_many(resize(list_of(constant(:term), length: 5..10), 4), fn value ->
+        assert value == List.duplicate(:term, 5)
+      end)
+    end
+
+    test "with the :min_length option set" do
+      for_many(list_of(constant(:term), min_length: 5), fn value ->
+        assert Enum.all?(value, &(&1 == :term))
+        assert length(value) >= 5
+      end)
+    end
+
+    test "with the :max_length option set" do
+      for_many(list_of(constant(:term), max_length: 5), fn value ->
+        assert Enum.all?(value, &(&1 == :term))
+        assert length(value) <= 5
+      end)
+    end
+
+    test "with invalid options" do
+      data = constant(:term)
+
+      message = ":length must be a positive integer or a range of positive integers, got: :oops"
+      assert_raise ArgumentError, message, fn -> list_of(data, length: :oops) end
+
+      message = ":min_length must be a positive integer, got: :oops"
+      assert_raise ArgumentError, message, fn -> list_of(data, min_length: :oops) end
+
+      message = ":max_length must be a positive integer, got: :oops"
+      assert_raise ArgumentError, message, fn -> list_of(data, max_length: :oops) end
+    end
   end
 
   test "uniq_list_of/1" do
@@ -358,7 +404,7 @@ defmodule StreamDataTest do
 
   test "gen all" do
     data =
-      gen all list <- nonempty(list_of(integer())),
+      gen all list <- list_of(integer(), min_length: 1),
               elem <- member_of(list),
               elem != 5,
               elem_not_five = elem do
