@@ -750,8 +750,8 @@ defmodule StreamData do
           raise ArgumentError, ":length must be a positive integer or a range " <>
                                "of positive integers, got: #{inspect(other)}"
         :error ->
-          min_length = options[:min_length] || 0
-          max_length = options[:max_length] || :infinity
+          min_length = Keyword.get(options, :min_length, 0)
+          max_length = Keyword.get(options, :max_length, :infinity)
           unless is_integer(min_length) and min_length >= 0 do
             raise ArgumentError, ":min_length must be a positive integer, got: #{inspect(min_length)}"
           end
