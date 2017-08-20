@@ -261,17 +261,22 @@ defmodule StreamDataTest do
   end
 
   test "uniq_list_of/1" do
-    for_many(uniq_list_of(integer(), &(&1), 1000), fn list ->
+    for_many(uniq_list_of(integer(), max_tries: 1000), fn list ->
       assert Enum.uniq(list) == list
     end)
 
     int = scale(integer(), &(&1 * 2))
-    for_many(uniq_list_of(int, &abs/1, 1000), fn list ->
+    for_many(uniq_list_of(int, uniq_fun: &abs/1, max_tries: 1000), fn list ->
       assert Enum.uniq_by(list, &abs/1) == list
     end)
 
+    for_many(uniq_list_of(integer(), min_length: 3, max_tries: 1000), fn list ->
+      assert Enum.uniq(list) == list
+      assert length(list) >= 3
+    end)
+
     assert_raise StreamData.TooManyDuplicatesError, fn ->
-      Enum.take(resize(uniq_list_of(boolean(), &(&1), 0), 10), 10)
+      Enum.take(resize(uniq_list_of(boolean(), max_tries: 0), 10), 10)
     end
   end
 
