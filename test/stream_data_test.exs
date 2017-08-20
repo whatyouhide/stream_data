@@ -212,6 +212,13 @@ defmodule StreamDataTest do
     end)
   end
 
+  test "bitstring/0" do
+    for_many(resize(bitstring(), 10), fn value ->
+      assert is_bitstring(value)
+      assert bit_size(value) in 0..10
+    end)
+  end
+
   describe "list_of/2" do
     test "generates lists" do
       for_many(list_of(constant(:term)), fn value ->
