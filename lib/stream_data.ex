@@ -1369,27 +1369,6 @@ defmodule StreamData do
     |> map(&List.to_string/1)
   end
 
-  @doc false
-  @spec string_from_chars([Enumerable.t]) :: t(String.t)
-  def string_from_chars(char_ranges) when is_list(char_ranges) do
-    IO.warn("string_from_chars/1 is deprecated, use string/1 instead")
-    string(Enum.concat(char_ranges))
-  end
-
-  @doc false
-  @spec ascii_string() :: t(String.t)
-  def ascii_string() do
-    IO.warn("ascii_string/0 is deprecated, use string(:ascii)")
-    string(:ascii)
-  end
-
-  @doc false
-  @spec alphanumeric_string() :: t(String.t)
-  def alphanumeric_string() do
-    IO.warn("alphanumeric_string/0 is deprecated, use string(:alphanumeric)")
-    string(:alphanumeric)
-  end
-
   unquoted_atom_characters = Enum.concat([?a..?z, ?A..?Z, ?0..?9, [?_, ?@]])
 
   @doc """
