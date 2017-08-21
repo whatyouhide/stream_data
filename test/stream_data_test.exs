@@ -200,10 +200,15 @@ defmodule StreamDataTest do
     end)
   end
 
-  test "binary/0" do
+  test "binary/1" do
     for_many(resize(binary(), 10), fn value ->
       assert is_binary(value)
       assert byte_size(value) in 0..10
+    end)
+
+    for_many(binary(length: 3), fn value ->
+      assert is_binary(value)
+      assert byte_size(value) == 3
     end)
   end
 
