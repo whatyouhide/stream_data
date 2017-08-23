@@ -384,6 +384,10 @@ defmodule StreamDataTest do
     for_many(string(:alphanumeric), fn string ->
       assert string =~ ~r/\A[a-zA-Z0-9]*\z/
     end)
+    
+    for_many(string(:alphanumeric, length: 3), fn value ->
+      assert String.length(value) == 3
+    end)
   end
 
   test "unquoted_atom/0" do

@@ -1347,8 +1347,8 @@ defmodule StreamData do
   Shrinks towards smaller strings and as described in the description of the
   possible values of `kind_or_chars` above.
   """
-  @spec string(:ascii | :alphanumeric | Enumerable.t) :: t(String.t)
-  def string(kind_or_chars) do
+  @spec string(:ascii | :alphanumeric | Enumerable.t, keyword) :: t(String.t)
+  def string(kind_or_chars, options \\ []) do
     chars =
       case kind_or_chars do
         :ascii ->
@@ -1362,10 +1362,11 @@ defmodule StreamData do
                                ":alphanumeric, or a list of characters, got: " <>
                                inspect(other)
       end
+    list_options = Keyword.take(options, [:length, :min_length, :max_length])
 
     chars
     |> member_of()
-    |> list_of()
+    |> list_of(list_options)
     |> map(&List.to_string/1)
   end
 
