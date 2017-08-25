@@ -1316,7 +1316,22 @@ defmodule StreamData do
   end
 
   @ascii_chars ?\s..?~
-  @alphanumeric_chars Enum.concat([?a..?z, ?A..?Z, ?0..?9])
+  @alphanumeric_chars [?a..?z, ?A..?Z, ?0..?9]
+  @printable_chars [
+    ?\n,
+    ?\r,
+    ?\t,
+    ?\v,
+    ?\b,
+    ?\f,
+    ?\e,
+    ?\d,
+    ?\a,
+    0x20..0x7E,
+    0xA0..0xD7FF,
+    0xE000..0xFFFD,
+    0x10000..0x10FFFF,
+  ]
 
   @doc """
   Generates a string of the given kind or from the given characters.
@@ -1330,9 +1345,15 @@ defmodule StreamData do
       (`?a..?z`, `?A..?Z`, `?0..?9`) are generated. Such strings shrink towards
       `?a` following the order shown previously.
 
-    * a list of characters - strings with only characters present in the given
-      list are generated. Such strings shrink towards characters that appear
-      earlier in the list.
+    * `:printable` - printable strings (`String.printable?/1` returns `true`)
+      are generated. Such strings shrink towards lower codepoints.
+
+    * a range - strings with characters from the range are generated. Such
+      strings shrink towards characters that appear earlier in the range.
+
+    * a list of ranges or single codepoints - strings with characters from the
+      ranges or codepoints are generated. Such strings shrink towards earlier
+      elements of the given list and towards the beginning of ranges.
 
   ## Examples
 
@@ -1347,30 +1368,48 @@ defmodule StreamData do
   Shrinks towards smaller strings and as described in the description of the
   possible values of `kind_or_chars` above.
   """
-  @spec string(:ascii | :alphanumeric | Enumerable.t, keyword) :: t(String.t)
-  def string(kind_or_chars, options \\ []) do
-    chars =
-      case kind_or_chars do
-        :ascii ->
-          @ascii_chars
-        :alphanumeric ->
-          @alphanumeric_chars
-        chars when is_list(chars) ->
-          chars
-        other ->
-          raise ArgumentError, "unsupported string kind, has to be one of :ascii, " <>
-                               ":alphanumeric, or a list of characters, got: " <>
-                               inspect(other)
-      end
-    list_options = Keyword.take(options, [:length, :min_length, :max_length])
+  @spec string(:ascii | :alphanumeric | :printable | Range.t | [Range.t | pos_integer]) ::
+        t(String.t)
+  def string(kind_or_codepoints, options \\ [])
 
-    chars
-    |> member_of()
-    |> list_of(list_options)
-    |> map(&List.to_string/1)
+  def string(:ascii, options) do
+    string(@ascii_chars, options)
   end
 
-  unquoted_atom_characters = Enum.concat([?a..?z, ?A..?Z, ?0..?9, [?_, ?@]])
+  def string(:alphanumeric, options) do
+    string(@alphanumeric_chars, options)
+  end
+
+  def string(:printable, options) do
+    string(@printable_chars, options)
+  end
+
+  def string(%Range{} = codepoints_range, options) do
+    string([codepoints_range], options)
+  end
+
+  def string(codepoints, options)
+      when is_list(codepoints) and is_list(options) do
+    list_options = Keyword.take(options, [:length, :min_length, :max_length])
+
+    char =
+      bind(member_of(codepoints), fn
+        %Range{} = range ->
+          integer(range)
+        codepoint when is_integer(codepoint) ->
+          constant(codepoint)
+      end)
+
+    map(list_of(char, list_options), &List.to_string/1)
+  end
+
+  def string(other, _options) do
+    raise ArgumentError, "unsupported string kind, has to be one of :ascii, " <>
+                         ":alphanumeric, :printable, a range, or a list of " <>
+                         "ranges or single codepoints, got: #{inspect(other)}"
+ end
+
+  @unquoted_atom_characters [?a..?z, ?A..?Z, ?0..?9, ?_, ?@]
 
   @doc """
   Generates atoms that don't need to be quoted when written as literals.
@@ -1395,7 +1434,7 @@ defmodule StreamData do
 
     # We limit the size to 255 so that adding the first character doesn't
     # break the system limit of 256 chars in an atom.
-    rest = scale(string(unquote(unquoted_atom_characters)), &min(&1, 255))
+    rest = scale(string(@unquoted_atom_characters), &min(&1, 255))
 
     {starting_char, rest}
     |> resize_atom_data()

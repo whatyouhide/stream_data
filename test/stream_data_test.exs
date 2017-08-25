@@ -367,11 +367,15 @@ defmodule StreamDataTest do
   end
 
   test "string/1" do
-    for_many(string(Enum.concat([?a..?z, ?A..?K])), fn string ->
+    for_many(string([?a..?z, ?A..?K, ?_]), fn string ->
       assert is_binary(string)
       Enum.each(String.to_charlist(string), fn char ->
-        assert char in ?a..?z or char in ?A..?K
+        assert char in ?a..?z or char in ?A..?K or char == ?_
       end)
+    end)
+
+    for_many(string(?a..?f, min_length: 1), fn string ->
+      assert string =~ ~r/\A[a-f]+\z/
     end)
 
     for_many(string(:ascii), fn string ->
@@ -384,7 +388,11 @@ defmodule StreamDataTest do
     for_many(string(:alphanumeric), fn string ->
       assert string =~ ~r/\A[a-zA-Z0-9]*\z/
     end)
-    
+
+    for_many(string(:printable), fn string ->
+      assert String.printable?(string)
+    end)
+
     for_many(string(:alphanumeric, length: 3), fn value ->
       assert String.length(value) == 3
     end)
