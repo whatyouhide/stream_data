@@ -71,26 +71,26 @@ defmodule StreamDataTest do
     end)
   end
 
-  test "filter/2,3" do
-    values =
-      integer(0..10_000)
-      |> filter(&(&1 > 0))
-      |> Enum.take(1000)
+  describe "filter/2,3" do
+    test "filters out terms that fail the predicate" do
+      values =
+        integer(0..10_000)
+        |> filter(&(&1 > 0))
+        |> Enum.take(1000)
 
-    assert length(values) <= 1000
+      assert length(values) <= 1000
 
-    Enum.each(values, fn value ->
-      assert value in 0..10_000
-    end)
-
-    data = filter(constant(:term), &is_binary/1, 10)
-    assert_raise StreamData.FilterTooNarrowError, ~r/too many \(10\) consecutive elements were filtered out/, fn ->
-      Enum.take(data, 1)
+      Enum.each(values, fn value ->
+        assert value in 0..10_000
+      end)
     end
 
-    data = filter(constant(:term), &is_binary/1, 2)
-    assert_raise StreamData.FilterTooNarrowError, ~r/too many \(2\) consecutive elements were filtered out/, fn ->
-      Enum.take(data, 1)
+    test "raises an error when too many consecutive elements fail the predicate" do
+      data = filter(constant(:term), &is_binary/1, 10)
+      message = ~r/too many \(10\) consecutive elements were filtered out/
+      assert_raise StreamData.FilterTooNarrowError, message, fn ->
+        Enum.take(data, 1)
+      end
     end
   end
 
@@ -200,28 +200,36 @@ defmodule StreamDataTest do
     end)
   end
 
-  test "binary/1" do
-    for_many(resize(binary(), 10), fn value ->
-      assert is_binary(value)
-      assert byte_size(value) in 0..10
-    end)
+  describe "binary/1" do
+    test "generates binaries" do
+      for_many(resize(binary(), 10), fn value ->
+        assert is_binary(value)
+        assert byte_size(value) in 0..10
+      end)
+    end
 
-    for_many(binary(length: 3), fn value ->
-      assert is_binary(value)
-      assert byte_size(value) == 3
-    end)
+    test "with length-related options" do
+      for_many(binary(length: 3), fn value ->
+        assert is_binary(value)
+        assert byte_size(value) == 3
+      end)
+    end
   end
 
-  test "bitstring/0" do
-    for_many(resize(bitstring(), 10), fn value ->
-      assert is_bitstring(value)
-      assert bit_size(value) in 0..10
-    end)
+  describe "bitstring/1" do
+    test "generates bitstrings" do
+      for_many(resize(bitstring(), 10), fn value ->
+        assert is_bitstring(value)
+        assert bit_size(value) in 0..10
+      end)
+    end
 
-    for_many(bitstring(length: 3), fn value ->
-      assert is_bitstring(value)
-      assert bit_size(value) == 3
-    end)
+    test "with length-related options" do
+      for_many(bitstring(length: 3), fn value ->
+        assert is_bitstring(value)
+        assert bit_size(value) == 3
+      end)
+    end
   end
 
   describe "list_of/2" do
@@ -277,23 +285,32 @@ defmodule StreamDataTest do
     end
   end
 
-  test "uniq_list_of/1" do
-    for_many(uniq_list_of(integer(), max_tries: 1000), fn list ->
-      assert Enum.uniq(list) == list
-    end)
+  describe "uniq_list_of/1" do
+    test "without options" do
+      for_many(uniq_list_of(integer(1..10_000)), fn list ->
+        assert Enum.uniq(list) == list
+      end)
+    end
 
-    int = scale(integer(), &(&1 * 2))
-    for_many(uniq_list_of(int, uniq_fun: &abs/1, max_tries: 1000), fn list ->
-      assert Enum.uniq_by(list, &abs/1) == list
-    end)
+    test "with the :uniq_fun option" do
+      for_many(uniq_list_of(integer(-10000..10000), uniq_fun: &abs/1), fn list ->
+        assert Enum.uniq_by(list, &abs/1) == list
+      end)
+    end
 
-    for_many(uniq_list_of(integer(), min_length: 3, max_tries: 1000), fn list ->
-      assert Enum.uniq(list) == list
-      assert length(list) >= 3
-    end)
+    test "with length-related options" do
+      for_many(uniq_list_of(integer(), min_length: 3, max_tries: 1000), fn list ->
+        assert Enum.uniq(list) == list
+        assert length(list) >= 3
+      end)
+    end
 
-    assert_raise StreamData.TooManyDuplicatesError, fn ->
-      Enum.take(resize(uniq_list_of(boolean(), max_tries: 0), 10), 10)
+    test "raises an error when :max_tries are reached" do
+      assert_raise StreamData.TooManyDuplicatesError, fn ->
+        integer()
+        |> uniq_list_of(max_tries: 0, min_length: 1)
+        |> Enum.take(1)
+      end
     end
   end
 
