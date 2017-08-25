@@ -3,7 +3,7 @@ defmodule PropertyTest do
   Provides macros for property testing.
 
   This module provides two main macros that can be used for property testing.
-  The core is `check/3`, which allows to execute arbitrary tests on many pieces
+  The core is `check/3`, which allows executing arbitrary tests on many pieces
   of generated data. The other macro that is provided is `property/3`, which is
   meant as a utility to replace the `ExUnit.Case.test/3` macro when writing
   properties. Generators to be used when writing properties can be found in the
@@ -25,21 +25,21 @@ defmodule PropertyTest do
         refute starts_with?("", "something")
       end
 
-  This test  highlights the method used to write such kind of tests: they're
-  written from the developer by hand. The process usually consists in testing an
-  expected output on a set of expected inputs. This works especially well for
-  edge cases but the robustness of this test could be improved. This is what
-  property testing aims to solve. Property testing is based on two ideas:
+  This test highlights the method used to write such kind of tests: they're
+  written by hand. The process usually consists of testing an expected output on
+  a set of expected inputs. This works especially well for edge cases, but the
+  robustness of this test could be improved. This is what property testing aims
+  to solve. Property testing is based on two ideas:
 
     * specify a set of **properties** that a piece of code should satisfy
     * test those properties on a very large number of randomly generated data
 
   The point of specifying **properties** instead of testing manual scenarios is
   that properties should hold for all the data that the piece of code should be
-  able to deal with, and in turn this plays well with generating data at random.
-  Writing properties has the added benefit of forcing the programmer to think
-  about their code differently: they have to think about which are invariant
-  properties that their code satisfies.
+  able to deal with, and in turn, this plays well with generating data at
+  random. Writing properties has the added benefit of forcing the programmer to
+  think about their code differently: they have to think about which are
+  invariant properties that their code satisfies.
 
   To go back to the `starts_with?/2` example above, let's come up with a
   property that this function should hold. Since we know that the `Kernel.<>/2`
@@ -60,7 +60,7 @@ defmodule PropertyTest do
   repeated for a large number of times (`100` by default, but it's
   configurable), hence generating many combinations of random `a` and `b`. If
   the body passes for all the generated data, then we consider the property to
-  hold. If a combination of random generated terms fails the body of the
+  hold. If a combination of randomly generated terms fails the body of the
   property, then `PropertyTest` tries to find the smallest set of random
   generated terms that still fails the property and reports that; this step is
   called shrinking.
@@ -70,7 +70,7 @@ defmodule PropertyTest do
   Say that our `starts_with?/2` function blindly returns false when the second
   argument is the empty binary (such as `starts_with?("foo", "")`). It's likely
   that in 100 runs an empty binary will be generated and bound to `b`. When that
-  happens, the body of the property fails but `a` is a random generated binary
+  happens, the body of the property fails but `a` is a randomly generated binary
   and this might be inconvenient: for example, `a` could be `<<0, 74, 192, 99,
   24, 26>>`. In this case, the `check/3` macro tries to **shrink** `a` to the
   smallest term that still fails the property (`b` is not shrunk because `""` is
