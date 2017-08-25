@@ -1385,7 +1385,9 @@ defmodule StreamData do
   end
 
   def string(%Range{} = codepoints_range, options) do
-    string([codepoints_range], options)
+    # We do this instead of calling string([codepoints_range], options) for speed.
+    list_options = Keyword.take(options, [:length, :min_length, :max_length])
+    map(list_of(integer(codepoints_range), list_options), &List.to_string/1)
   end
 
   def string(codepoints, options)
@@ -1427,8 +1429,8 @@ defmodule StreamData do
   def unquoted_atom() do
     starting_char =
       frequency([
-        {4, member_of(?a..?z)},
-        {2, member_of(?A..?Z)},
+        {4, integer(?a..?z)},
+        {2, integer(?A..?Z)},
         {1, constant(?_)},
       ])
 
@@ -1444,7 +1446,7 @@ defmodule StreamData do
   def module_alias() do
     chars = string(unquote(Enum.concat([?a..?z, ?A..?Z, ?0..?9, [?_]])))
 
-    {member_of(?A..?Z), scale(chars, &min(&1, 255))}
+    {integer(?A..?Z), scale(chars, &min(&1, 255))}
     |> map(fn {first, rest} -> <<first>> <> rest end)
     |> list_of()
     |> nonempty()

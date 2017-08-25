@@ -366,36 +366,48 @@ defmodule StreamDataTest do
     end)
   end
 
-  test "string/1" do
-    for_many(string([?a..?z, ?A..?K, ?_]), fn string ->
-      assert is_binary(string)
-      Enum.each(String.to_charlist(string), fn char ->
-        assert char in ?a..?z or char in ?A..?K or char == ?_
+  describe "string/1" do
+    test "with a list of ranges and codepoints" do
+      for_many(string([?a..?z, ?A..?K, ?_]), fn string ->
+        assert is_binary(string)
+        Enum.each(String.to_charlist(string), fn char ->
+          assert char in ?a..?z or char in ?A..?K or char == ?_
+        end)
       end)
-    end)
+    end
 
-    for_many(string(?a..?f, min_length: 1), fn string ->
-      assert string =~ ~r/\A[a-f]+\z/
-    end)
-
-    for_many(string(:ascii), fn string ->
-      assert is_binary(string)
-      Enum.each(String.to_charlist(string), fn char ->
-        assert char in ?\s..?~
+    test "with a range" do
+      for_many(string(?a..?f, min_length: 1), fn string ->
+        assert string =~ ~r/\A[a-f]+\z/
       end)
-    end)
+    end
 
-    for_many(string(:alphanumeric), fn string ->
-      assert string =~ ~r/\A[a-zA-Z0-9]*\z/
-    end)
+    test "with :ascii" do
+      for_many(string(:ascii), fn string ->
+        assert is_binary(string)
+        Enum.each(String.to_charlist(string), fn char ->
+          assert char in ?\s..?~
+        end)
+      end)
+    end
 
-    for_many(string(:printable), fn string ->
-      assert String.printable?(string)
-    end)
+    test "with :alphanumeric" do
+      for_many(string(:alphanumeric), fn string ->
+        assert string =~ ~r/\A[a-zA-Z0-9]*\z/
+      end)
+    end
 
-    for_many(string(:alphanumeric, length: 3), fn value ->
-      assert String.length(value) == 3
-    end)
+    test "with :printable" do
+      for_many(string(:printable), fn string ->
+        assert String.printable?(string)
+      end)
+    end
+
+    test "with a fixed length" do
+      for_many(string(:alphanumeric, length: 3), fn value ->
+        assert String.length(value) == 3
+      end)
+    end
   end
 
   test "unquoted_atom/0" do
