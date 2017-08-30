@@ -187,6 +187,13 @@ defmodule StreamDataTest do
     end)
   end
 
+  test "positive_integer/0" do
+    for_many(positive_integer(), fn int ->
+      assert is_integer(int)
+      assert int in 1..1000
+    end)
+  end
+
   test "uniform_float/0" do
     for_many(uniform_float(), fn float ->
       assert is_float(float)

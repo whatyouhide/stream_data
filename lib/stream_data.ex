@@ -1186,6 +1186,23 @@ defmodule StreamData do
   end
 
   @doc """
+  Generates positive integers bound by the generation size.
+
+  ## Examples
+
+      Enum.take(StreamData.positive_integer(), 3)
+      #=> [1, 1, 3]
+
+  ## Shrinking
+
+  Generated values shrink towards `1`.
+  """
+  @spec positive_integer() :: t(pos_integer)
+  def positive_integer() do
+    sized(fn size -> integer(1..size) end)
+  end
+
+  @doc """
   Generates uniformly distributed floats in the interval `0..1`.
 
   Note that if you want to have more complex float values, such as negative
