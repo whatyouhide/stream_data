@@ -186,6 +186,11 @@ defmodule StreamData do
     end
   end
 
+  defp call(other, _seed, _size) do
+    raise ArgumentError, "expected a generator, which can be a %StreamData{} struct, an atom, " <>
+                         "or a tuple with generators in it, but got: #{inspect(other)}"
+  end
+
   ## Generators
 
   @doc """

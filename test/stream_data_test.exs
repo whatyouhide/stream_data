@@ -33,6 +33,14 @@ defmodule StreamDataTest do
     end)
   end
 
+  test "error message on invalid generators" do
+    message = ~r/expected a generator, which can be a %StreamData{} struct/
+
+    assert_raise ArgumentError, message, fn ->
+      for_many(one_of([1, 2, 3]), fn _ -> :ok end)
+    end
+  end
+
   test "constant/1" do
     for_many(constant(:term), fn term ->
       assert term == :term
