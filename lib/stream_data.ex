@@ -113,13 +113,8 @@ defmodule StreamData do
   @typedoc """
   An opaque type that represents a `StreamData` generator that generates values
   of type `a`.
-
-  Note that while this type is opaque, a generator is still guaranteed to be a
-  `StreamData` struct (in case you want to pattern match on it).
   """
-  @opaque t(a) :: %__MODULE__{
-    generator: generator_fun(a),
-  }
+  @opaque t(a) :: %__MODULE__{generator: generator_fun(a)} | atom() | tuple()
 
   @rand_algorithm :exs1024
 
