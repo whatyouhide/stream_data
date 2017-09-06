@@ -1545,11 +1545,11 @@ defmodule StreamData do
 
   The return value of this function is one of:
 
-    * `{:ok, map}` - if all generated values satisfy `fun`. `map` is a map of
-      metadata that contains no keys for now.
+    * `{:ok, ok_map}` - if all generated values satisfy `fun`. `ok_map` is a map
+      of metadata that contains no keys for now.
 
-    * `{:error, map}` - if a generated value doesn't satisfy `fun`. `map` is a
-      map of metadata that contains the following keys:
+    * `{:error, error_map}` - if a generated value doesn't satisfy `fun`.
+      `error_map` is a map of metadata that contains the following keys:
 
       * `:original_failure` - if `fun` returned `{:error, term}` for a generated
         value, this key in the map will be `term`.
@@ -1814,6 +1814,7 @@ defmodule StreamData do
 
   # This is the implementation of Enumerable.reduce/3. It's here because it
   # needs split_seed/1 and call/3 which are private.
+  @doc false
   def __reduce__(data, acc, fun) do
     reduce(data, acc, fun, new_seed(:os.timestamp()), _initial_size = 1, _max_size = 100)
   end
