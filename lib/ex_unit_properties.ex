@@ -1,13 +1,12 @@
-defmodule PropertyTest do
+defmodule ExUnitProperties do
   @moduledoc """
   Provides macros for property testing.
 
-  This module provides two main macros that can be used for property testing.
-  The core is `check/3`, which allows executing arbitrary tests on many pieces
-  of generated data. The other macro that is provided is `property/3`, which is
-  meant as a utility to replace the `ExUnit.Case.test/3` macro when writing
-  properties. Generators to be used when writing properties can be found in the
-  `StreamData` module.
+  This module provides a few macros that can be used for property testing. The core is `check/3`,
+  which allows executing arbitrary tests on many pieces of generated data. Another one is
+  `property/3`, which is meant as a utility to replace the `ExUnit.Case.test/3` macro when writing
+  properties. The last one is `gen/3`, which can be used as syntactic sugar to build generators
+  (see `StreamData` for other ways of building generators and for core generators).
 
   ## Overview of property testing
 
@@ -61,7 +60,7 @@ defmodule PropertyTest do
   configurable), hence generating many combinations of random `a` and `b`. If
   the body passes for all the generated data, then we consider the property to
   hold. If a combination of randomly generated terms fails the body of the
-  property, then `PropertyTest` tries to find the smallest set of random
+  property, then `ExUnitProperties` tries to find the smallest set of random
   generated terms that still fails the property and reports that; this step is
   called shrinking.
 
@@ -95,13 +94,21 @@ defmodule PropertyTest do
   Hebert: it's a great explanation of property testing that includes many
   examples. Fred's website uses an Erlang property testing tool called
   [PropEr](https://github.com/manopapad/proper) but many of the things he talks
-  about apply to `PropertyTest` as well.
+  about apply to `ExUnitProperties` as well.
   """
 
   alias ExUnit.AssertionError
 
   defmodule Error do
     defexception [:message]
+  end
+
+  @doc false
+  defmacro __using__(_opts) do
+    quote do
+      import unquote(__MODULE__), only: [property: 2, property: 3, check: 2, gen: 2]
+      import StreamData
+    end
   end
 
   @doc """
@@ -117,7 +124,7 @@ defmodule PropertyTest do
 
   ## Examples
 
-      import PropertyTest
+      use ExUnitProperties
 
       property "reversing a list doesn't change its length" do
         check all list <- list_of(integer()) do
@@ -130,19 +137,122 @@ defmodule PropertyTest do
   defmacro property(message, context \\ quote(do: _), [do: block] = _body) do
     ExUnit.plural_rule("property", "properties")
 
-    block =
-      quote do
-        import StreamData
-        import unquote(__MODULE__), only: [check: 2]
-        unquote(block)
-      end
-
     context = Macro.escape(context)
     contents = Macro.escape(block, unquote: true)
 
     quote bind_quoted: [context: context, contents: contents, message: message] do
       name = ExUnit.Case.register_test(__ENV__, :property, message, [:property])
       def unquote(name)(unquote(context)), do: unquote(contents)
+    end
+  end
+
+  @doc """
+  Syntactic sugar to create generators.
+
+  This macro provides ad hoc syntax to write complex generators. Let's see a
+  quick example to get a feel of how it works. Say we have a `User` struct:
+
+      defmodule User do
+        defstruct [:name, :email]
+      end
+
+  We can create a generator of users like this:
+
+      email_generator = map({binary(), binary()}, fn left, right -> left <> "@" <> right end)
+      gen all name <- binary(),
+              email <- email_generator do
+        %User{name: name, email: email}
+      end
+
+  Everything between `gen all` and `do` is referred to as **clauses**. Clauses
+  are used to specify the values to generate to be used in the body. The newly
+  created generator will generated values that are the return value of the
+  `do` body for the generated values from the clauses.
+
+  ### Clauses
+
+  As seen in the example above, clauses can be of three types:
+
+    * value generation - they have the form `pattern <- generator` where
+      `generator` must be a generator. These clauses take a value out of
+      `generator` on each run and match it against `pattern`. Variables bound in
+      `pattern` can be then used throughout subsequent clauses and in the `do`
+      body.
+
+    * binding - they have the form `pattern = expression`. They are exactly like
+      assignment through the `=` operator: if `pattern` doesn't match
+      `expression`, an error is raised. They can be used to bind values for use
+      in subsequent clauses and in the `do` body.
+
+    * filtering - they have the form `expression`. If a filtering clause returns
+      a truthy value, then the set of generated values that appear before the
+      filtering clause is considered valid and generation continues. If the
+      filtering clause returns a falsey value, then the current value is
+      considered invalid and a new value is generated. Note that filtering
+      clauses should not filter out too many times; in case they do, a
+      `StreamData.FilterTooNarrowError` error is raised (same as `StreamData.filter/3`).
+
+  ### Body
+
+  The return value of the body passed in the `do` block is what is ultimately
+  generated by the generator return by this macro.
+
+  ## Shrinking
+
+  See the module documentation for more information on shrinking. Clauses affect
+  shrinking in the following way:
+
+    * binding clauses don't affect shrinking
+    * filtering clauses affect shrinking like `filter/3`
+    * value generation clauses affect shrinking similarly to `bind/2`
+
+  """
+  defmacro gen({:all, _meta, clauses} = _generation_clauses, [do: body] = _block) do
+    compile(clauses, body)
+  end
+
+  defp compile(clauses, body) do
+    quote do
+      var!(generated_values, unquote(__MODULE__)) = []
+      {:cont, data} = unquote(compile_clauses(clauses, body))
+      data
+    end
+  end
+
+  defp compile_clauses([], body) do
+    quote do
+      var!(generated_values, unquote(__MODULE__)) = Enum.reverse(var!(generated_values, unquote(__MODULE__)))
+      {:cont, StreamData.constant(unquote(body))}
+    end
+  end
+
+  defp compile_clauses([{:<-, _meta, [pattern, generator]} = clause | rest], body) do
+    quote do
+      data =
+        StreamData.bind_filter(unquote(generator), fn unquote(pattern) = generated_value ->
+          var!(generated_values, unquote(__MODULE__)) =
+            [{unquote(Macro.to_string(clause)), generated_value} | var!(generated_values, unquote(__MODULE__))]
+          unquote(compile_clauses(rest, body))
+        end)
+
+      {:cont, data}
+    end
+  end
+
+  defp compile_clauses([{:=, _meta, [_left, _right]} = assignment | rest], body) do
+    quote do
+      unquote(assignment)
+      unquote(compile_clauses(rest, body))
+    end
+  end
+
+  defp compile_clauses([clause | rest], body) do
+    quote do
+      if unquote(clause) do
+        unquote(compile_clauses(rest, body))
+      else
+        :skip
+      end
     end
   end
 
@@ -231,7 +341,7 @@ defmodule PropertyTest do
       ]
 
       property =
-        StreamData.gen all unquote_splicing(clauses) do
+        ExUnitProperties.gen all unquote_splicing(clauses) do
           fn ->
             try do
               unquote(body)
@@ -240,7 +350,7 @@ defmodule PropertyTest do
                 result = %{
                   exception: exception,
                   stacktrace: System.stacktrace(),
-                  generated_values: var!(generated_values, StreamData),
+                  generated_values: var!(generated_values, unquote(__MODULE__)),
                 }
                 {:error, result}
             else
@@ -261,7 +371,7 @@ defmodule PropertyTest do
         {:ok, _result} ->
           :ok
         {:error, test_result} ->
-          PropertyTest.__raise__(test_result)
+          unquote(__MODULE__).__raise__(test_result)
       end
     end
   end
