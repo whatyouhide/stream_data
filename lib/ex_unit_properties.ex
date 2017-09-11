@@ -133,12 +133,25 @@ defmodule ExUnitProperties do
       end
 
   """
-  # TODO: is it fine to not support rescue/after stuff?
-  defmacro property(message, context \\ quote(do: _), [do: block] = _body) do
+  defmacro property(message, context \\ quote(do: _), contents) do
     ExUnit.plural_rule("property", "properties")
 
+    contents =
+      case contents do
+        [do: block] ->
+          quote do
+            unquote(block)
+            :ok
+          end
+        _ ->
+          quote do
+            try(unquote(contents))
+            :ok
+          end
+      end
+
     context = Macro.escape(context)
-    contents = Macro.escape(block, unquote: true)
+    contents = Macro.escape(contents, unquote: true)
 
     quote bind_quoted: [context: context, contents: contents, message: message] do
       name = ExUnit.Case.register_test(__ENV__, :property, message, [:property])

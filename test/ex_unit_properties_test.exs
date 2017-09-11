@@ -19,31 +19,18 @@ defmodule ExUnitPropertiesTest do
     end
   end
 
-  property "shrinking" do
-    assert_raise ExUnit.AssertionError, fn ->
-      check all list <- list_of(integer()) do
-        assert 5 not in list
-      end
-    end
+  property "supports rescue" do
+    raise "some error"
+  rescue
+    exception in [RuntimeError] ->
+      assert Exception.message(exception) == "some error"
   end
 
-  property "works with errors that are not assertion errors" do
-    assert_raise ExUnitProperties.Error, fn ->
-      check all tuple <- {:ok, nil} do
-        :ok = tuple
-      end
-    end
-  end
-
-  property "runs the number of specified times" do
-    {:ok, counter} = Agent.start_link(fn -> 0 end)
-
-    check all :ok <- :ok, max_runs: 10 do
-      Agent.update(counter, &(&1 + 1))
-      :ok
-    end
-
-    assert Agent.get(counter, &(&1)) == 10
+  property "supports catch" do
+    throw(:some_error)
+  catch
+    :throw, term ->
+      assert term == :some_error
   end
 
   describe "check all" do
@@ -58,6 +45,33 @@ defmodule ExUnitPropertiesTest do
       end
 
       assert Agent.get(counter, &(&1)) == 10
+    end
+
+    property "runs the number of specified times" do
+      {:ok, counter} = Agent.start_link(fn -> 0 end)
+
+      check all :ok <- :ok, max_runs: 10 do
+        Agent.update(counter, &(&1 + 1))
+        :ok
+      end
+
+      assert Agent.get(counter, &(&1)) == 10
+    end
+
+    property "works with errors that are not assertion errors" do
+      assert_raise ExUnitProperties.Error, fn ->
+        check all tuple <- {:ok, nil} do
+          :ok = tuple
+        end
+      end
+    end
+
+    property "shrinking" do
+      assert_raise ExUnit.AssertionError, fn ->
+        check all list <- list_of(integer()) do
+          assert 5 not in list
+        end
+      end
     end
   end
 end
