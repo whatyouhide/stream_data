@@ -3,7 +3,7 @@ ExUnit.start()
 defmodule StdlibSamplesTest do
   use ExUnit.Case, async: true
 
-  import PropertyTest
+  use ExUnitProperties
 
   property "my_starts_with?/1" do
     check all bin1 <- binary(),

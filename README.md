@@ -23,7 +23,7 @@ and run `mix deps.get`. StreamData is usually added only to the `:test` environm
 
 [The documentation is available online.](https://hexdocs.pm/stream_data/)
 
-StreamData is made of two main components: data generation and property testing. The `StreamData` module provides tools to work with data generation. The `PropertyTest` module takes care of the property testing functionality.
+StreamData is made of two main components: data generation and property testing. The `StreamData` module provides tools to work with data generation. The `ExUnitProperties` module takes care of the property testing functionality.
 
 ### Data generation
 
@@ -37,7 +37,7 @@ StreamData.integer() |> Stream.map(&abs/1) |> Enum.take(3)
 `StreamData` provides all the necessary tools to create arbitrarily complex custom generators:
 
 ```elixir
-require StreamData
+require ExUnitProperties
 
 domains = [
   "gmail.com",
@@ -46,8 +46,9 @@ domains = [
 ]
 
 email_generator =
-  StreamData.gen all name <- StreamData.filter(StreamData.alphanumeric_string(), &(&1 != "")),
-                     domain <- StreamData.member_of(domains) do
+  ExUnitProperties.gen all name <- StreamData.string(:alphanumeric),
+                           name != "",
+                           domain <- StreamData.member_of(domains) do
     name <> "@" <> domain
   end
 
@@ -60,17 +61,17 @@ Enum.take(StreamData.resize(email_generator, 20), 2)
 Property testing aims at randomizing test data in order to make tests more robust. Instead of writing a bunch of inputs and expected outputs by hand, with property testing we write a *property* of our code that should hold for a set of data, and then we generated data in this set to verify that property. To generate this data, we can use the above-mentioned `StreamData` module.
 
 ```elixir
-import PropertyTest
+use ExUnitProperties
 
 property "bin1 <> bin2 always starts with bin1" do
-  check all bin1 <- StreamData.binary(),
-            bin2 <- StreamData.binary() do
+  check all bin1 <- binary(),
+            bin2 <- binary() do
     assert String.starts_with?(bin1 <> bin2, bin1)
   end
 end
 ```
 
-To know more about property testing, read the `PropertyTest` documentation. Another great resource about property testing in Erlang (but with most ideas that apply to Elixir as well) is Fred Hebert's website [propertesting.com](http://propertesting.com).
+To know more about property testing, read the `ExUnitProperties` documentation. Another great resource about property testing in Erlang (but with most ideas that apply to Elixir as well) is Fred Hebert's website [propertesting.com](http://propertesting.com).
 
 The property testing side of this library is heavily inspired by the [original QuickCheck paper](http://www.cs.tufts.edu/~nr/cs257/archive/john-hughes/quick.pdf) (which targeted Haskell) as well as Clojure's take on property testing, [test.check](https://github.com/clojure/test.check).
 

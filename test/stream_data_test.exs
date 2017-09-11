@@ -480,22 +480,6 @@ defmodule StreamDataTest do
     assert check_all(list_of(boolean()), options, property) == {:ok, %{}}
   end
 
-  test "gen all" do
-    data =
-      gen all list <- list_of(integer(), min_length: 1),
-              elem <- member_of(list),
-              elem != 5,
-              elem_not_five = elem do
-        {Integer.to_string(elem_not_five), list}
-      end
-
-    for_many(data, fn {string, list} ->
-      assert is_binary(string)
-      assert is_list(list)
-      assert String.to_integer(string) != 5
-    end)
-  end
-
   defp for_many(data, count \\ 200, fun) do
     data
     |> Stream.take(count)

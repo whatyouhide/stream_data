@@ -1,7 +1,23 @@
-defmodule PropertyTestTest do
+defmodule ExUnitPropertiesTest do
   use ExUnit.Case, async: true
 
-  import PropertyTest
+  use ExUnitProperties
+
+  test "gen all" do
+    data =
+      gen all list <- list_of(integer(), min_length: 1),
+              elem <- member_of(list),
+              elem != 5,
+              elem_not_five = elem do
+        {Integer.to_string(elem_not_five), list}
+      end
+
+    check all {string, list} <- data do
+      assert is_binary(string)
+      assert is_list(list)
+      assert String.to_integer(string) != 5
+    end
+  end
 
   property "shrinking" do
     assert_raise ExUnit.AssertionError, fn ->
@@ -12,7 +28,7 @@ defmodule PropertyTestTest do
   end
 
   property "works with errors that are not assertion errors" do
-    assert_raise PropertyTest.Error, fn ->
+    assert_raise ExUnitProperties.Error, fn ->
       check all tuple <- {:ok, nil} do
         :ok = tuple
       end
