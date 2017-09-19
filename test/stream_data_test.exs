@@ -374,6 +374,21 @@ defmodule StreamDataTest do
     end)
   end
 
+  test "optional_map/1" do
+    data =
+      fixed_map(%{
+        integer: integer(),
+        binary: binary(),
+      })
+
+    for_many(data, fn map ->
+      assert map_size(map) <= 2
+      assert (map |> Map.keys() |> MapSet.new() |> MapSet.subset?(MapSet.new([:integer, :binary])))
+      if Map.has_key?(map, :integer), do: assert is_integer(Map.fetch!(map, :integer))
+      if Map.has_key?(map, :binary), do: assert is_binary(Map.fetch!(map, :binary))
+    end)
+  end
+
   test "keyword_of/1" do
     for_many(keyword_of(integer()), 50, fn keyword ->
       assert Keyword.keyword?(keyword)
