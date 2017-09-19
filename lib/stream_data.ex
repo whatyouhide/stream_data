@@ -1074,7 +1074,7 @@ defmodule StreamData do
 
   defp sublist(list) do
     map(list_of(boolean(), length: length(list)), fn indexes_to_keep ->
-      for {elem, keep?} when keep? <- Enum.zip(list, indexes_to_keep), do: elem
+      for {elem, true} <- Enum.zip(list, indexes_to_keep), do: elem
     end)
   end
 
