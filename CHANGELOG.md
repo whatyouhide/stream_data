@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.3.0
+
+  * Add length-related options to `StreamData.string/2`
+  * Introduce `StreamData.positive_integer/0`
+  * Raise a better error message on invalid generators
+  * Fix the `StreamData.t/0` type
+  * Add support for `rescue/catch/after` in `ExUnitProperties.property/2,3`
+  * Introduce `StreamData.optional_map/1`
+  * Add support for keyword lists as argument to `StreamData.fixed_map/1`
+
+#### Breaking changes
+
+  * Change the arguments to `StreamData.string/2` so that it can take `:ascii`, `:alphanumeric`, `:printable`, a range, or a list of ranges or single codepoints
+  * Rename `PropertyTest` to `ExUnitProperties` and introduce `use ExUnitProperties` to use in tests that use property-based testing
+
 ## v0.2.0
 
   * Add length-related options to `StreamData.list_of/2`, `StreamData.uniq_list_of/1`, `StreamData.binary/1`
