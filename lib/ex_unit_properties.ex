@@ -347,6 +347,9 @@ defmodule ExUnitProperties do
     quote do
       options = unquote(options)
       options = [
+        # TODO: Use :rand.export_seed in Elixir master.
+        # The value may be :undefined in a new process
+        # though, which means we need to raise.
         initial_seed: {0, 0, ExUnit.configuration()[:seed]},
         initial_size: options[:initial_size] || Application.fetch_env!(:stream_data, :initial_size),
         max_runs: options[:max_runs] || Application.fetch_env!(:stream_data, :max_runs),

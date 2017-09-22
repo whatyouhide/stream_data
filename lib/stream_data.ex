@@ -1743,6 +1743,10 @@ defmodule StreamData do
     :rand.seed_s(@rand_algorithm, tuple)
   end
 
+  defp new_seed({_, _} = exported_seed) do
+    :rand.seed_s(exported_seed)
+  end
+
   defp split_seed(seed) do
     {int1, seed} = :rand.uniform_s(1_000_000_000, seed)
     {int2, seed} = :rand.uniform_s(1_000_000_000, seed)
