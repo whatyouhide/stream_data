@@ -513,8 +513,8 @@ defmodule StreamDataTest do
   end
 
   test "check_all/3 with :rand.export_seed()" do
-    :rand.uniform()
-    options = [initial_seed: :rand.export_seed()]
+    seed = :rand.seed_s(:exs1024)
+    options = [initial_seed: :rand.export_seed_s(seed)]
 
     property = fn list ->
       if 5 in list do
