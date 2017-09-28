@@ -262,7 +262,7 @@ defmodule StreamData do
 
       require Integer
 
-      list_data = StreamData.nonempty(StreamData.list_of(StreamData.integer()))
+      list_data = StreamData.list_of(StreamData.integer(), min_length: 1)
 
       data =
         StreamData.bind_filter(list_data, fn
@@ -327,11 +327,11 @@ defmodule StreamData do
   ## Examples
 
   Say we wanted to create a generator that returns two-element tuples where the
-  first element is a list, and the second element is a random element from that
+  first element is a non-empty list, and the second element is a random element from that
   list. To do that, we can first generate a list and then bind a function to
   that list; this function will return the list and a random element from it.
 
-      StreamData.bind(StreamData.list_of(StreamData.integer()), fn list ->
+      StreamData.bind(StreamData.list_of(StreamData.integer(), min_length: 1), fn list ->
         StreamData.bind(StreamData.member_of(list), fn elem ->
           StreamData.constant({list, elem})
         end)
