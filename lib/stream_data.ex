@@ -48,8 +48,8 @@ defmodule StreamData do
   positive even integers, you can do:
 
       StreamData.integer()
-      |> Stream.filter(&(&1 > 0))
-      |> Stream.map(&(&1 * 2))
+      |> Stream.filter(& &1 > 0)
+      |> Stream.map(& &1 * 2)
       |> Enum.take(10)
       #=> [4, 6, 4, 10, 14, 16, 4, 16, 36, 16]
 
@@ -376,7 +376,7 @@ defmodule StreamData do
   this case, a better approach would be to generate integers and make sure they
   are odd:
 
-      odd_ints = StreamData.map(StreamData.integer(), &(&1 * 2 + 1))
+      odd_ints = StreamData.map(StreamData.integer(), & &1 * 2 + 1)
       Enum.take(odd_ints, 3)
       #=> [1, 1, 3]
 
@@ -419,7 +419,7 @@ defmodule StreamData do
       range
       |> uniform_in_range(seed)
       |> integer_lazy_tree()
-      |> LazyTree.filter(&(&1 in range))
+      |> LazyTree.filter(& &1 in range)
     end)
   end
 
@@ -427,8 +427,8 @@ defmodule StreamData do
     children =
       int
       |> Stream.iterate(&div(&1, 2))
-      |> Stream.take_while(&(&1 != 0))
-      |> Stream.map(&(int - &1))
+      |> Stream.take_while(& &1 != 0)
+      |> Stream.map(& int - &1)
       |> Stream.map(&integer_lazy_tree/1)
 
     LazyTree.new(int, children)
@@ -839,7 +839,7 @@ defmodule StreamData do
   """
   @spec uniq_list_of(t(a), keyword) :: t([a]) when a: term
   def uniq_list_of(data, options \\ []) do
-    uniq_fun = Keyword.get(options, :uniq_fun, &(&1))
+    uniq_fun = Keyword.get(options, :uniq_fun, & &1)
     max_tries = Keyword.get(options, :max_tries, 10)
     list_length_range_fun = list_length_range_fun(options)
 
@@ -854,7 +854,7 @@ defmodule StreamData do
       |> LazyTree.map(&list_lazy_tree(&1, min_length))
       |> LazyTree.flatten()
       |> LazyTree.map(&Enum.uniq_by(&1, uniq_fun))
-      |> LazyTree.filter(&(length(&1) >= min_length))
+      |> LazyTree.filter(& length(&1) >= min_length)
     end)
   end
 
@@ -1268,13 +1268,13 @@ defmodule StreamData do
   values or bigger values, you can transform this generator. For example, to
   have floats in the interval `0..10`, you can use `map/2`:
 
-      StreamData.map(StreamData.uniform_float(), &(&1 * 10))
+      StreamData.map(StreamData.uniform_float(), & &1 * 10)
 
   To have sometimes negative floats, you can for example use `bind/2`:
 
       StreamData.bind(StreamData.boolean(), fn negative? ->
         if negative? do
-          StreamData.map(StreamData.uniform_float(), &(-&1))
+          StreamData.map(StreamData.uniform_float(), & -&1)
         else
           StreamData.uniform_float()
         end

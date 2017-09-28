@@ -40,22 +40,22 @@ defmodule ExUnitPropertiesTest do
       check all i <- integer(),
                 string_i = Integer.to_string(i),
                 max_runs: 10 do
-        Agent.update(counter, &(&1 + 1))
+        Agent.update(counter, & &1 + 1)
         assert String.to_integer(string_i) == i
       end
 
-      assert Agent.get(counter, &(&1)) == 10
+      assert Agent.get(counter, & &1) == 10
     end
 
     property "runs the number of specified times" do
       {:ok, counter} = Agent.start_link(fn -> 0 end)
 
       check all :ok <- :ok, max_runs: 10 do
-        Agent.update(counter, &(&1 + 1))
+        Agent.update(counter, & &1 + 1)
         :ok
       end
 
-      assert Agent.get(counter, &(&1)) == 10
+      assert Agent.get(counter, & &1) == 10
     end
 
     property "works with errors that are not assertion errors" do

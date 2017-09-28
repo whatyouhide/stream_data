@@ -16,17 +16,17 @@ defmodule StreamDataTest do
   end
 
   test "terms used as generators" do
-    for_many(map(:foo, &(&1)), fn term ->
+    for_many(map(:foo, & &1), fn term ->
       assert term == :foo
     end)
 
-    data = map({integer(), boolean()}, &(&1))
+    data = map({integer(), boolean()}, & &1)
     for_many(data, fn {int, boolean} ->
       assert is_integer(int)
       assert is_boolean(boolean)
     end)
 
-    data = map({:ok, integer()}, &(&1))
+    data = map({:ok, integer()}, & &1)
     for_many(data, fn {atom, int} ->
       assert atom == :ok
       assert is_integer(int)
@@ -48,7 +48,7 @@ defmodule StreamDataTest do
   end
 
   test "map/1" do
-    data = map(integer(1..5), &(-&1))
+    data = map(integer(1..5), & -&1)
     for_many(data, fn int ->
       assert int in -1..-5
     end)
@@ -83,7 +83,7 @@ defmodule StreamDataTest do
     test "filters out terms that fail the predicate" do
       values =
         integer(0..10_000)
-        |> filter(&(&1 > 0))
+        |> filter(& &1 > 0)
         |> Enum.take(1000)
 
       assert length(values) <= 1000
@@ -157,7 +157,7 @@ defmodule StreamDataTest do
 
     assert :small_chance in values
     assert :big_chance in values
-    assert Enum.count(values, &(&1 == :small_chance)) < Enum.count(values, &(&1 == :big_chance))
+    assert Enum.count(values, & &1 == :small_chance) < Enum.count(values, & &1 == :big_chance)
   end
 
   test "one_of/1" do
@@ -251,7 +251,7 @@ defmodule StreamDataTest do
     test "generates lists" do
       for_many(list_of(constant(:term)), fn value ->
         assert is_list(value)
-        assert Enum.all?(value, &(&1 == :term))
+        assert Enum.all?(value, & &1 == :term)
       end)
     end
 
@@ -263,7 +263,7 @@ defmodule StreamDataTest do
 
     test "with the :length option as a min..max range" do
       for_many(list_of(constant(:term), length: 5..10), fn value ->
-        assert Enum.all?(value, &(&1 == :term))
+        assert Enum.all?(value, & &1 == :term)
         assert length(value) in 5..10
       end)
 
@@ -274,14 +274,14 @@ defmodule StreamDataTest do
 
     test "with the :min_length option set" do
       for_many(list_of(constant(:term), min_length: 5), fn value ->
-        assert Enum.all?(value, &(&1 == :term))
+        assert Enum.all?(value, & &1 == :term)
         assert length(value) >= 5
       end)
     end
 
     test "with the :max_length option set" do
       for_many(list_of(constant(:term), max_length: 5), fn value ->
-        assert Enum.all?(value, &(&1 == :term))
+        assert Enum.all?(value, & &1 == :term)
         assert length(value) <= 5
       end)
     end

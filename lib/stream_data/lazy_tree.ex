@@ -20,7 +20,7 @@ defmodule StreamData.LazyTree do
 
   ## Examples
 
-      StreamData.LazyTree.new(1, Stream.map([StreamData.LazyTree.constant(2)], &(&1 * 2)))
+      StreamData.LazyTree.new(1, Stream.map([StreamData.LazyTree.constant(2)], & &1 * 2))
 
   """
   @spec new(a, Enumerable.t) :: t(a) when a: term
@@ -52,7 +52,7 @@ defmodule StreamData.LazyTree do
   ## Examples
 
       tree = StreamData.LazyTree.new(1, [])
-      StreamData.LazyTree.map(tree, &(-&1))
+      StreamData.LazyTree.map(tree, & -&1)
 
   """
   @spec map(t(a), (a -> b)) :: t(b) when a: term, b: term
@@ -130,7 +130,7 @@ defmodule StreamData.LazyTree do
   ## Examples
 
       tree = StreamData.LazyTree.new(1, [])
-      StreamData.LazyTree.filter(tree, &(rem(&1, 2) == 0))
+      StreamData.LazyTree.filter(tree, & rem(&1, 2) == 0)
 
   """
   @spec filter(t(a), (a -> as_boolean(term))) :: t(a) when a: term
@@ -165,7 +165,7 @@ defmodule StreamData.LazyTree do
   """
   @spec zip([t(a)]) :: t([a]) when a: term
   def zip(trees) do
-    root = Enum.map(trees, &(&1.root))
+    root = Enum.map(trees, & &1.root)
     children =
       trees
       |> permutations()

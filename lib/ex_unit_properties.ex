@@ -383,7 +383,7 @@ defmodule ExUnitProperties do
           property
         end
 
-      case StreamData.check_all(property, options, &(&1.())) do
+      case StreamData.check_all(property, options, & &1.()) do
         {:ok, _result} ->
           :ok
         {:error, test_result} ->

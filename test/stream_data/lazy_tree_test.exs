@@ -69,7 +69,7 @@ defmodule StreamData.LazyTreeTest do
         new(-1, [constant(1), constant(2)]), # this whole branch is cut since the root doesn't pass the filter
       ])
 
-    filtered_tree = LazyTree.filter(tree, &(&1 > 0))
+    filtered_tree = LazyTree.filter(tree, & &1 > 0)
 
     expected = new(1, [new(1, [constant(2)])])
 
