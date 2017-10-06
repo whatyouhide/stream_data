@@ -493,6 +493,16 @@ defmodule StreamDataTest do
     end)
   end
 
+  test "simple_term/0" do
+    for_many(simple_term(), fn term ->
+      assert is_boolean(term) or
+               is_integer(term) or
+               is_float(term) or
+               is_binary(term) or
+               is_atom(term)
+    end)
+  end
+
   test "check_all/3 with :os.timestamp" do
     options = [initial_seed: :os.timestamp()]
 
