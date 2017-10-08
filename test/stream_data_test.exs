@@ -510,10 +510,11 @@ defmodule StreamDataTest do
     end)
   end
 
-  test "simple_term/0" do
-    for_many(simple_term(), fn term ->
+  test "term/0" do
+    for_many(term(), fn term ->
       assert is_boolean(term) or is_integer(term) or is_float(term) or is_binary(term) or
-               is_atom(term)
+               is_atom(term) or is_reference(term) or is_list(term) or is_map(term) or
+               is_tuple(term)
     end)
   end
 
