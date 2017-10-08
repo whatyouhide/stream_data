@@ -28,6 +28,7 @@ defmodule StreamData.LazyTreeTest do
     require Integer
 
     tree = new(1, [constant(2), constant(3)])
+
     {:ok, mapped_tree} =
       LazyTree.filter_map(tree, fn int ->
         if Integer.is_odd(int) do
@@ -36,6 +37,7 @@ defmodule StreamData.LazyTreeTest do
           :skip
         end
       end)
+
     expected = new("1", [constant("3")])
 
     assert realize_tree(mapped_tree) == realize_tree(expected)

@@ -9,6 +9,7 @@ defmodule StreamDataTest do
 
   test "implementation of the Enumerable protocol" do
     values = Enum.take(Stream.zip(integer(), boolean()), 10)
+
     Enum.each(values, fn {int, boolean} ->
       assert is_integer(int)
       assert is_boolean(boolean)
@@ -16,17 +17,17 @@ defmodule StreamDataTest do
   end
 
   test "terms used as generators" do
-    for_many(map(:foo, & &1), fn term ->
-      assert term == :foo
-    end)
+    for_many(map(:foo, & &1), fn term -> assert term == :foo end)
 
     data = map({integer(), boolean()}, & &1)
+
     for_many(data, fn {int, boolean} ->
       assert is_integer(int)
       assert is_boolean(boolean)
     end)
 
     data = map({:ok, integer()}, & &1)
+
     for_many(data, fn {atom, int} ->
       assert atom == :ok
       assert is_integer(int)
@@ -82,8 +83,8 @@ defmodule StreamDataTest do
   describe "filter/2,3" do
     test "filters out terms that fail the predicate" do
       values =
-        integer(0..10_000)
         |> filter(& &1 > 0)
+        integer(0..10000)
         |> Enum.take(1000)
 
       assert length(values) <= 1000
@@ -353,6 +354,7 @@ defmodule StreamDataTest do
   test "map_of/2" do
     for_many(map_of(binary(), integer()), 50, fn map ->
       assert is_map(map)
+
       Enum.each(map, fn {key, value} ->
         assert is_binary(key)
         assert is_integer(value)
@@ -415,13 +417,12 @@ defmodule StreamDataTest do
 
   test "nonempty/1" do
     data = nonempty(list_of(constant(:term)))
-    for_many(data, fn list ->
-      assert length(list) > 0
-    end)
+    for_many(data, fn list -> assert length(list) > 0 end)
   end
 
   test "tree/2" do
     data = tree(boolean(), &list_of/1)
+
     for_many(data, 100, fn
       tree when is_list(tree) ->
         assert Enum.all?(List.flatten(tree), &is_boolean/1)
@@ -434,6 +435,7 @@ defmodule StreamDataTest do
     test "with a list of ranges and codepoints" do
       for_many(string([?a..?z, ?A..?K, ?_]), fn string ->
         assert is_binary(string)
+
         Enum.each(String.to_charlist(string), fn char ->
           assert char in ?a..?z or char in ?A..?K or char == ?_
         end)
@@ -553,6 +555,7 @@ defmodule StreamDataTest do
 
   defp each_improper_list([head | tail], head_fun, tail_fun) do
     head_fun.(head)
+
     if is_list(tail) do
       each_improper_list(tail, head_fun, tail_fun)
     else

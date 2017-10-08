@@ -125,10 +125,10 @@ defmodule StreamData do
 
     def message(%{max_consecutive_failures: max_consecutive_failures}) do
       "too many (#{max_consecutive_failures}) consecutive elements were filtered out. " <>
-      "Make sure to avoid filters that are too strict and filter out too many elements " <>
-      "and make sure a small generation size doesn't affect the filter too heavily (such as " <>
-      "when empty lists are filtered out but small generation size forces generation of many " <>
-      "empty lists)"
+        "Make sure to avoid filters that are too strict and filter out too many elements " <>
+        "and make sure a small generation size doesn't affect the filter too heavily (such as " <>
+        "when empty lists are filtered out but small generation size forces generation of many " <>
+        "empty lists)"
     end
   end
 
@@ -137,10 +137,10 @@ defmodule StreamData do
 
     def message(%{max_tries: max_tries, remaining_to_generate: remaining, generated: generated}) do
       "too many (#{max_tries}) non-unique elements were generated consecutively. " <>
-      "Make sure to avoid generating from a small space of data (such as only a " <>
-      "handful of terms) and make sure a small generation size doesn't affect " <>
-      "uniqueness too heavily. There were still #{remaining} elements left to " <>
-      "generate, while the generated elements were:\n\n#{inspect(generated)}"
+        "Make sure to avoid generating from a small space of data (such as only a " <>
+        "handful of terms) and make sure a small generation size doesn't affect " <>
+        "uniqueness too heavily. There were still #{remaining} elements left to " <>
+        "generate, while the generated elements were:\n\n#{inspect(generated)}"
     end
   end
 
@@ -170,7 +170,7 @@ defmodule StreamData do
         LazyTree.constant({})
       size ->
         {trees, _seed} =
-          Enum.map_reduce(0..size - 1, seed, fn index, acc ->
+          Enum.map_reduce(0..(size - 1), seed, fn index, acc ->
             {seed1, seed2} = split_seed(acc)
             data = elem(tuple, index)
             {call(data, seed1, size), seed2}
@@ -311,6 +311,7 @@ defmodule StreamData do
           filter_mapped_tree
           |> LazyTree.map(&call(&1, seed2, size))
           |> LazyTree.flatten()
+
         {:ok, tree}
       :error ->
         bind_filter(seed2, size, data, mapper, tries_left - 1)
@@ -454,9 +455,7 @@ defmodule StreamData do
   """
   @spec resize(t(a), size()) :: t(a) when a: term()
   def resize(data, new_size) when is_integer(new_size) and new_size >= 0 do
-    new(fn seed, _size ->
-      call(data, seed, new_size)
-    end)
+    new(fn seed, _size -> call(data, seed, new_size) end)
   end
 
   @doc """
@@ -525,9 +524,7 @@ defmodule StreamData do
   """
   @spec scale(t(a), (size() -> size())) :: t(a) when a: term()
   def scale(data, size_changer) when is_function(size_changer, 1) do
-    sized(fn size ->
-      resize(data, size_changer.(size))
-    end)
+    sized(fn size -> resize(data, size_changer.(size)) end)
   end
 
   @doc """
@@ -604,7 +601,7 @@ defmodule StreamData do
   @spec frequency([{pos_integer(), t(a)}]) :: t(a) when a: term()
   def frequency(frequencies) when is_list(frequencies) do
     sum = Enum.reduce(frequencies, 0, fn {frequency, _data}, acc -> acc + frequency end)
-    bind(integer(0..sum - 1), &pick_frequency(frequencies, &1))
+    bind(integer(0..(sum - 1)), &pick_frequency(frequencies, &1))
   end
 
   defp pick_frequency([{frequency, data} | rest], int) do
@@ -781,7 +778,7 @@ defmodule StreamData do
       LazyTree.constant(list)
     else
       children =
-        0..length - 1
+        0..(length - 1)
         |> Stream.map(&List.delete_at(list, &1))
         |> Stream.map(&list_lazy_tree(&1, min_length))
 
@@ -1470,8 +1467,7 @@ defmodule StreamData do
     map(list_of(integer(codepoints_range), list_options), &List.to_string/1)
   end
 
-  def string(codepoints, options)
-      when is_list(codepoints) and is_list(options) do
+  def string(codepoints, options) when is_list(codepoints) and is_list(options) do
     list_options = Keyword.take(options, [:length, :min_length, :max_length])
 
     char =
@@ -1535,9 +1531,7 @@ defmodule StreamData do
   end
 
   defp resize_atom_data(data) do
-    scale(data, fn size ->
-      min(trunc(:math.pow(size, 0.5)), 256)
-    end)
+    scale(data, fn size -> min(trunc(:math.pow(size, 0.5)), 256) end)
   end
 
   @doc """

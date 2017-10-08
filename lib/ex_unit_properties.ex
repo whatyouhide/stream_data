@@ -349,6 +349,7 @@ defmodule ExUnitProperties do
 
     quote do
       options = unquote(options)
+
       options = [
         # TODO: Use :rand.export_seed in Elixir master.
         # The value may be :undefined in a new process

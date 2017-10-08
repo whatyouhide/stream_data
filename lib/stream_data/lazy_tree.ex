@@ -92,6 +92,7 @@ defmodule StreamData.LazyTree do
           tree
           |> filter(&match?({:cont, _}, &1))
           |> map(fn {:cont, elem} -> elem end)
+
         {:ok, tree}
       :skip ->
         :error
@@ -161,11 +162,11 @@ defmodule StreamData.LazyTree do
       StreamData.LazyTree.zip(trees).root
       #=> [1, 2]
 
-
   """
   @spec zip([t(a)]) :: t([a]) when a: term()
   def zip(trees) do
     root = Enum.map(trees, & &1.root)
+
     children =
       trees
       |> permutations()
@@ -177,7 +178,9 @@ defmodule StreamData.LazyTree do
   defp permutations(trees) when is_list(trees) do
     trees
     |> Stream.with_index()
-    |> Stream.flat_map(fn {tree, index} -> Enum.map(tree.children, &List.replace_at(trees, index, &1)) end)
+    |> Stream.flat_map(fn {tree, index} ->
+         Enum.map(tree.children, &List.replace_at(trees, index, &1))
+       end)
   end
 
   defimpl Inspect do
