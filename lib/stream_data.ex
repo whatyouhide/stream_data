@@ -106,9 +106,9 @@ defmodule StreamData do
 
   alias StreamData.LazyTree
 
-  @typep seed :: :rand.state
-  @typep size :: non_neg_integer
-  @typep generator_fun(a) :: (seed, size -> LazyTree.t(a))
+  @typep seed() :: :rand.state()
+  @typep size() :: non_neg_integer()
+  @typep generator_fun(a) :: (seed(), size() -> LazyTree.t(a))
 
   @typedoc """
   An opaque type that represents a `StreamData` generator that generates values
@@ -224,7 +224,7 @@ defmodule StreamData do
   This generator shrinks exactly like `data`, but with `fun` mapped over the
   shrunk data.
   """
-  @spec map(t(a), (a -> b)) :: t(b) when a: term, b: term
+  @spec map(t(a), (a -> b)) :: t(b) when a: term(), b: term()
   def map(data, fun) when is_function(fun, 1) do
     new(fn seed, size ->
       data
@@ -283,7 +283,8 @@ defmodule StreamData do
   This generator shrinks like `bind/2` but values that are skipped are not used
   for shrinking (similarly to how `filter/3` works).
   """
-  @spec bind_filter(t(a), (a -> {:cont, t(b)} | :skip), non_neg_integer) :: t(b) when a: term, b: term
+  @spec bind_filter(t(a), (a -> {:cont, t(b)} | :skip), non_neg_integer()) ::
+        t(b) when a: term(), b: term()
   def bind_filter(data, fun, max_consecutive_failures \\ 10)
       when is_function(fun, 1) and is_integer(max_consecutive_failures) and max_consecutive_failures >= 0 do
     new(fn seed, size ->
@@ -345,7 +346,7 @@ defmodule StreamData do
   shrunk value value and returns a whole new generator, which will most likely
   emit new items.
   """
-  @spec bind(t(a), (a -> t(b))) :: t(b) when a: term, b: term
+  @spec bind(t(a), (a -> t(b))) :: t(b) when a: term(), b: term()
   def bind(data, fun) when is_function(fun, 1) do
     bind_filter(data, fn generated_term -> {:cont, fun.(generated_term)} end)
   end
@@ -385,7 +386,7 @@ defmodule StreamData do
   All the values that each generated value shrinks to satisfy `predicate` as
   well.
   """
-  @spec filter(t(a), (a -> as_boolean(term)), non_neg_integer) :: t(a) when a: term
+  @spec filter(t(a), (a -> as_boolean(term())), non_neg_integer()) :: t(a) when a: term()
   def filter(data, predicate, max_consecutive_failures \\ 10)
       when is_function(predicate, 1) and is_integer(max_consecutive_failures) and max_consecutive_failures >= 0 do
     bind_filter(data, fn term ->
@@ -413,7 +414,7 @@ defmodule StreamData do
 
   Shrinks towards with the smallest absolute value that still lie in `range`.
   """
-  @spec integer(Range.t) :: t(integer)
+  @spec integer(Range.t()) :: t(integer())
   def integer(_lower.._upper = range) do
     new(fn seed, _size ->
       range
@@ -451,7 +452,7 @@ defmodule StreamData do
       #=> [4, -5, -9]
 
   """
-  @spec resize(t(a), size) :: t(a) when a: term
+  @spec resize(t(a), size()) :: t(a) when a: term()
   def resize(data, new_size) when is_integer(new_size) and new_size >= 0 do
     new(fn seed, _size ->
       call(data, seed, new_size)
@@ -480,7 +481,7 @@ defmodule StreamData do
       #=> [0, -1, 5]
 
   """
-  @spec sized((size -> t(a))) :: t(a) when a: term
+  @spec sized((size() -> t(a))) :: t(a) when a: term()
   def sized(fun) when is_function(fun, 1) do
     new(fn seed, size ->
       new_data = fun.(size)
@@ -522,7 +523,7 @@ defmodule StreamData do
       end)
 
   """
-  @spec scale(t(a), (size -> size)) :: t(a) when a: term
+  @spec scale(t(a), (size() -> size())) :: t(a) when a: term()
   def scale(data, size_changer) when is_function(size_changer, 1) do
     sized(fn size ->
       resize(data, size_changer.(size))
@@ -547,7 +548,7 @@ defmodule StreamData do
   The generator returned by `unshrinkable/1` generates the same values as `data`,
   but such values will not shrink.
   """
-  @spec unshrinkable(t(a)) :: t(a) when a: term
+  @spec unshrinkable(t(a)) :: t(a) when a: term()
   def unshrinkable(data) do
     new(fn seed, size ->
       %LazyTree{root: root} = call(data, seed, size)
@@ -600,7 +601,7 @@ defmodule StreamData do
   #       LazyTree.new(tree.root, Stream.concat(earlier_children, tree.children))
   #     end)
   #
-  @spec frequency([{pos_integer, t(a)}]) :: t(a) when a: term
+  @spec frequency([{pos_integer(), t(a)}]) :: t(a) when a: term()
   def frequency(frequencies) when is_list(frequencies) do
     sum = Enum.reduce(frequencies, 0, fn {frequency, _data}, acc -> acc + frequency end)
     bind(integer(0..sum - 1), &pick_frequency(frequencies, &1))
@@ -632,7 +633,7 @@ defmodule StreamData do
   generated it, and then this generator will shrink towards earlier generators
   in `datas`.
   """
-  @spec one_of([t(a)]) :: t(a) when a: term
+  @spec one_of([t(a)]) :: t(a) when a: term()
   def one_of([_ | _] = datas) do
     bind(integer(0..length(datas) - 1), fn index ->
       Enum.fetch!(datas, index)
@@ -655,7 +656,7 @@ defmodule StreamData do
 
   This generator shrinks towards elements that appear earlier in `enum`.
   """
-  @spec member_of(Enumerable.t) :: t(term)
+  @spec member_of(Enumerable.t()) :: t(term())
   def member_of(enum) do
     enum_length = Enum.count(enum)
 
@@ -722,7 +723,7 @@ defmodule StreamData do
   #       |> LazyTree.flatten()
   #     end)
   #
-  @spec list_of(t(a), keyword) :: t([a]) when a: term
+  @spec list_of(t(a), keyword()) :: t([a]) when a: term()
   def list_of(data, options \\ []) do
     list_length_range_fun = list_length_range_fun(options)
 
@@ -837,7 +838,7 @@ defmodule StreamData do
   This generator shrinks like `list_of/1`, but the shrunk values are unique
   according to the `:uniq_fun` option as well.
   """
-  @spec uniq_list_of(t(a), keyword) :: t([a]) when a: term
+  @spec uniq_list_of(t(a), keyword()) :: t([a]) when a: term()
   def uniq_list_of(data, options \\ []) do
     uniq_fun = Keyword.get(options, :uniq_fun, & &1)
     max_tries = Keyword.get(options, :max_tries, 10)
@@ -895,7 +896,8 @@ defmodule StreamData do
   ending) and towards shrunk elements of the list and a shrunk improper
   ending.
   """
-  @spec nonempty_improper_list_of(t(a), t(b)) :: t(nonempty_improper_list(a, b)) when a: term, b: term
+  @spec nonempty_improper_list_of(t(a), t(b)) ::
+        t(nonempty_improper_list(a, b)) when a: term(), b: term()
   def nonempty_improper_list_of(first, improper) do
     map({list_of(first), improper}, fn
       {[], ending} ->
@@ -923,7 +925,8 @@ defmodule StreamData do
   Shrinks towards smaller lists and shrunk elements in those lists, and
   ultimately towards proper lists.
   """
-  @spec maybe_improper_list_of(t(a), t(b)) :: t(maybe_improper_list(a, b)) when a: term, b: term
+  @spec maybe_improper_list_of(t(a), t(b)) ::
+        t(maybe_improper_list(a, b)) when a: term(), b: term()
   def maybe_improper_list_of(first, improper) do
     frequency([
       {2, list_of(first)},
@@ -946,7 +949,7 @@ defmodule StreamData do
   Shrinks by shrinking each element in the generated list according to the
   corresponding generator. Shrunk lists never lose elements.
   """
-  @spec fixed_list([t(a)]) :: t([a]) when a: term
+  @spec fixed_list([t(a)]) :: t([a]) when a: term()
   def fixed_list(datas) when is_list(datas) do
     new(fn seed, size ->
       {trees, _seed} =
@@ -974,7 +977,7 @@ defmodule StreamData do
   Shrinks by shrinking each element in the generated tuple according to the
   corresponding generator.
   """
-  @spec tuple(tuple) :: t(tuple)
+  @spec tuple(tuple()) :: t(tuple())
   def tuple(tuple_datas) when is_tuple(tuple_datas) do
     new(fn seed, size -> call(tuple_datas, seed, size) end)
   end
@@ -996,7 +999,8 @@ defmodule StreamData do
   Shrinks towards smallest maps and towards shrinking keys and values according
   to the respective generators.
   """
-  @spec map_of(t(key), t(value)) :: t(%{optional(key) => value}) when key: term, value: term
+  @spec map_of(t(key), t(value), non_neg_integer()) ::
+        t(%{optional(key) => value}) when key: term(), value: term()
   def map_of(key_data, value_data, max_tries \\ 10) do
     {key_data, value_data}
     |> uniq_list_of(uniq_fun: fn {key, _value} -> key end, max_tries: max_tries)
@@ -1023,7 +1027,7 @@ defmodule StreamData do
 
   This generator shrinks by shrinking the values of the generated map.
   """
-  @spec fixed_map(map | keyword) :: t(map)
+  @spec fixed_map(map() | keyword()) :: t(map())
   def fixed_map(data)
 
   def fixed_map(data) when is_list(data) do
@@ -1058,7 +1062,7 @@ defmodule StreamData do
   This generator shrinks by first shrinking the map by taking out keys until the map is empty, and
   then by shrinking the generated values.
   """
-  @spec optional_map(map | keyword) :: t(map)
+  @spec optional_map(map() | keyword()) :: t(map())
   def optional_map(data)
 
   def optional_map(data) when is_list(data) do
@@ -1106,7 +1110,7 @@ defmodule StreamData do
   `list_of/1`, that is, by shrinking the values in each tuple and also reducing
   the size of the generated keyword list.
   """
-  @spec keyword_of(t(a)) :: t(keyword(a)) when a: term
+  @spec keyword_of(t(a)) :: t(keyword(a)) when a: term()
   def keyword_of(value_data) do
     list_of({unquoted_atom(), value_data})
   end
@@ -1124,7 +1128,7 @@ defmodule StreamData do
       #=> [[1], [-1, 0], [2, 1, -2]]
 
   """
-  @spec nonempty(t(Enumerable.t)) :: t(Enumerable.t)
+  @spec nonempty(t(Enumerable.t())) :: t(Enumerable.t())
   def nonempty(enum_data) do
     filter(enum_data, &not(Enum.empty?(&1)))
   end
@@ -1175,7 +1179,7 @@ defmodule StreamData do
 
   Shrinks values and shrinks towards less deep trees.
   """
-  @spec tree(t(a), (t(a) -> t(b))) :: t(a | b) when a: term, b: term
+  @spec tree(t(a), (t(a) -> t(b))) :: t(a | b) when a: term(), b: term()
   def tree(leaf_data, subtree_fun) do
     new(fn seed, size ->
       leaf_data = resize(leaf_data, size)
@@ -1222,7 +1226,7 @@ defmodule StreamData do
 
   Shrinks towards `false`.
   """
-  @spec boolean() :: t(boolean)
+  @spec boolean() :: t(boolean())
   def boolean() do
     member_of([false, true])
   end
@@ -1239,7 +1243,7 @@ defmodule StreamData do
 
   Generated values shrink towards `0`.
   """
-  @spec integer() :: t(integer)
+  @spec integer() :: t(integer())
   def integer() do
     sized(fn size -> integer(-size..size) end)
   end
@@ -1256,7 +1260,7 @@ defmodule StreamData do
 
   Generated values shrink towards `1`.
   """
-  @spec positive_integer() :: t(pos_integer)
+  @spec positive_integer() :: t(pos_integer())
   def positive_integer() do
     sized(fn size -> integer(1..size) end)
   end
@@ -1289,7 +1293,7 @@ defmodule StreamData do
 
   Values generated by this generator do not shrink.
   """
-  @spec uniform_float() :: t(float)
+  @spec uniform_float() :: t(float())
   def uniform_float() do
     new(fn seed, _size ->
       {float, _seed} = :rand.uniform_s(seed)
@@ -1312,7 +1316,7 @@ defmodule StreamData do
   Values generated by this generator shrink like integers, so towards bytes
   closer to `0`.
   """
-  @spec byte() :: t(byte)
+  @spec byte() :: t(byte())
   def byte() do
     integer(0..255)
   end
@@ -1345,7 +1349,7 @@ defmodule StreamData do
   Values generated by this generator shrink by becoming smaller binaries and by
   having individual bytes that shrink towards `0`.
   """
-  @spec binary(keyword) :: t(binary)
+  @spec binary(keyword()) :: t(binary())
   def binary(options \\ []) do
     list_options = Keyword.take(options, [:length, :min_length, :max_length])
     map(list_of(byte(), list_options), &IO.iodata_to_binary/1)
@@ -1379,7 +1383,7 @@ defmodule StreamData do
   Values generated by this generator shrink by becoming smaller bitstrings and
   by having the individual bits go towards `0`.
   """
-  @spec bitstring(keyword) :: t(bitstring)
+  @spec bitstring(keyword()) :: t(bitstring())
   def bitstring(options \\ []) do
     bits = member_of([0, 1])
     list_options = Keyword.take(options, [:length, :min_length, :max_length])
@@ -1444,8 +1448,8 @@ defmodule StreamData do
   Shrinks towards smaller strings and as described in the description of the
   possible values of `kind_or_chars` above.
   """
-  @spec string(:ascii | :alphanumeric | :printable | Range.t | [Range.t | pos_integer]) ::
-        t(String.t)
+  @spec string(:ascii | :alphanumeric | :printable | Range.t() | [Range.t() | pos_integer()]) ::
+        t(String.t())
   def string(kind_or_codepoints, options \\ [])
 
   def string(:ascii, options) do
@@ -1501,7 +1505,7 @@ defmodule StreamData do
 
   Shrinks towards smaller atoms in the `?a..?z` character set.
   """
-  @spec unquoted_atom() :: t(atom)
+  @spec unquoted_atom() :: t(atom())
   def unquoted_atom() do
     starting_char =
       frequency([
@@ -1551,7 +1555,7 @@ defmodule StreamData do
   Shrinks towards smaller and less nested lists and towards bytes instead of
   binaries.
   """
-  @spec iolist() :: t(iolist)
+  @spec iolist() :: t(iolist())
   def iolist() do
     # We try to use binaries that scale slower otherwise we end up with iodata with
     # big binaries at many levels deep.
@@ -1576,7 +1580,7 @@ defmodule StreamData do
 
   Shrinks towards less nested iodata and ultimately towards smaller binaries.
   """
-  @spec iodata() :: t(iodata)
+  @spec iodata() :: t(iodata())
   def iodata() do
     frequency([
       {3, binary()},
@@ -1607,6 +1611,7 @@ defmodule StreamData do
   The terms generated by this generator shrink based on the generator used to create them (see the
   list of possible generated terms above).
   """
+  @spec simple_term() :: t(boolean() | integer() | binary() | float() | atom())
   def simple_term() do
     one_of([boolean(), integer(), binary(), uniform_float(), unquoted_atom()])
   end
@@ -1698,8 +1703,8 @@ defmodule StreamData do
   22`, and `check_all/3` was able to shrink this value to the smallest failing
   value, which in this case is `11`.
   """
-  @spec check_all(t(a), Keyword.t, (a -> {:ok, term} | {:error, b})) :: {:ok, map} | {:error, map}
-        when a: term, b: term
+  @spec check_all(t(a), Keyword.t(), (a -> {:ok, term()} | {:error, b})) ::
+        {:ok, map()} | {:error, map()} when a: term(), b: term()
   def check_all(data, options, fun) when is_list(options) and is_function(fun, 1) do
     seed = new_seed(Keyword.fetch!(options, :initial_seed))
     size = Keyword.get(options, :initial_size, 1)

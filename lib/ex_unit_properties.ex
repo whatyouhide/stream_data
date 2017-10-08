@@ -143,6 +143,7 @@ defmodule ExUnitProperties do
             unquote(block)
             :ok
           end
+
         _ ->
           quote do
             try(unquote(contents))
@@ -234,7 +235,9 @@ defmodule ExUnitProperties do
 
   defp compile_clauses([], body) do
     quote do
-      var!(generated_values, unquote(__MODULE__)) = Enum.reverse(var!(generated_values, unquote(__MODULE__)))
+      var!(generated_values, unquote(__MODULE__)) =
+        Enum.reverse(var!(generated_values, unquote(__MODULE__)))
+
       {:cont, StreamData.constant(unquote(body))}
     end
   end
@@ -386,6 +389,7 @@ defmodule ExUnitProperties do
       case StreamData.check_all(property, options, & &1.()) do
         {:ok, _result} ->
           :ok
+
         {:error, test_result} ->
           unquote(__MODULE__).__raise__(test_result)
       end

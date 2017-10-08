@@ -12,7 +12,7 @@ defmodule StreamData.LazyTree do
 
   @type t(node) :: %__MODULE__{
     root: node,
-    children: Enumerable.t, # of t(node)
+    children: Enumerable.t(), # of t(node)
   }
 
   @doc """
@@ -23,7 +23,7 @@ defmodule StreamData.LazyTree do
       StreamData.LazyTree.new(1, Stream.map([StreamData.LazyTree.constant(2)], & &1 * 2))
 
   """
-  @spec new(a, Enumerable.t) :: t(a) when a: term
+  @spec new(a, Enumerable.t()) :: t(a) when a: term()
   def new(root, children) do
     %__MODULE__{root: root, children: children}
   end
@@ -36,7 +36,7 @@ defmodule StreamData.LazyTree do
       StreamData.LazyTree.constant(:some_term)
 
   """
-  @spec constant(a) :: t(a) when a: term
+  @spec constant(a) :: t(a) when a: term()
   def constant(term) do
     new(term, [])
   end
@@ -55,7 +55,7 @@ defmodule StreamData.LazyTree do
       StreamData.LazyTree.map(tree, & -&1)
 
   """
-  @spec map(t(a), (a -> b)) :: t(b) when a: term, b: term
+  @spec map(t(a), (a -> b)) :: t(b) when a: term(), b: term()
   def map(%__MODULE__{root: root, children: children}, fun) when is_function(fun, 1) do
     new(fun.(root), Stream.map(children, &map(&1, fun)))
   end
@@ -82,7 +82,7 @@ defmodule StreamData.LazyTree do
 
   """
   @spec filter_map(t(a), (a -> {:cont, b} | :skip)) ::
-        {:ok, t(b)} | :error when a: term, b: term
+        {:ok, t(b)} | :error when a: term(), b: term()
   def filter_map(%__MODULE__{} = tree, fun) when is_function(fun, 1) do
     %__MODULE__{root: root} = tree = map(tree, fun)
 
@@ -111,7 +111,7 @@ defmodule StreamData.LazyTree do
       |> StreamData.LazyTree.flatten()
 
   """
-  @spec flatten(t(t(a))) :: t(a) when a: term
+  @spec flatten(t(t(a))) :: t(a) when a: term()
   def flatten(%__MODULE__{root: %__MODULE__{}} = tree) do
     new(tree.root.root, Stream.concat(tree.root.children, Stream.map(tree.children, &flatten/1)))
   end
@@ -133,7 +133,7 @@ defmodule StreamData.LazyTree do
       StreamData.LazyTree.filter(tree, & rem(&1, 2) == 0)
 
   """
-  @spec filter(t(a), (a -> as_boolean(term))) :: t(a) when a: term
+  @spec filter(t(a), (a -> as_boolean(term()))) :: t(a) when a: term()
   def filter(%__MODULE__{} = tree, predicate) when is_function(predicate, 1) do
     children =
       Stream.flat_map(tree.children, fn child ->
@@ -163,7 +163,7 @@ defmodule StreamData.LazyTree do
 
 
   """
-  @spec zip([t(a)]) :: t([a]) when a: term
+  @spec zip([t(a)]) :: t([a]) when a: term()
   def zip(trees) do
     root = Enum.map(trees, & &1.root)
     children =
