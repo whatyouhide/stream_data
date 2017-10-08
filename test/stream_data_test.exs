@@ -83,8 +83,8 @@ defmodule StreamDataTest do
   describe "filter/2,3" do
     test "filters out terms that fail the predicate" do
       values =
-        |> filter(& &1 > 0)
         integer(0..10000)
+        |> filter(& &1 > 0)
         |> Enum.take(1000)
 
       assert length(values) <= 1000
