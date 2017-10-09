@@ -17,7 +17,7 @@ defmodule StreamData.Mixfile do
       docs: [
         source_ref: "v#{@version}",
         main: "StreamData",
-        source_url: @repo_url,
+        source_url: @repo_url
       ],
 
       # Hex
@@ -25,8 +25,8 @@ defmodule StreamData.Mixfile do
       package: [
         maintainers: ["Andrea Leopardi"],
         licenses: ["Apache 2.0"],
-        links: %{"GitHub" => @repo_url},
-      ],
+        links: %{"GitHub" => @repo_url}
+      ]
     ]
   end
 
@@ -36,14 +36,14 @@ defmodule StreamData.Mixfile do
       env: [
         initial_size: 1,
         max_runs: 100,
-        max_shrinking_steps: 100,
-      ],
+        max_shrinking_steps: 100
+      ]
     ]
   end
 
   defp deps() do
     [
-      {:ex_doc, "~> 0.15", only: :dev},
+      {:ex_doc, "~> 0.15", only: :dev}
     ]
   end
 end

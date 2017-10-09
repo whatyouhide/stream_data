@@ -37,10 +37,8 @@ defmodule ExUnitPropertiesTest do
     property "can do assignment" do
       {:ok, counter} = Agent.start_link(fn -> 0 end)
 
-      check all i <- integer(),
-                string_i = Integer.to_string(i),
-                max_runs: 10 do
-        Agent.update(counter, & &1 + 1)
+      check all i <- integer(), string_i = Integer.to_string(i), max_runs: 10 do
+        Agent.update(counter, &(&1 + 1))
         assert String.to_integer(string_i) == i
       end
 
@@ -51,7 +49,7 @@ defmodule ExUnitPropertiesTest do
       {:ok, counter} = Agent.start_link(fn -> 0 end)
 
       check all :ok <- :ok, max_runs: 10 do
-        Agent.update(counter, & &1 + 1)
+        Agent.update(counter, &(&1 + 1))
         :ok
       end
 

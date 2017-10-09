@@ -49,7 +49,8 @@ defmodule StreamDataTest do
   end
 
   test "map/1" do
-    data = map(integer(1..5), & -&1)
+    data = map(integer(1..5), &(-&1))
+
     for_many(data, fn int ->
       assert int in -1..-5
     end)
@@ -58,14 +59,11 @@ defmodule StreamDataTest do
   test "bind_filter/2" do
     require Integer
 
-    data =
-      bind_filter(integer(1..5), fn int ->
-        if Integer.is_even(int) do
-          {:cont, constant(int)}
-        else
-          :skip
-        end
-      end, 1000)
+    bind_filter_fun = fn int ->
+      if Integer.is_even(int), do: {:cont, constant(int)}, else: :skip
+    end
+
+    data = bind_filter(integer(1..5), bind_filter_fun, 1000)
 
     for_many(data, fn int ->
       assert int in 1..5
@@ -75,6 +73,7 @@ defmodule StreamDataTest do
 
   test "bind/2" do
     data = bind(integer(1..5), &constant(-&1))
+
     for_many(data, fn int ->
       assert int in -1..-5
     end)
@@ -84,19 +83,20 @@ defmodule StreamDataTest do
     test "filters out terms that fail the predicate" do
       values =
         integer(0..10000)
-        |> filter(& &1 > 0)
+        |> filter(&(&1 > 0))
         |> Enum.take(1000)
 
       assert length(values) <= 1000
 
       Enum.each(values, fn value ->
-        assert value in 0..10_000
+        assert value in 0..10000
       end)
     end
 
     test "raises an error when too many consecutive elements fail the predicate" do
       data = filter(constant(:term), &is_binary/1, 10)
       message = ~r/too many \(10\) consecutive elements were filtered out/
+
       assert_raise StreamData.FilterTooNarrowError, message, fn ->
         Enum.take(data, 1)
       end
@@ -142,6 +142,7 @@ defmodule StreamDataTest do
   test "scale/2" do
     size_data = sized(&constant(&1))
     data = scale(size_data, fn size -> size + 1000 end)
+
     for_many(data, fn int ->
       assert int >= 1000
     end)
@@ -151,14 +152,14 @@ defmodule StreamDataTest do
     data =
       frequency([
         {1, constant(:small_chance)},
-        {100, constant(:big_chance)},
+        {100, constant(:big_chance)}
       ])
 
     values = Enum.take(data, 1000)
 
     assert :small_chance in values
     assert :big_chance in values
-    assert Enum.count(values, & &1 == :small_chance) < Enum.count(values, & &1 == :big_chance)
+    assert Enum.count(values, &(&1 == :small_chance)) < Enum.count(values, &(&1 == :big_chance))
   end
 
   test "one_of/1" do
@@ -252,7 +253,7 @@ defmodule StreamDataTest do
     test "generates lists" do
       for_many(list_of(constant(:term)), fn value ->
         assert is_list(value)
-        assert Enum.all?(value, & &1 == :term)
+        assert Enum.all?(value, &(&1 == :term))
       end)
     end
 
@@ -264,7 +265,7 @@ defmodule StreamDataTest do
 
     test "with the :length option as a min..max range" do
       for_many(list_of(constant(:term), length: 5..10), fn value ->
-        assert Enum.all?(value, & &1 == :term)
+        assert Enum.all?(value, &(&1 == :term))
         assert length(value) in 5..10
       end)
 
@@ -275,14 +276,14 @@ defmodule StreamDataTest do
 
     test "with the :min_length option set" do
       for_many(list_of(constant(:term), min_length: 5), fn value ->
-        assert Enum.all?(value, & &1 == :term)
+        assert Enum.all?(value, &(&1 == :term))
         assert length(value) >= 5
       end)
     end
 
     test "with the :max_length option set" do
       for_many(list_of(constant(:term), max_length: 5), fn value ->
-        assert Enum.all?(value, & &1 == :term)
+        assert Enum.all?(value, &(&1 == :term))
         assert length(value) <= 5
       end)
     end
@@ -303,7 +304,7 @@ defmodule StreamDataTest do
 
   describe "uniq_list_of/1" do
     test "without options" do
-      for_many(uniq_list_of(integer(1..10_000)), fn list ->
+      for_many(uniq_list_of(integer(1..10000)), fn list ->
         assert Enum.uniq(list) == list
       end)
     end
@@ -366,7 +367,7 @@ defmodule StreamDataTest do
     data =
       fixed_map(%{
         integer: integer(),
-        binary: binary(),
+        binary: binary()
       })
 
     for_many(data, fn map ->
@@ -388,23 +389,35 @@ defmodule StreamDataTest do
     data =
       optional_map(%{
         integer: integer(),
-        binary: binary(),
+        binary: binary()
       })
 
     for_many(data, fn map ->
       assert map_size(map) <= 2
-      assert (map |> Map.keys() |> MapSet.new() |> MapSet.subset?(MapSet.new([:integer, :binary])))
-      if Map.has_key?(map, :integer), do: assert is_integer(Map.fetch!(map, :integer))
-      if Map.has_key?(map, :binary), do: assert is_binary(Map.fetch!(map, :binary))
+      assert map |> Map.keys() |> MapSet.new() |> MapSet.subset?(MapSet.new([:integer, :binary]))
+
+      if Map.has_key?(map, :integer) do
+        assert is_integer(Map.fetch!(map, :integer))
+      end
+
+      if Map.has_key?(map, :binary) do
+        assert(is_binary(Map.fetch!(map, :binary)))
+      end
     end)
 
     data = optional_map(integer: integer(), binary: binary())
 
     for_many(data, fn map ->
       assert map_size(map) <= 2
-      assert (map |> Map.keys() |> MapSet.new() |> MapSet.subset?(MapSet.new([:integer, :binary])))
-      if Map.has_key?(map, :integer), do: assert is_integer(Map.fetch!(map, :integer))
-      if Map.has_key?(map, :binary), do: assert is_binary(Map.fetch!(map, :binary))
+      assert map |> Map.keys() |> MapSet.new() |> MapSet.subset?(MapSet.new([:integer, :binary]))
+
+      if Map.has_key?(map, :integer) do
+        assert is_integer(Map.fetch!(map, :integer))
+      end
+
+      if Map.has_key?(map, :binary) do
+        assert is_binary(Map.fetch!(map, :binary))
+      end
     end)
   end
 
@@ -426,6 +439,7 @@ defmodule StreamDataTest do
     for_many(data, 100, fn
       tree when is_list(tree) ->
         assert Enum.all?(List.flatten(tree), &is_boolean/1)
+
       other ->
         assert is_boolean(other)
     end)
@@ -451,6 +465,7 @@ defmodule StreamDataTest do
     test "with :ascii" do
       for_many(string(:ascii), fn string ->
         assert is_binary(string)
+
         Enum.each(String.to_charlist(string), fn char ->
           assert char in ?\s..?~
         end)
@@ -497,10 +512,7 @@ defmodule StreamDataTest do
 
   test "simple_term/0" do
     for_many(simple_term(), fn term ->
-      assert is_boolean(term) or
-               is_integer(term) or
-               is_float(term) or
-               is_binary(term) or
+      assert is_boolean(term) or is_integer(term) or is_float(term) or is_binary(term) or
                is_atom(term)
     end)
   end

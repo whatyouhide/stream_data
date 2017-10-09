@@ -168,6 +168,7 @@ defmodule StreamData do
     case tuple_size(tuple) do
       0 ->
         LazyTree.constant({})
+
       size ->
         {trees, _seed} =
           Enum.map_reduce(0..(size - 1), seed, fn index, acc ->
@@ -175,6 +176,7 @@ defmodule StreamData do
             data = elem(tuple, index)
             {call(data, seed1, size), seed2}
           end)
+
         trees
         |> LazyTree.zip()
         |> LazyTree.map(&List.to_tuple/1)
@@ -182,8 +184,9 @@ defmodule StreamData do
   end
 
   defp call(other, _seed, _size) do
-    raise ArgumentError, "expected a generator, which can be a %StreamData{} struct, an atom, " <>
-                         "or a tuple with generators in it, but got: #{inspect(other)}"
+    raise ArgumentError,
+          "expected a generator, which can be a %StreamData{} struct, an atom, " <>
+            "or a tuple with generators in it, but got: #{inspect(other)}"
   end
 
   ## Generators
@@ -283,14 +286,17 @@ defmodule StreamData do
   This generator shrinks like `bind/2` but values that are skipped are not used
   for shrinking (similarly to how `filter/3` works).
   """
-  @spec bind_filter(t(a), (a -> {:cont, t(b)} | :skip), non_neg_integer()) ::
-        t(b) when a: term(), b: term()
+  @spec bind_filter(t(a), (a -> {:cont, t(b)} | :skip), non_neg_integer()) :: t(b)
+        when a: term(),
+             b: term()
   def bind_filter(data, fun, max_consecutive_failures \\ 10)
-      when is_function(fun, 1) and is_integer(max_consecutive_failures) and max_consecutive_failures >= 0 do
+      when is_function(fun, 1) and is_integer(max_consecutive_failures) and
+             max_consecutive_failures >= 0 do
     new(fn seed, size ->
       case bind_filter(seed, size, data, fun, max_consecutive_failures) do
         {:ok, lazy_tree} ->
           lazy_tree
+
         :too_many_failures ->
           raise FilterTooNarrowError, max_consecutive_failures: max_consecutive_failures
       end
@@ -313,6 +319,7 @@ defmodule StreamData do
           |> LazyTree.flatten()
 
         {:ok, tree}
+
       :error ->
         bind_filter(seed2, size, data, mapper, tries_left - 1)
     end
@@ -389,14 +396,13 @@ defmodule StreamData do
   """
   @spec filter(t(a), (a -> as_boolean(term())), non_neg_integer()) :: t(a) when a: term()
   def filter(data, predicate, max_consecutive_failures \\ 10)
-      when is_function(predicate, 1) and is_integer(max_consecutive_failures) and max_consecutive_failures >= 0 do
-    bind_filter(data, fn term ->
-      if predicate.(term) do
-        {:cont, constant(term)}
-      else
-        :skip
-      end
-    end, max_consecutive_failures)
+      when is_function(predicate, 1) and is_integer(max_consecutive_failures) and
+             max_consecutive_failures >= 0 do
+    bind_filter_fun = fn term ->
+      if predicate.(term), do: {:cont, constant(term)}, else: :skip
+    end
+
+    bind_filter(data, bind_filter_fun, max_consecutive_failures)
   end
 
   ### Rich API
@@ -421,7 +427,7 @@ defmodule StreamData do
       range
       |> uniform_in_range(seed)
       |> integer_lazy_tree()
-      |> LazyTree.filter(& &1 in range)
+      |> LazyTree.filter(&(&1 in range))
     end)
   end
 
@@ -429,8 +435,8 @@ defmodule StreamData do
     children =
       int
       |> Stream.iterate(&div(&1, 2))
-      |> Stream.take_while(& &1 != 0)
-      |> Stream.map(& int - &1)
+      |> Stream.take_while(&(&1 != 0))
+      |> Stream.map(&(int - &1))
       |> Stream.map(&integer_lazy_tree/1)
 
     LazyTree.new(int, children)
@@ -632,7 +638,7 @@ defmodule StreamData do
   """
   @spec one_of([t(a)]) :: t(a) when a: term()
   def one_of([_ | _] = datas) do
-    bind(integer(0..length(datas) - 1), fn index ->
+    bind(integer(0..(length(datas) - 1)), fn index ->
       Enum.fetch!(datas, index)
     end)
   end
@@ -661,7 +667,7 @@ defmodule StreamData do
       raise "cannot generate elements from an empty enumerable"
     end
 
-    bind(integer(0..enum_length - 1), fn index ->
+    bind(integer(0..(enum_length - 1)), fn index ->
       constant(Enum.fetch!(enum, index))
     end)
   end
@@ -742,20 +748,29 @@ defmodule StreamData do
       case Keyword.fetch(options, :length) do
         {:ok, length} when is_integer(length) and length >= 0 ->
           {length, length}
+
         {:ok, min..max} when min >= 0 and max >= 0 ->
           {min(min, max), max(min, max)}
+
         {:ok, other} ->
-          raise ArgumentError, ":length must be a positive integer or a range " <>
-                               "of positive integers, got: #{inspect(other)}"
+          raise ArgumentError,
+                ":length must be a positive integer or a range " <>
+                  "of positive integers, got: #{inspect(other)}"
+
         :error ->
           min_length = Keyword.get(options, :min_length, 0)
           max_length = Keyword.get(options, :max_length, :infinity)
+
           unless is_integer(min_length) and min_length >= 0 do
-            raise ArgumentError, ":min_length must be a positive integer, got: #{inspect(min_length)}"
+            raise ArgumentError,
+                  ":min_length must be a positive integer, got: #{inspect(min_length)}"
           end
+
           unless (is_integer(max_length) and max_length >= 0) or max_length == :infinity do
-            raise ArgumentError, ":max_length must be a positive integer, got: #{inspect(max_length)}"
+            raise ArgumentError,
+                  ":max_length must be a positive integer, got: #{inspect(max_length)}"
           end
+
           {min_length, max_length}
       end
 
@@ -847,20 +862,52 @@ defmodule StreamData do
       length = uniform_in_range(length_range, seed1)
 
       data
-      |> uniq_list_of(uniq_fun, seed2, size, _seen = MapSet.new(), max_tries, max_tries, length, _acc = [])
+      |> uniq_list_of(
+           uniq_fun,
+           seed2,
+           size,
+           _seen = MapSet.new(),
+           max_tries,
+           max_tries,
+           length,
+           []
+         )
       |> LazyTree.zip()
       |> LazyTree.map(&list_lazy_tree(&1, min_length))
       |> LazyTree.flatten()
       |> LazyTree.map(&Enum.uniq_by(&1, uniq_fun))
-      |> LazyTree.filter(& length(&1) >= min_length)
+      |> LazyTree.filter(&(length(&1) >= min_length))
     end)
   end
 
-  defp uniq_list_of(_data, _uniq_fun, _seed, _size, seen, _tries_left = 0, max_tries, remaining, _acc) do
-    raise TooManyDuplicatesError, max_tries: max_tries, remaining_to_generate: remaining, generated: seen
+  defp uniq_list_of(
+         _data,
+         _uniq_fun,
+         _seed,
+         _size,
+         seen,
+         _tries_left = 0,
+         max_tries,
+         remaining,
+         _acc
+       ) do
+    raise TooManyDuplicatesError,
+      max_tries: max_tries,
+      remaining_to_generate: remaining,
+      generated: seen
   end
 
-  defp uniq_list_of(_data, _uniq_fun, _seed, _size, _seen, _tries_left, _max_tries, _remaining = 0, acc) do
+  defp uniq_list_of(
+         _data,
+         _uniq_fun,
+         _seed,
+         _size,
+         _seen,
+         _tries_left,
+         _max_tries,
+         _remaining = 0,
+         acc
+       ) do
     acc
   end
 
@@ -873,7 +920,17 @@ defmodule StreamData do
     if MapSet.member?(seen, key) do
       uniq_list_of(data, uniq_fun, seed2, size, seen, tries_left - 1, max_tries, remaining, acc)
     else
-      uniq_list_of(data, uniq_fun, seed2, size, MapSet.put(seen, key), max_tries, max_tries, remaining - 1, [tree | acc])
+      uniq_list_of(
+        data,
+        uniq_fun,
+        seed2,
+        size,
+        MapSet.put(seen, key),
+        max_tries,
+        max_tries,
+        remaining - 1,
+        [tree | acc]
+      )
     end
   end
 
@@ -893,12 +950,14 @@ defmodule StreamData do
   ending) and towards shrunk elements of the list and a shrunk improper
   ending.
   """
-  @spec nonempty_improper_list_of(t(a), t(b)) ::
-        t(nonempty_improper_list(a, b)) when a: term(), b: term()
+  @spec nonempty_improper_list_of(t(a), t(b)) :: t(nonempty_improper_list(a, b))
+        when a: term(),
+             b: term()
   def nonempty_improper_list_of(first, improper) do
     map({list_of(first), improper}, fn
       {[], ending} ->
         [ending]
+
       {list, ending} ->
         List.foldr(list, ending, &[&1 | &2])
     end)
@@ -922,12 +981,13 @@ defmodule StreamData do
   Shrinks towards smaller lists and shrunk elements in those lists, and
   ultimately towards proper lists.
   """
-  @spec maybe_improper_list_of(t(a), t(b)) ::
-        t(maybe_improper_list(a, b)) when a: term(), b: term()
+  @spec maybe_improper_list_of(t(a), t(b)) :: t(maybe_improper_list(a, b))
+        when a: term(),
+             b: term()
   def maybe_improper_list_of(first, improper) do
     frequency([
       {2, list_of(first)},
-      {1, nonempty_improper_list_of(first, improper)},
+      {1, nonempty_improper_list_of(first, improper)}
     ])
   end
 
@@ -996,8 +1056,9 @@ defmodule StreamData do
   Shrinks towards smallest maps and towards shrinking keys and values according
   to the respective generators.
   """
-  @spec map_of(t(key), t(value), non_neg_integer()) ::
-        t(%{optional(key) => value}) when key: term(), value: term()
+  @spec map_of(t(key), t(value), non_neg_integer()) :: t(%{optional(key) => value})
+        when key: term(),
+             value: term()
   def map_of(key_data, value_data, max_tries \\ 10) do
     {key_data, value_data}
     |> uniq_list_of(uniq_fun: fn {key, _value} -> key end, max_tries: max_tries)
@@ -1127,7 +1188,7 @@ defmodule StreamData do
   """
   @spec nonempty(t(Enumerable.t())) :: t(Enumerable.t())
   def nonempty(enum_data) do
-    filter(enum_data, &not(Enum.empty?(&1)))
+    filter(enum_data, &(not Enum.empty?(&1)))
   end
 
   @doc ~S"""
@@ -1182,11 +1243,12 @@ defmodule StreamData do
       leaf_data = resize(leaf_data, size)
       {seed1, seed2} = split_seed(seed)
       nodes_on_each_level = random_pseudofactors(trunc(:math.pow(size, 1.1)), seed1)
+
       data =
         Enum.reduce(nodes_on_each_level, leaf_data, fn nodes_on_this_level, data_acc ->
           frequency([
             {1, data_acc},
-            {2, resize(subtree_fun.(data_acc), nodes_on_this_level)},
+            {2, resize(subtree_fun.(data_acc), nodes_on_this_level)}
           ])
         end)
 
@@ -1407,7 +1469,7 @@ defmodule StreamData do
     0x20..0x7E,
     0xA0..0xD7FF,
     0xE000..0xFFFD,
-    0x10000..0x10FFFF,
+    0x10000..0x10FFFF
   ]
 
   @doc """
@@ -1446,7 +1508,7 @@ defmodule StreamData do
   possible values of `kind_or_chars` above.
   """
   @spec string(:ascii | :alphanumeric | :printable | Range.t() | [Range.t() | pos_integer()]) ::
-        t(String.t())
+          t(String.t())
   def string(kind_or_codepoints, options \\ [])
 
   def string(:ascii, options) do
@@ -1474,6 +1536,7 @@ defmodule StreamData do
       bind(member_of(codepoints), fn
         %Range{} = range ->
           integer(range)
+
         codepoint when is_integer(codepoint) ->
           constant(codepoint)
       end)
@@ -1482,10 +1545,11 @@ defmodule StreamData do
   end
 
   def string(other, _options) do
-    raise ArgumentError, "unsupported string kind, has to be one of :ascii, " <>
-                         ":alphanumeric, :printable, a range, or a list of " <>
-                         "ranges or single codepoints, got: #{inspect(other)}"
- end
+    raise ArgumentError,
+          "unsupported string kind, has to be one of :ascii, " <>
+            ":alphanumeric, :printable, a range, or a list of " <>
+            "ranges or single codepoints, got: #{inspect(other)}"
+  end
 
   @unquoted_atom_characters [?a..?z, ?A..?Z, ?0..?9, ?_, ?@]
 
@@ -1507,7 +1571,7 @@ defmodule StreamData do
       frequency([
         {4, integer(?a..?z)},
         {2, integer(?A..?Z)},
-        {1, constant(?_)},
+        {1, constant(?_)}
       ])
 
     # We limit the size to 255 so that adding the first character doesn't
@@ -1578,7 +1642,7 @@ defmodule StreamData do
   def iodata() do
     frequency([
       {3, binary()},
-      {2, iolist()},
+      {2, iolist()}
     ])
   end
 
@@ -1698,7 +1762,9 @@ defmodule StreamData do
   value, which in this case is `11`.
   """
   @spec check_all(t(a), Keyword.t(), (a -> {:ok, term()} | {:error, b})) ::
-        {:ok, map()} | {:error, map()} when a: term(), b: term()
+          {:ok, map()} | {:error, map()}
+        when a: term(),
+             b: term()
   def check_all(data, options, fun) when is_list(options) and is_function(fun, 1) do
     seed = new_seed(Keyword.fetch!(options, :initial_seed))
     size = Keyword.get(options, :initial_size, 1)
@@ -1707,7 +1773,7 @@ defmodule StreamData do
 
     config = %{
       max_runs: max_runs,
-      max_shrinking_steps: max_shrinking_steps,
+      max_shrinking_steps: max_shrinking_steps
     }
 
     check_all(data, seed, size, fun, _runs = 0, config)
@@ -1724,8 +1790,11 @@ defmodule StreamData do
     case fun.(root) do
       {:ok, _term} ->
         check_all(data, seed2, size + 1, fun, runs + 1, config)
+
       {:error, reason} ->
-        shrinking_result = shrink_failure(shrink_initial_cont(children), nil, reason, fun, 1, config)
+        shrinking_result =
+          shrink_failure(shrink_initial_cont(children), nil, reason, fun, 1, config)
+
         shrinking_result = Map.put(shrinking_result, :original_failure, reason)
         {:error, shrinking_result}
     end
@@ -1735,7 +1804,9 @@ defmodule StreamData do
     &Enumerable.reduce(nodes, &1, fn elem, acc -> {:suspend, [elem | acc]} end)
   end
 
-  defp shrink_failure(_cont, _parent_cont, smallest, _fun, nodes_visited, %{max_shrinking_steps: nodes_visited}) do
+  defp shrink_failure(_cont, _parent_cont, smallest, _fun, nodes_visited, %{
+         max_shrinking_steps: nodes_visited
+       }) do
     %{shrunk_failure: smallest, nodes_visited: nodes_visited}
   end
 
@@ -1752,14 +1823,24 @@ defmodule StreamData do
     case cont.({:cont, []}) do
       {state, _} when state in [:halted, :done] and is_function(parent_cont) ->
         shrink_failure(parent_cont, nil, smallest, fun, nodes_visited, config)
+
       {state, _} when state in [:halted, :done] ->
         %{shrunk_failure: smallest, nodes_visited: nodes_visited}
+
       {:suspended, [child], cont} ->
         case fun.(child.root) do
           {:ok, _term} ->
             shrink_failure(cont, nil, smallest, fun, nodes_visited + 1, config)
+
           {:error, reason} ->
-            shrink_failure(shrink_initial_cont(child.children), cont, reason, fun, nodes_visited + 1, config)
+            shrink_failure(
+              shrink_initial_cont(child.children),
+              cont,
+              reason,
+              fun,
+              nodes_visited + 1,
+              config
+            )
         end
     end
   end

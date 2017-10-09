@@ -56,7 +56,7 @@ defmodule StreamData.LazyTreeTest do
       new(:root1, [
         constant(:child1_a),
         constant(:child1_b),
-        new(:root2, [constant(:child2_a), constant(:child2_b)]),
+        new(:root2, [constant(:child2_a), constant(:child2_b)])
       ])
 
     assert realize_tree(joined_tree) == realize_tree(expected)
@@ -67,11 +67,13 @@ defmodule StreamData.LazyTreeTest do
 
     tree =
       new(1, [
-        new(1, [constant(-1), constant(2)]), # here only an inner child is removed since it doesn't pass the filter
-        new(-1, [constant(1), constant(2)]), # this whole branch is cut since the root doesn't pass the filter
+        # Here only an inner child is removed since it doesn't pass the filter
+        new(1, [constant(-1), constant(2)]),
+        # This whole branch is cut since the root doesn't pass the filter
+        new(-1, [constant(1), constant(2)])
       ])
 
-    filtered_tree = LazyTree.filter(tree, & &1 > 0)
+    filtered_tree = LazyTree.filter(tree, &(&1 > 0))
 
     expected = new(1, [new(1, [constant(2)])])
 

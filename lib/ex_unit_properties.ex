@@ -247,7 +247,11 @@ defmodule ExUnitProperties do
       data =
         StreamData.bind_filter(unquote(generator), fn unquote(pattern) = generated_value ->
           var!(generated_values, unquote(__MODULE__)) =
-            [{unquote(Macro.to_string(clause)), generated_value} | var!(generated_values, unquote(__MODULE__))]
+            [
+              {unquote(Macro.to_string(clause)), generated_value}
+              | var!(generated_values, unquote(__MODULE__))
+            ]
+
           unquote(compile_clauses(rest, body))
         end)
 
@@ -355,9 +359,11 @@ defmodule ExUnitProperties do
         # The value may be :undefined in a new process
         # though, which means we may need to generate one.
         initial_seed: {0, 0, ExUnit.configuration()[:seed]},
-        initial_size: options[:initial_size] || Application.fetch_env!(:stream_data, :initial_size),
+        initial_size: options[:initial_size] ||
+          Application.fetch_env!(:stream_data, :initial_size),
         max_runs: options[:max_runs] || Application.fetch_env!(:stream_data, :max_runs),
-        max_shrinking_steps: options[:max_shrinking_steps] || Application.fetch_env!(:stream_data, :max_shrinking_steps),
+        max_shrinking_steps: options[:max_shrinking_steps] ||
+          Application.fetch_env!(:stream_data, :max_shrinking_steps)
       ]
 
       property =
@@ -370,8 +376,9 @@ defmodule ExUnitProperties do
                 result = %{
                   exception: exception,
                   stacktrace: System.stacktrace(),
-                  generated_values: var!(generated_values, unquote(__MODULE__)),
+                  generated_values: var!(generated_values, unquote(__MODULE__))
                 }
+
                 {:error, result}
             else
               _result ->
@@ -398,9 +405,12 @@ defmodule ExUnitProperties do
   end
 
   def __raise__(test_result) do
-    %{original_failure: original_failure,
+    %{
+      original_failure: original_failure,
       shrunk_failure: shrunk_failure,
-      nodes_visited: nodes_visited} = test_result
+      nodes_visited: nodes_visited
+    } = test_result
+
     choose_error_and_raise(original_failure, shrunk_failure, nodes_visited)
   end
 
@@ -408,24 +418,36 @@ defmodule ExUnitProperties do
     reraise enrich_assertion_error(shrunk_failure, nodes_visited), shrunk_failure.stacktrace
   end
 
-  defp choose_error_and_raise(%{exception: %AssertionError{}} = original_failure, _, nodes_visited) do
+  defp choose_error_and_raise(
+         %{exception: %AssertionError{}} = original_failure,
+         _,
+         nodes_visited
+       ) do
     reraise enrich_assertion_error(original_failure, nodes_visited), original_failure.stacktrace
   end
 
   defp choose_error_and_raise(_original_failure, shrunk_failure, nodes_visited) do
-    formatted = indent(Exception.format_banner(:error, shrunk_failure.exception, shrunk_failure.stacktrace), "    ")
+    formatted =
+      indent(
+        Exception.format_banner(:error, shrunk_failure.exception, shrunk_failure.stacktrace),
+        "    "
+      )
+
     message =
       "failed with generated values (after #{nodes_visited} attempt(s)):\n\n" <>
-      "#{format_generated_values(shrunk_failure.generated_values)}\n\n" <>
-      formatted
+        "#{format_generated_values(shrunk_failure.generated_values)}\n\n" <> formatted
+
     reraise Error, [message: message], shrunk_failure.stacktrace
   end
 
-  defp enrich_assertion_error(%{exception: exception, generated_values: generated_values}, nodes_visited) do
+  defp enrich_assertion_error(
+         %{exception: exception, generated_values: generated_values},
+         nodes_visited
+       ) do
     message =
       "Failed with generated values (after #{nodes_visited} attempt(s)):\n\n" <>
-      indent(format_generated_values(generated_values), "    ") <>
-      if(is_binary(exception.message), do: "\n\n" <> exception.message, else: "")
+        indent(format_generated_values(generated_values), "    ") <>
+        if(is_binary(exception.message), do: "\n\n" <> exception.message, else: "")
 
     %{exception | message: message}
   end
@@ -441,9 +463,10 @@ defmodule ExUnitProperties do
   end
 
   defp split_clauses_and_options(clauses_and_options) do
-    case Enum.split_while(clauses_and_options, &not(Keyword.keyword?(&1))) do
+    case Enum.split_while(clauses_and_options, &(not Keyword.keyword?(&1))) do
       {_clauses, []} = result ->
         result
+
       {clauses, [options]} ->
         {clauses, options}
     end

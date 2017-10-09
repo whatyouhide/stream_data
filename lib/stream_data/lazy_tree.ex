@@ -11,9 +11,9 @@ defmodule StreamData.LazyTree do
   defstruct [:root, :children]
 
   @type t(node) :: %__MODULE__{
-    root: node,
-    children: Enumerable.t(), # of t(node)
-  }
+          root: node,
+          children: Enumerable.t()
+        }
 
   @doc """
   Creates a new lazy tree from the given `root` and enumerable of `children`.
@@ -81,8 +81,9 @@ defmodule StreamData.LazyTree do
       end)
 
   """
-  @spec filter_map(t(a), (a -> {:cont, b} | :skip)) ::
-        {:ok, t(b)} | :error when a: term(), b: term()
+  @spec filter_map(t(a), (a -> {:cont, b} | :skip)) :: {:ok, t(b)} | :error
+        when a: term(),
+             b: term()
   def filter_map(%__MODULE__{} = tree, fun) when is_function(fun, 1) do
     %__MODULE__{root: root} = tree = map(tree, fun)
 
@@ -94,6 +95,7 @@ defmodule StreamData.LazyTree do
           |> map(fn {:cont, elem} -> elem end)
 
         {:ok, tree}
+
       :skip ->
         :error
     end
