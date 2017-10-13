@@ -96,12 +96,11 @@ defmodule StreamData do
       `tuple/1`. For example, `{StreamData.integer(), StreamData.boolean()}`
       generates entries like `{10, false}`.
 
-  Note that *these terms are only implicitly converted to generators when
-  composing them*. This means that these terms are not full-fledged generators:
-  for example, atoms cannot be enumerated directly as they don't implement the
-  `Enumerable` protocol. However, `StreamData.map(:foo, &Atom.to_string/1)` can
-  be enumerated since `:foo` is implicitly converted to a generator when passed
-  to a `StreamData` function.
+  Note that *these terms must be explicitly converted to stream data generators*.
+  This means that these terms are not full-fledged generators. For example, atoms
+  cannot be enumerated directly as they don't implement the `Enumerable` protocol.
+  However, `StreamData.constant(:foo)` is enumerable as it has been wrapped in
+  a `StreamData` function.
   """
 
   alias StreamData.LazyTree
