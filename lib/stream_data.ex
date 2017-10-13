@@ -168,9 +168,9 @@ defmodule StreamData do
       0 ->
         LazyTree.constant({})
 
-      size ->
+      tuple_size ->
         {trees, _seed} =
-          Enum.map_reduce(0..(size - 1), seed, fn index, acc ->
+          Enum.map_reduce(0..(tuple_size - 1), seed, fn index, acc ->
             {seed1, seed2} = split_seed(acc)
             data = elem(tuple, index)
             {call(data, seed1, size), seed2}
