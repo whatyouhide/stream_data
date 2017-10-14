@@ -491,11 +491,20 @@ defmodule StreamDataTest do
     end
   end
 
-  test "unquoted_atom/0" do
-    for_many(unquoted_atom(), fn atom ->
-      assert is_atom(atom)
-      refute String.starts_with?(inspect(atom), ":\"")
-    end)
+  describe "atom/1" do
+    test ":unquoted" do
+      for_many(atom(:unquoted), fn atom ->
+        assert is_atom(atom)
+        refute String.starts_with?(inspect(atom), ":\"")
+      end)
+    end
+
+    test ":alias" do
+      for_many(atom(:alias), fn module ->
+        assert is_atom(module)
+        assert String.starts_with?(Atom.to_string(module), "Elixir.")
+      end)
+    end
   end
 
   test "iolist/0" do

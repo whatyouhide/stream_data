@@ -1169,7 +1169,7 @@ defmodule StreamData do
   """
   @spec keyword_of(t(a)) :: t(keyword(a)) when a: term()
   def keyword_of(value_data) do
-    list_of({unquoted_atom(), value_data})
+    list_of({atom(:unquoted), value_data})
   end
 
   @doc """
@@ -1550,22 +1550,31 @@ defmodule StreamData do
             "ranges or single codepoints, got: #{inspect(other)}"
   end
 
-  @unquoted_atom_characters [?a..?z, ?A..?Z, ?0..?9, ?_, ?@]
-
   @doc """
-  Generates atoms that don't need to be quoted when written as literals.
+  Generates atoms of various `kind`s.
+
+  `kind` can be:
+
+    * `:unquoted` - this generates atoms that don't need to be quoted when written as literals.
+      For example, it will generate `:foo` but not `:"foo bar"`.
+
+    * `:alias` - generates Elixir aliases like `Foo` or `Foo.Bar.Baz`.
 
   ## Examples
 
-      Enum.take(StreamData.unquoted_atom(), 3)
+      Enum.take(StreamData.atom(:unquoted), 3)
       #=> [:xF, :y, :B_]
 
   ## Shrinking
 
-  Shrinks towards smaller atoms in the `?a..?z` character set.
+  Shrinks towards smaller atoms and towards "simpler" letters (like towards only alphabet
+  letters).
   """
-  @spec unquoted_atom() :: t(atom())
-  def unquoted_atom() do
+
+  def atom(kind)
+
+  @unquoted_atom_characters [?a..?z, ?A..?Z, ?0..?9, ?_, ?@]
+  def atom(:unquoted) do
     starting_char =
       frequency([
         {4, integer(?a..?z)},
@@ -1573,28 +1582,33 @@ defmodule StreamData do
         {1, constant(?_)}
       ])
 
-    # We limit the size to 255 so that adding the first character doesn't
-    # break the system limit of 256 chars in an atom.
-    rest = scale(string(@unquoted_atom_characters), &min(&1, 255))
+    # We limit the size to 254 so that adding the first character doesn't
+    # break the system limit of 255 chars in an atom.
+    rest = scale(string(@unquoted_atom_characters), &min(&1, 254))
 
     {starting_char, rest}
-    |> resize_atom_data()
-    |> map(fn {first, rest} -> String.to_atom(<<first>> <> rest) end)
+    |> map(fn {first, rest} -> String.to_atom(<<first, rest::binary>>) end)
+    |> scale_with_exponent(0.75)
   end
 
-  def module_alias() do
-    chars = string(unquote(Enum.concat([?a..?z, ?A..?Z, ?0..?9, [?_]])))
+  @alias_atom_characters [?a..?z, ?A..?Z, ?0..?9, ?_]
+  def atom(:alias) do
+    sized(fn size ->
+      max_list_length =
+        size
+        |> min(100)
+        |> :math.pow(0.75)
+        |> Float.ceil()
+        |> trunc()
 
-    {integer(?A..?Z), scale(chars, &min(&1, 255))}
-    |> map(fn {first, rest} -> <<first>> <> rest end)
-    |> list_of()
-    |> nonempty()
-    |> map(&Module.concat/1)
-    |> scale(&trunc(:math.pow(&1, 0.5)))
-  end
+      first_letter = integer(?A..?Z)
+      other_letters = string(@alias_atom_characters, max_length: trunc(255 / max_list_length))
 
-  defp resize_atom_data(data) do
-    scale(data, fn size -> min(trunc(:math.pow(size, 0.5)), 256) end)
+      {first_letter, other_letters}
+      |> map(fn {first, rest} -> <<first, rest::binary>> end)
+      |> list_of(length: 1..max_list_length)
+      |> map(&Module.concat/1)
+    end)
   end
 
   @doc """
@@ -1616,7 +1630,7 @@ defmodule StreamData do
   def iolist() do
     # We try to use binaries that scale slower otherwise we end up with iodata with
     # big binaries at many levels deep.
-    scaled_binary = scale(binary(), &trunc(:math.pow(&1, 0.6)))
+    scaled_binary = scale_with_exponent(binary(), 0.6)
 
     improper_ending = one_of([scaled_binary, constant([])])
     tree = tree(one_of([byte(), scaled_binary]), &maybe_improper_list_of(&1, improper_ending))
@@ -1655,7 +1669,7 @@ defmodule StreamData do
     * binaries (through `binary/1`)
     * floats (through `uniform_float/0`)
     * booleans (through `boolean/0`)
-    * unquoted atoms (through `unquoted_atom/0`)
+    * atoms (through `atom/1`)
     * references (which are not shrinkable)
 
   Compound terms are terms that contain other terms (which are generated recursively with
@@ -1679,11 +1693,15 @@ defmodule StreamData do
         when simple: boolean() | integer() | binary() | float() | atom()
   def term() do
     ref = new(fn _seed, _size -> LazyTree.constant(make_ref()) end)
-    simple_term = one_of([boolean(), integer(), binary(), uniform_float(), unquoted_atom(), ref])
+    simple_term = one_of([boolean(), integer(), binary(), uniform_float(), atom(:unquoted), ref])
 
     tree(simple_term, fn leaf ->
       one_of([list_of(leaf), map_of(leaf, leaf), {}, {leaf}, {leaf, leaf}, {leaf, leaf, leaf}])
     end)
+  end
+
+  defp scale_with_exponent(data, exponent) do
+    scale(data, fn size -> trunc(:math.pow(size, exponent)) end)
   end
 
   @doc """
