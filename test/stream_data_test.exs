@@ -492,8 +492,8 @@ defmodule StreamDataTest do
   end
 
   describe "atom/1" do
-    test ":unquoted" do
-      for_many(atom(:unquoted), fn atom ->
+    test ":alphanumeric" do
+      for_many(atom(:alphanumeric), fn atom ->
         assert is_atom(atom)
         refute String.starts_with?(inspect(atom), ":\"")
       end)

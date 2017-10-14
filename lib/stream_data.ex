@@ -1169,7 +1169,7 @@ defmodule StreamData do
   """
   @spec keyword_of(t(a)) :: t(keyword(a)) when a: term()
   def keyword_of(value_data) do
-    list_of({atom(:unquoted), value_data})
+    list_of({atom(:alphanumeric), value_data})
   end
 
   @doc """
@@ -1555,14 +1555,14 @@ defmodule StreamData do
 
   `kind` can be:
 
-    * `:unquoted` - this generates atoms that don't need to be quoted when written as literals.
+    * `:alphanumeric` - this generates atoms that don't need to be quoted when written as literals.
       For example, it will generate `:foo` but not `:"foo bar"`.
 
     * `:alias` - generates Elixir aliases like `Foo` or `Foo.Bar.Baz`.
 
   ## Examples
 
-      Enum.take(StreamData.atom(:unquoted), 3)
+      Enum.take(StreamData.atom(:alphanumeric), 3)
       #=> [:xF, :y, :B_]
 
   ## Shrinking
@@ -1574,7 +1574,7 @@ defmodule StreamData do
   def atom(kind)
 
   @unquoted_atom_characters [?a..?z, ?A..?Z, ?0..?9, ?_, ?@]
-  def atom(:unquoted) do
+  def atom(:alphanumeric) do
     starting_char =
       frequency([
         {4, integer(?a..?z)},
@@ -1693,7 +1693,7 @@ defmodule StreamData do
         when simple: boolean() | integer() | binary() | float() | atom()
   def term() do
     ref = new(fn _seed, _size -> LazyTree.constant(make_ref()) end)
-    simple_term = one_of([boolean(), integer(), binary(), uniform_float(), atom(:unquoted), ref])
+    simple_term = one_of([boolean(), integer(), binary(), uniform_float(), atom(:alphanumeric), ref])
 
     tree(simple_term, fn leaf ->
       one_of([list_of(leaf), map_of(leaf, leaf), {}, {leaf}, {leaf, leaf}, {leaf, leaf, leaf}])
