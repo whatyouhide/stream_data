@@ -95,11 +95,16 @@ defmodule StreamDataTest do
 
     test "raises an error when too many consecutive elements fail the predicate" do
       data = filter(constant(:term), &is_binary/1, 10)
-      message = ~r/too many \(10\) consecutive elements were filtered out/
 
-      assert_raise StreamData.FilterTooNarrowError, message, fn ->
-        Enum.take(data, 1)
-      end
+      exception =
+        assert_raise StreamData.FilterTooNarrowError, fn ->
+          Enum.take(data, 1)
+        end
+
+      message = Exception.message(exception)
+
+      assert message =~ "too many consecutive elements (10 elements in this case)"
+      assert message =~ "The last element to be filtered out was: :term."
     end
   end
 

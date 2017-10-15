@@ -120,14 +120,40 @@ defmodule StreamData do
   defstruct [:generator]
 
   defmodule FilterTooNarrowError do
-    defexception [:max_consecutive_failures]
+    defexception [:max_consecutive_failures, :last_generated_value]
 
-    def message(%{max_consecutive_failures: max_consecutive_failures}) do
-      "too many (#{max_consecutive_failures}) consecutive elements were filtered out. " <>
-        "Make sure to avoid filters that are too strict and filter out too many elements " <>
-        "and make sure a small generation size doesn't affect the filter too heavily (such as " <>
-        "when empty lists are filtered out but small generation size forces generation of many " <>
-        "empty lists)"
+    def message(exception) do
+      %{
+        max_consecutive_failures: max_consecutive_failures,
+        last_generated_value: last_generated_value
+      } = exception
+
+      last_element_part =
+        case last_generated_value do
+          {:value, value} -> " The last element to be filtered out was: #{inspect(value)}."
+          :none -> ""
+        end
+
+      """
+      too many consecutive elements (#{max_consecutive_failures} elements in this case) were
+      filtered out.#{last_element_part} To avoid this:
+
+        * make sure the generation space contains enough values that the chance of a generated
+          value being filtered out is small. For example, don't generate all integers and filter
+          out odd ones in order to have a generator of even integers (since you'd be taking out
+          half the generation space).
+
+        * keep an eye on how the generation size affects the generator being filtered. For
+          example, you might be filtering out only a handful of values from the generation space,
+          but small generation sizes might make the generation space much smaller hence increasing
+          the probability of values that you'd filter out being generated.
+
+        * try to restructure your generator so that instead of generating many values and taking
+          out the ones you don't want, you instead generate values and turn all of them into
+          values that are suitable. For example, multiply integers by two to have a generator of
+          even values instead of filtering out all odd integers.
+
+      """
     end
   end
 
@@ -298,7 +324,14 @@ defmodule StreamData do
           lazy_tree
 
         :too_many_failures ->
-          raise FilterTooNarrowError, max_consecutive_failures: max_consecutive_failures
+          raise FilterTooNarrowError,
+            max_consecutive_failures: max_consecutive_failures,
+            last_generated_value: :none
+
+        {:too_many_failures, last_generated_value} ->
+          raise FilterTooNarrowError,
+            max_consecutive_failures: max_consecutive_failures,
+            last_generated_value: {:value, last_generated_value}
       end
     end)
   end
@@ -319,6 +352,9 @@ defmodule StreamData do
           |> LazyTree.flatten()
 
         {:ok, tree}
+
+      :error when tries_left == 1 ->
+        {:too_many_failures, lazy_tree.root}
 
       :error ->
         bind_filter(seed2, size, data, mapper, tries_left - 1)
