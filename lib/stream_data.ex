@@ -1243,7 +1243,7 @@ defmodule StreamData do
 
   This is best explained with an example. Say that we want to generate binary
   trees of integers, and that we represent binary trees as either an integer (a
-  leaf) a `%Branch{}` struct:
+  leaf) or a `%Branch{}` struct:
 
       defmodule Branch do
         defstruct [:left, :right]
@@ -1269,7 +1269,7 @@ defmodule StreamData do
 
   ## Examples
 
-  A common example is nested lists:
+  A common example is a nested list:
 
       data = StreamData.tree(StreamData.integer(), &StreamData.list_of/1)
       Enum.at(StreamData.resize(data, 10), 0)
