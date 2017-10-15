@@ -1700,7 +1700,9 @@ defmodule StreamData do
         when simple: boolean() | integer() | binary() | float() | atom()
   def term() do
     ref = new(fn _seed, _size -> LazyTree.constant(make_ref()) end)
-    simple_term = one_of([boolean(), integer(), binary(), uniform_float(), atom(:alphanumeric), ref])
+
+    simple_term =
+      one_of([boolean(), integer(), binary(), uniform_float(), atom(:alphanumeric), ref])
 
     tree(simple_term, fn leaf ->
       one_of([list_of(leaf), map_of(leaf, leaf), {}, {leaf}, {leaf, leaf}, {leaf, leaf, leaf}])
