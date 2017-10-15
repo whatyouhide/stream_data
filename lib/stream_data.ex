@@ -1275,6 +1275,31 @@ defmodule StreamData do
       Enum.at(StreamData.resize(data, 10), 0)
       #=> [[], '\t', '\a', [1, 2], -3, [-7, [10]]]
 
+  Another common example is a tree, where the data exists only in the inner nodes.
+  Its type is:
+
+      @type tree(t) :: :leaf | {:node, t, tree(t), tree(t)} where t: var
+
+  To generate such a tree of integers, we use the first parameter `leaf_data` to
+  generate the leaf nodes. The function `subtree_fun` generates inner nodes,
+  including the integer value and using its `child_gen` parameter to generate
+  the child nodes.
+
+      tree = StreamData.tree(:leaf, fn child_gen ->
+        {:node, integer(), child_gen, child_gen} end)
+      Enum.at(StreamData.resize(tree, 20), 1)
+      #=> {
+        :node,
+        -1,
+        {
+          :node,
+          2,
+          {:node, 3, :leaf, :leaf},
+          {:node, 0, :leaf, {:node, 0, :leaf, :leaf}}
+        },
+        {:node, 1, :leaf, :leaf}
+      }
+
   ## Shrinking
 
   Shrinks values and shrinks towards less deep trees.
