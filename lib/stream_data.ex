@@ -401,7 +401,7 @@ defmodule StreamData do
   well.
   """
   @spec filter(t(a), (a -> as_boolean(term())), non_neg_integer()) :: t(a) when a: term()
-  def filter(data, predicate, max_consecutive_failures \\ 10)
+  def filter(data, predicate, max_consecutive_failures \\ 25)
       when is_function(predicate, 1) and is_integer(max_consecutive_failures) and
              max_consecutive_failures >= 0 do
     bind_filter_fun = fn term ->
