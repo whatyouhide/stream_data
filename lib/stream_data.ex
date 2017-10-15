@@ -1251,7 +1251,7 @@ defmodule StreamData do
       end
 
   Now, we can generate trees by using the `integer()` generator to generate
-  the leaf nodes. The we can use the `subtree_fun` function to generate inner
+  the leaf nodes. Then we can use the `subtree_fun` function to generate inner
   nodes (that is, `%Branch{}` structs or `integer()`s).
 
       tree_data =
@@ -1260,11 +1260,11 @@ defmodule StreamData do
             %Branch{left: left, right: right}
           end)
         end)
-      
+
       Enum.at(StreamData.resize(tree_data, 10), 0)
       #=> %Branch{left: %Branch{left: 4, right: -1}, right: -2}
 
-  ## Examples
+  ## Example
 
   A common example is a nested list:
 
