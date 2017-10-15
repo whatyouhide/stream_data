@@ -1756,7 +1756,7 @@ defmodule StreamData do
   function "holds" for all generated data. `fun` is called with each generated
   value and can return one of:
 
-    * {:ok, term} - means that the function "holds" for the given value. `term`
+    * `{:ok, term}` - means that the function "holds" for the given value. `term`
       can be anything and will be used for internal purposes by `StreamData`.
 
     * `{:error, term}` - means that the function doesn't hold for the given
