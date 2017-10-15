@@ -1250,21 +1250,17 @@ defmodule StreamData do
         defstruct [:left, :right]
       end
 
-  We can start off by creating a generator that generates branches given the
-  generator that generates the content of each node (`integer/0` in our case):
+  Now, we can generate trees by using the `integer()` generator to generate
+  the leaf nodes. The we can use the `subtree_fun` function to generate inner
+  nodes (that is, `%Branch{}` structs or `integer()`s).
 
-      defmodule MyTree do
-        def branch_data(child_data) do
+      tree_data =
+        StreamData.tree(StreamData.integer(), fn child_data ->
           StreamData.map({child_data, child_data}, fn {left, right} ->
             %Branch{left: left, right: right}
           end)
-        end
-      end
-
-  Now, we can generate trees by simply using `branch_data` as the `subtree_fun`,
-  and `integer/0` as `leaf_data`:
-
-      tree_data = StreamData.tree(StreamData.integer(), &MyTree.branch_data/1)
+        end)
+      
       Enum.at(StreamData.resize(tree_data, 10), 0)
       #=> %Branch{left: %Branch{left: 4, right: -1}, right: -2}
 
@@ -1275,31 +1271,6 @@ defmodule StreamData do
       data = StreamData.tree(StreamData.integer(), &StreamData.list_of/1)
       Enum.at(StreamData.resize(data, 10), 0)
       #=> [[], '\t', '\a', [1, 2], -3, [-7, [10]]]
-
-  Another common example is a tree, where the data exists only in the inner nodes.
-  Its type is:
-
-      @type tree(t) :: :leaf | {:node, t, tree(t), tree(t)} where t: var
-
-  To generate such a tree of integers, we use the first parameter `leaf_data` to
-  generate the leaf nodes. The function `subtree_fun` generates inner nodes,
-  including the integer value and using its `child_gen` parameter to generate
-  the child nodes.
-
-      tree = StreamData.tree(:leaf, fn child_gen ->
-        {:node, integer(), child_gen, child_gen} end)
-      Enum.at(StreamData.resize(tree, 20), 1)
-      #=> {
-        :node,
-        -1,
-        {
-          :node,
-          2,
-          {:node, 3, :leaf, :leaf},
-          {:node, 0, :leaf, {:node, 0, :leaf, :leaf}}
-        },
-        {:node, 1, :leaf, :leaf}
-      }
 
   ## Shrinking
 
