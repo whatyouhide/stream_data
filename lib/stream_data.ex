@@ -419,13 +419,17 @@ defmodule StreamData do
       example, less than 10) then the probabilitty of generating many consecutive values in `1..5`
       is high.
 
-    * Try to restructure your generator so that instead of generating many values and taking out the ones you don't want, you instead generate values and turn all of them into values that are suitable. A good example is a generator for even integers. You could write it as
+    * Try to restructure your generator so that instead of generating many values and taking out
+      the ones you don't want, you instead generate values and turn all of them into values that
+      are suitable. A good example is a generator for even integers. You could write it as
 
           def even_integers() do
             StreamData.filter(StreamData.integer(), &Integer.is_even/1)
           end
 
-      but this would generate many unused values, increasing likeliness of `StreamData.FilterTooNarrowError` errors and performing inefficiently. Instead, you can use `map/2` to turn all integers into even integers:
+      but this would generate many unused values, increasing likeliness of
+      `StreamData.FilterTooNarrowError` errors and performing inefficiently. Instead, you can use
+      `map/2` to turn all integers into even integers:
 
           def even_integers() do
             StreamData.map(StreamData.integer(), &(&1 * 2))
