@@ -1276,7 +1276,7 @@ defmodule StreamData do
 
   Shrinks values and shrinks towards less deep trees.
   """
-  @spec tree(leaf_data :: t(a), subtree_fun :: (child_gen :: t(a | b) -> t(b))) :: t(a | b) when a: term(), b: term()
+  @spec tree(t(a), (child_data :: t(a | b) -> t(b))) :: t(a | b) when a: term(), b: term()
   def tree(leaf_data, subtree_fun) do
     new(fn seed, size ->
       leaf_data = resize(leaf_data, size)
