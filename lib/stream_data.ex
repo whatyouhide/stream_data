@@ -180,6 +180,12 @@ defmodule StreamData do
   # We support multiple types of generators through call/3: this is basically a
   # poor implementation of a protocol (which we don't want to add just for
   # this).
+  @doc false
+  def __call__(data, seed, size) do
+    call(data, seed, size)
+  end
+
+  @compile {:inline, call: 3}
 
   defp call(%__MODULE__{generator: generator}, seed, size) do
     %LazyTree{} = generator.(seed, size)
