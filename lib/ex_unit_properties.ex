@@ -489,9 +489,18 @@ defmodule ExUnitProperties do
   """
   @spec pick(StreamData.t(a)) :: a when a: term()
   def pick(data) do
-    seed = ExUnit.configuration()[:seed]
-    seed = :rand.seed_s(:exs1024, {seed, seed, seed})
-    {size, _seed} = :rand.uniform_s(100, seed)
+    exported_seed =
+      case :rand.export_seed() do
+        :undefined ->
+          raise "the random seed is not set in the current process. Make sure to only call " <>
+                  "pick/1 inside ExUnit tests"
+
+        seed ->
+          seed
+      end
+
+    seed = :rand.seed_s(exported_seed)
+    {size, seed} = :rand.uniform_s(100, seed)
     %StreamData.LazyTree{root: root} = StreamData.__call__(data, seed, size)
     root
   end
