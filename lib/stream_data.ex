@@ -1573,24 +1573,20 @@ defmodule StreamData do
   end
 
   def string(%Range{} = codepoints_range, options) do
-    # We do this instead of calling string([codepoints_range], options) for speed.
-    list_options = Keyword.take(options, [:length, :min_length, :max_length])
-    map(list_of(integer(codepoints_range), list_options), &List.to_string/1)
+    string_from_codepoint_data(integer(codepoints_range), options)
   end
 
   def string(codepoints, options) when is_list(codepoints) and is_list(options) do
-    list_options = Keyword.take(options, [:length, :min_length, :max_length])
-
-    char =
-      bind(member_of(codepoints), fn
+    codepoints_with_frequency =
+      Enum.map(codepoints, fn
         %Range{} = range ->
-          integer(range)
+          {Enum.count(range), integer(range)}
 
         codepoint when is_integer(codepoint) ->
-          constant(codepoint)
+          {1, constant(codepoint)}
       end)
 
-    map(list_of(char, list_options), &List.to_string/1)
+    string_from_codepoint_data(frequency(codepoints_with_frequency), options)
   end
 
   def string(other, _options) do
@@ -1598,6 +1594,12 @@ defmodule StreamData do
           "unsupported string kind, has to be one of :ascii, " <>
             ":alphanumeric, :printable, a range, or a list of " <>
             "ranges or single codepoints, got: #{inspect(other)}"
+  end
+
+  defp string_from_codepoint_data(codepoint_data, options) do
+    codepoint_data
+    |> list_of(options)
+    |> map(&List.to_string/1)
   end
 
   @doc """
