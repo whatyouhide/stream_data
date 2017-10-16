@@ -1,6 +1,5 @@
 defmodule ExUnitPropertiesTest do
   use ExUnit.Case, async: true
-
   use ExUnitProperties
 
   test "gen all" do
@@ -11,6 +10,10 @@ defmodule ExUnitPropertiesTest do
               elem_not_five = elem do
         {Integer.to_string(elem_not_five), list}
       end
+
+    # Let's make sure that "5" isn't common at all by making the smallest size for this generator
+    # be 10.
+    data = scale(data, &max(&1, 10))
 
     check all {string, list} <- data do
       assert is_binary(string)
