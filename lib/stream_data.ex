@@ -1264,7 +1264,7 @@ defmodule StreamData do
       Enum.at(StreamData.resize(tree_data, 10), 0)
       #=> %Branch{left: %Branch{left: 4, right: -1}, right: -2}
 
-  ## Example
+  ## Examples
 
   A common example is a nested list:
 
