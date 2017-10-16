@@ -358,12 +358,12 @@ defmodule StreamDataTest do
   end
 
   test "map_of/2" do
-    for_many(map_of(binary(), integer()), 50, fn map ->
+    for_many(map_of(integer(), boolean()), _count = 50, fn map ->
       assert is_map(map)
 
       Enum.each(map, fn {key, value} ->
-        assert is_binary(key)
-        assert is_integer(value)
+        assert is_integer(key)
+        assert is_boolean(value)
       end)
     end)
   end
@@ -427,9 +427,12 @@ defmodule StreamDataTest do
   end
 
   test "keyword_of/1" do
-    for_many(keyword_of(integer()), 50, fn keyword ->
+    for_many(keyword_of(boolean()), _count = 50, fn keyword ->
       assert Keyword.keyword?(keyword)
-      assert Enum.all?(Keyword.values(keyword), &is_integer/1)
+
+      Enum.each(keyword, fn {_key, value} ->
+        assert is_boolean(value)
+      end)
     end)
   end
 
@@ -505,7 +508,7 @@ defmodule StreamDataTest do
     end
 
     test ":alias" do
-      for_many(atom(:alias), fn module ->
+      for_many(atom(:alias), _count = 50, fn module ->
         assert is_atom(module)
         assert String.starts_with?(Atom.to_string(module), "Elixir.")
       end)
@@ -513,7 +516,7 @@ defmodule StreamDataTest do
   end
 
   test "iolist/0" do
-    for_many(iolist(), fn iolist ->
+    for_many(iolist(), _count = 50, fn iolist ->
       assert :erlang.iolist_size(iolist) >= 0
     end)
   end
@@ -525,7 +528,7 @@ defmodule StreamDataTest do
   end
 
   test "term/0" do
-    for_many(term(), fn term ->
+    for_many(term(), _count = 50, fn term ->
       assert is_boolean(term) or is_integer(term) or is_float(term) or is_binary(term) or
                is_atom(term) or is_reference(term) or is_list(term) or is_map(term) or
                is_tuple(term)
@@ -566,7 +569,7 @@ defmodule StreamDataTest do
     assert check_all(list_of(boolean()), options, property) == {:ok, %{}}
   end
 
-  defp for_many(data, count \\ 200, fun) do
+  defp for_many(data, count \\ 150, fun) do
     data
     |> Stream.take(count)
     |> Enum.each(fun)
