@@ -1740,7 +1740,7 @@ defmodule StreamData do
   list of possible generated terms above).
   """
   @spec term() :: t(simple | [simple] | %{optional(simple) => simple} | tuple())
-        when simple: boolean() | integer() | binary() | float() | atom()
+        when simple: boolean() | integer() | binary() | float() | atom() | reference()
   def term() do
     ref = new(fn _seed, _size -> LazyTree.constant(make_ref()) end)
 
