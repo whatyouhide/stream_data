@@ -73,22 +73,26 @@ defmodule ExUnitPropertiesTest do
     end
   end
 
-  describe "pick/1" do
-    test "when there's a random seed thanks to ExUnit setting it up" do
-      integer = ExUnitProperties.pick(integer())
-      assert is_integer(integer)
-      assert integer in -100..100
-    end
+  if Version.compare(System.version(), "1.6.0-dev") in [:eq, :gt] do
+    describe "pick/1" do
+      test "when there's a random seed thanks to ExUnit setting it up" do
+        integer = ExUnitProperties.pick(integer())
+        assert is_integer(integer)
+        assert integer in -100..100
+      end
 
-    test "raises when there's no random seed in the process dictionary" do
-      {_pid, ref} =
-        spawn_monitor(fn ->
-          assert_raise RuntimeError, ~r/the random seed is not set in the current process/, fn ->
-            ExUnitProperties.pick(integer())
-          end
-        end)
+      test "raises when there's no random seed in the process dictionary" do
+        {_pid, ref} =
+          spawn_monitor(fn ->
+            message = ~r/the random seed is not set in the current process/
 
-      assert_receive {:DOWN, ^ref, _, _, _}
+            assert_raise RuntimeError, message, fn ->
+              ExUnitProperties.pick(integer())
+            end
+          end)
+
+        assert_receive {:DOWN, ^ref, _, _, _}
+      end
     end
   end
 end
