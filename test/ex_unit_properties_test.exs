@@ -72,4 +72,10 @@ defmodule ExUnitPropertiesTest do
       end
     end
   end
+
+  test "pick/1" do
+    integer = ExUnitProperties.pick(integer())
+    assert is_integer(integer)
+    assert integer in -100..100
+  end
 end
