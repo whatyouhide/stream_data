@@ -128,6 +128,13 @@ defmodule StreamData do
         last_generated_value: last_generated_value
       } = exception
 
+      max_consecutive_failures_part =
+        if max_consecutive_failures do
+          " (#{max_consecutive_failures} elements in this case)"
+        else
+          ""
+        end
+
       last_element_part =
         case last_generated_value do
           {:value, value} -> " The last element to be filtered out was: #{inspect(value)}."
@@ -135,8 +142,8 @@ defmodule StreamData do
         end
 
       """
-      too many consecutive elements (#{max_consecutive_failures} elements in this case) were
-      filtered out.#{last_element_part} To avoid this:
+      too many consecutive elements#{max_consecutive_failures_part} were filtered out.
+      #{last_element_part} To avoid this:
 
         * make sure the generation space contains enough values that the chance of a generated
           value being filtered out is small. For example, don't generate all integers and filter
@@ -322,7 +329,13 @@ defmodule StreamData do
         when a: term(),
              b: term()
   def bind_filter(data, fun, max_consecutive_failures \\ 10)
-      when is_function(fun, 1) and is_integer(max_consecutive_failures) and
+
+  def bind_filter(data, fun, max_consecutive_failures) when is_function(fun, 1) do
+    bind_filter(data, fn elem, _tries_left -> fun.(elem) end, max_consecutive_failures)
+  end
+
+  def bind_filter(data, fun, max_consecutive_failures)
+      when is_function(fun, 2) and is_integer(max_consecutive_failures) and
              max_consecutive_failures >= 0 do
     new(fn seed, size ->
       case bind_filter(seed, size, data, fun, max_consecutive_failures) do
@@ -347,10 +360,14 @@ defmodule StreamData do
   end
 
   defp bind_filter(seed, size, data, mapper, tries_left) do
+    fun = fn elem ->
+      mapper.(elem, tries_left)
+    end
+
     {seed1, seed2} = split_seed(seed)
     lazy_tree = call(data, seed1, size)
 
-    case LazyTree.filter_map(lazy_tree, mapper) do
+    case LazyTree.filter_map(lazy_tree, fun) do
       {:ok, filter_mapped_tree} ->
         tree =
           filter_mapped_tree

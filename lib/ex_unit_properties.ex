@@ -227,12 +227,12 @@ defmodule ExUnitProperties do
   defp compile(clauses, body) do
     quote do
       var!(generated_values, unquote(__MODULE__)) = []
-      {:cont, data} = unquote(compile_clauses(clauses, body))
+      {:cont, data} = unquote(compile_clauses(clauses, body, _line = nil))
       data
     end
   end
 
-  defp compile_clauses([], body) do
+  defp compile_clauses([], body, _line) do
     quote do
       var!(generated_values, unquote(__MODULE__)) =
         Enum.reverse(var!(generated_values, unquote(__MODULE__)))
@@ -241,20 +241,26 @@ defmodule ExUnitProperties do
     end
   end
 
-  defp compile_clauses([{:<-, _meta, [pattern, generator]} = clause | rest], body) do
-    quote generated: true do
+  defp compile_clauses([{:<-, meta, [pattern, generator]} = clause | rest], body, _line) do
+    line = meta[:line]
+
+    quote generated: true, line: line do
       data =
         StreamData.bind_filter(unquote(generator), fn
           # TODO: support when
-          unquote(pattern) = generated_value ->
+          unquote(pattern) = generated_value, tries_left ->
             var!(generated_values, unquote(__MODULE__)) =
               [
                 {unquote(Macro.to_string(clause)), generated_value}
                 | var!(generated_values, unquote(__MODULE__))
               ]
 
-            unquote(compile_clauses(rest, body))
-          _other ->
+            unquote(compile_clauses(rest, body, line))
+
+          other, tries_left = 1 ->
+            raise StreamData.FilterTooNarrowError, last_generated_value: {:value, other}
+
+          _other, _tries_left ->
             :skip
         end)
 
@@ -262,12 +268,25 @@ defmodule ExUnitProperties do
     end
   end
 
-  defp compile_clauses([clause | rest], body) do
-    quote do
-      if unquote(clause) do
-        unquote(compile_clauses(rest, body))
+  defp compile_clauses([clause | rest], body, parent_line) do
+    line =
+      with {_, meta, _} when is_list(meta) <- clause,
+           line when is_integer(line) <- Keyword.get(meta, :line) do
+        line
       else
-        :skip
+        _ -> parent_line
+      end
+
+    quote line: line do
+      cond do
+        unquote(clause) ->
+          unquote(compile_clauses(rest, body, line))
+
+        tries_left == 1 ->
+          raise "foo"
+
+        true ->
+          :skip
       end
     end
   end
