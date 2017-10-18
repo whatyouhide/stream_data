@@ -2,23 +2,36 @@ defmodule ExUnitPropertiesTest do
   use ExUnit.Case, async: true
   use ExUnitProperties
 
-  test "gen all" do
-    data =
-      gen all list <- list_of(integer(), min_length: 1),
-              elem <- member_of(list),
-              elem != 5,
-              elem_not_five = elem do
-        {Integer.to_string(elem_not_five), list}
+  describe "gen all" do
+    test "supports generation and filtering clauses" do
+      data =
+        gen all [_ | _] = list <- list_of(integer()),
+                elem <- member_of(list),
+                elem != 5,
+                elem_not_five = elem do
+          {Integer.to_string(elem_not_five), list}
+        end
+
+      # Let's make sure that "5" isn't common at all by making the smallest size for this generator
+      # be 10.
+      data = scale(data, &max(&1, 10))
+
+      check all {string, list} <- data do
+        assert is_binary(string)
+        assert is_list(list)
+        assert String.to_integer(string) != 5
       end
+    end
 
-    # Let's make sure that "5" isn't common at all by making the smallest size for this generator
-    # be 10.
-    data = scale(data, &max(&1, 10))
+    test "treats non-matching patterns in <- clauses as filters" do
+      data =
+        gen all :non_boolean <- boolean() do
+          :ok
+        end
 
-    check all {string, list} <- data do
-      assert is_binary(string)
-      assert is_list(list)
-      assert String.to_integer(string) != 5
+      assert_raise StreamData.FilterTooNarrowError, fn ->
+        Enum.take(data, 1)
+      end
     end
   end
 

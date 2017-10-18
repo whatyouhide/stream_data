@@ -187,11 +187,11 @@ defmodule ExUnitProperties do
 
   As seen in the example above, clauses can be of the following types:
 
-    * value generation - they have the form `pattern <- generator` where
-      `generator` must be a generator. These clauses take a value out of
-      `generator` on each run and match it against `pattern`. Variables bound in
-      `pattern` can be then used throughout subsequent clauses and in the `do`
-      body.
+    * value generation - they have the form `pattern <- generator` where `generator` must be a
+      generator. These clauses take a value out of `generator` on each run and match it against
+      `pattern`. Variables bound in `pattern` can be then used throughout subsequent clauses and
+      in the `do` body. If `pattern` doesn't match a generated value, it's treated like a filter
+      (see the "filtering" clauses described below).
 
     * filtering and binding - they have the form `expression`. If a filtering clause returns
       a truthy value, then the set of generated values that appear before the
@@ -242,16 +242,20 @@ defmodule ExUnitProperties do
   end
 
   defp compile_clauses([{:<-, _meta, [pattern, generator]} = clause | rest], body) do
-    quote do
+    quote generated: true do
       data =
-        StreamData.bind_filter(unquote(generator), fn unquote(pattern) = generated_value ->
-          var!(generated_values, unquote(__MODULE__)) =
-            [
-              {unquote(Macro.to_string(clause)), generated_value}
-              | var!(generated_values, unquote(__MODULE__))
-            ]
+        StreamData.bind_filter(unquote(generator), fn
+          # TODO: support when
+          unquote(pattern) = generated_value ->
+            var!(generated_values, unquote(__MODULE__)) =
+              [
+                {unquote(Macro.to_string(clause)), generated_value}
+                | var!(generated_values, unquote(__MODULE__))
+              ]
 
-          unquote(compile_clauses(rest, body))
+            unquote(compile_clauses(rest, body))
+          _other ->
+            :skip
         end)
 
       {:cont, data}
