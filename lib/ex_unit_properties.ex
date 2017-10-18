@@ -185,7 +185,7 @@ defmodule ExUnitProperties do
 
   ### Clauses
 
-  As seen in the example above, clauses can be of three types:
+  As seen in the example above, clauses can be of the following types:
 
     * value generation - they have the form `pattern <- generator` where
       `generator` must be a generator. These clauses take a value out of
@@ -193,18 +193,18 @@ defmodule ExUnitProperties do
       `pattern` can be then used throughout subsequent clauses and in the `do`
       body.
 
-    * binding - they have the form `pattern = expression`. They are exactly like
-      assignment through the `=` operator: if `pattern` doesn't match
-      `expression`, an error is raised. They can be used to bind values for use
-      in subsequent clauses and in the `do` body.
-
-    * filtering - they have the form `expression`. If a filtering clause returns
+    * filtering and binding - they have the form `expression`. If a filtering clause returns
       a truthy value, then the set of generated values that appear before the
       filtering clause is considered valid and generation continues. If the
       filtering clause returns a falsey value, then the current value is
       considered invalid and a new value is generated. Note that filtering
       clauses should not filter out too many times; in case they do, a
       `StreamData.FilterTooNarrowError` error is raised (same as `StreamData.filter/3`).
+      Filtering clauses can be used also to assign variables: for example, `a = :foo` is a valid
+      clause.
+
+  The behaviour of the clauses above is similar to the behaviour of clauses in
+  `Kernel.SpecialForms.for/1`.
 
   ### Body
 
@@ -216,7 +216,6 @@ defmodule ExUnitProperties do
   See the module documentation for more information on shrinking. Clauses affect
   shrinking in the following way:
 
-    * binding clauses don't affect shrinking
     * filtering clauses affect shrinking like `filter/3`
     * value generation clauses affect shrinking similarly to `bind/2`
 
@@ -256,13 +255,6 @@ defmodule ExUnitProperties do
         end)
 
       {:cont, data}
-    end
-  end
-
-  defp compile_clauses([{:=, _meta, [_left, _right]} = assignment | rest], body) do
-    quote do
-      unquote(assignment)
-      unquote(compile_clauses(rest, body))
     end
   end
 
