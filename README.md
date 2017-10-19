@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/whatyouhide/stream_data.svg?branch=master)](https://travis-ci.org/whatyouhide/stream_data)
 [![Hex.pm](https://img.shields.io/hexpm/v/stream_data.svg)](https://hex.pm/packages/stream_data)
 
-> StreamData is an Elixir library for **data generation** and **property testing**.
+> StreamData is an Elixir library for **data generation** and **property-based testing**.
 
 *Note*: StreamData is in beta. It's a candidate to be included in Elixir itself at some point (but it's not guaranteed to).
 
@@ -23,7 +23,7 @@ and run `mix deps.get`. StreamData is usually added only to the `:test` environm
 
 [The documentation is available online.](https://hexdocs.pm/stream_data/)
 
-StreamData is made of two main components: data generation and property testing. The `StreamData` module provides tools to work with data generation. The `ExUnitProperties` module takes care of the property testing functionality.
+StreamData is made of two main components: data generation and property-based testing. The `StreamData` module provides tools to work with data generation. The `ExUnitProperties` module takes care of the property-based testing functionality.
 
 ### Data generation
 
@@ -58,7 +58,7 @@ Enum.take(StreamData.resize(email_generator, 20), 2)
 
 ### Property testing
 
-Property testing aims at randomizing test data in order to make tests more robust. Instead of writing a bunch of inputs and expected outputs by hand, with property testing we write a *property* of our code that should hold for a set of data, and then we generated data in this set to verify that property. To generate this data, we can use the above-mentioned `StreamData` module.
+Property testing aims at randomizing test data in order to make tests more robust. Instead of writing a bunch of inputs and expected outputs by hand, with property-based testing we write a *property* of our code that should hold for a set of data, and then we generated data in this set to verify that property. To generate this data, we can use the above-mentioned `StreamData` module.
 
 ```elixir
 use ExUnitProperties
@@ -71,9 +71,9 @@ property "bin1 <> bin2 always starts with bin1" do
 end
 ```
 
-To know more about property testing, read the `ExUnitProperties` documentation. Another great resource about property testing in Erlang (but with most ideas that apply to Elixir as well) is Fred Hebert's website [propertesting.com](http://propertesting.com).
+To know more about property-based testing, read the `ExUnitProperties` documentation. Another great resource about property-based testing in Erlang (but with most ideas that apply to Elixir as well) is Fred Hebert's website [propertesting.com](http://propertesting.com).
 
-The property testing side of this library is heavily inspired by the [original QuickCheck paper](http://www.cs.tufts.edu/~nr/cs257/archive/john-hughes/quick.pdf) (which targeted Haskell) as well as Clojure's take on property testing, [test.check](https://github.com/clojure/test.check).
+The property-based testing side of this library is heavily inspired by the [original QuickCheck paper](http://www.cs.tufts.edu/~nr/cs257/archive/john-hughes/quick.pdf) (which targeted Haskell) as well as Clojure's take on property-based testing, [test.check](https://github.com/clojure/test.check).
 
 ## License
 

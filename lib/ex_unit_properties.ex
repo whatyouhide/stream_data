@@ -1,14 +1,14 @@
 defmodule ExUnitProperties do
   @moduledoc """
-  Provides macros for property testing.
+  Provides macros for property-based testing.
 
-  This module provides a few macros that can be used for property testing. The core is `check/3`,
+  This module provides a few macros that can be used for property-based testing. The core is `check/3`,
   which allows executing arbitrary tests on many pieces of generated data. Another one is
   `property/3`, which is meant as a utility to replace the `ExUnit.Case.test/3` macro when writing
   properties. The last one is `gen/3`, which can be used as syntactic sugar to build generators
   (see `StreamData` for other ways of building generators and for core generators).
 
-  ## Overview of property testing
+  ## Overview of property-based testing
 
   One of the most common ways of writing tests (in Elixir and many other
   languages) is to write tests by hand. For example, say that we want to write a
@@ -27,7 +27,7 @@ defmodule ExUnitProperties do
   This test highlights the method used to write such kind of tests: they're
   written by hand. The process usually consists of testing an expected output on
   a set of expected inputs. This works especially well for edge cases, but the
-  robustness of this test could be improved. This is what property testing aims
+  robustness of this test could be improved. This is what property-based testing aims
   to solve. Property testing is based on two ideas:
 
     * specify a set of **properties** that a piece of code should satisfy
@@ -82,17 +82,17 @@ defmodule ExUnitProperties do
   For detailed information on shrinking, see also the "Shrinking" section in the
   documentation for `StreamData`.
 
-  ## Resources on property testing
+  ## Resources on property-based testing
 
-  There are many resources available online on property testing. An interesting
+  There are many resources available online on property-based testing. An interesting
   read is the original paper that introduced QuickCheck, ["QuickCheck: A
   Lightweight Tool for Random Testing of Haskell
   Programs"](http://www.cs.tufts.edu/~nr/cs257/archive/john-hughes/quick.pdf), a
   property-testing tool for the Haskell programming language. Another very
   useful resource especially geared towards Erlang and the BEAM is
   [propertesting.com](http://propertesting.com), a website created by Fred
-  Hebert: it's a great explanation of property testing that includes many
-  examples. Fred's website uses an Erlang property testing tool called
+  Hebert: it's a great explanation of property-based testing that includes many
+  examples. Fred's website uses an Erlang property-based testing tool called
   [PropEr](https://github.com/manopapad/proper) but many of the things he talks
   about apply to `ExUnitProperties` as well.
   """

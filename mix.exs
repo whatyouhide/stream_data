@@ -21,7 +21,7 @@ defmodule StreamData.Mixfile do
       ],
 
       # Hex
-      description: "Data generation and property testing for Elixir",
+      description: "Data generation and property-based testing for Elixir",
       package: [
         maintainers: ["Andrea Leopardi"],
         licenses: ["Apache 2.0"],
