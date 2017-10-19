@@ -257,7 +257,7 @@ defmodule ExUnitProperties do
 
             unquote(compile_clauses(rest, body, line))
 
-          other, tries_left = 1 ->
+          other, _tries_left = 1 ->
             raise StreamData.FilterTooNarrowError, last_generated_value: {:value, other}
 
           _other, _tries_left ->
