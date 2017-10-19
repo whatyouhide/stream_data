@@ -56,19 +56,35 @@ defmodule StreamDataTest do
     end)
   end
 
-  test "bind_filter/2" do
-    require Integer
+  describe "bind_filter/2" do
+    test "with a function of arity 1" do
+      require Integer
 
-    bind_filter_fun = fn int ->
-      if Integer.is_even(int), do: {:cont, constant(int)}, else: :skip
+      bind_filter_fun = fn int ->
+        if Integer.is_even(int), do: {:cont, constant(int)}, else: :skip
+      end
+
+      data = bind_filter(integer(1..5), bind_filter_fun, 1000)
+
+      for_many(data, fn int ->
+        assert int in 1..5
+        assert Integer.is_even(int)
+      end)
     end
 
-    data = bind_filter(integer(1..5), bind_filter_fun, 1000)
+    test "with a function of arity 2" do
+      require Integer
 
-    for_many(data, fn int ->
-      assert int in 1..5
-      assert Integer.is_even(int)
-    end)
+      bind_filter_fun = fn _term, tries_left when is_integer(tries_left) ->
+        raise "tries_left = #{tries_left}"
+      end
+
+      data = bind_filter(boolean(), bind_filter_fun, _tries = 5)
+
+      assert_raise RuntimeError, "tries_left = 5", fn ->
+        Enum.take(data, 1)
+      end
+    end
   end
 
   test "bind/2" do
