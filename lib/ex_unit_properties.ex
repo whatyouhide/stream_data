@@ -106,7 +106,8 @@ defmodule ExUnitProperties do
   @doc false
   defmacro __using__(_opts) do
     quote do
-      import unquote(__MODULE__), only: [property: 2, property: 3, check: 2, gen: 2]
+      import unquote(__MODULE__), only: [property: 2, property: 3, check: 2, gen: 2,
+          fail_eventually: 1]
       import StreamData
     end
   end
@@ -519,4 +520,79 @@ defmodule ExUnitProperties do
     %StreamData.LazyTree{root: root} = StreamData.__call__(data, seed, size)
     root
   end
+
+  defmodule NoGeneratedDataWithFailuresError do
+    defexception [:message]
+  end
+
+  @doc """
+  The `fail_eventually` macro is used for negative testing and states that
+  the property will fail eventually.
+
+  For negative testing, we want to show that the system under test behaves properly
+  when tested with illegal data. If we want to prove that the data will fail
+  in every case, then it is sufficient to negate the assertions. But if only
+  some of the data does not satify the assertions, then `fail_eventually` will
+  ensure that at least once in each run of the property the assertions are not satisfied.
+
+  `fail_eventually` detects all errors of `ExUnitProperties` and all ExUnit
+  assertion errors.
+
+  ## Examples
+
+  The first examples shows that some integers are negative.
+
+      property "all integers are positive" do
+        fail_eventually do
+          check all n <- integer() do
+            assert n >= 0
+          end
+        end
+      end
+
+  The second example shows that some lists have no heads. In this case,
+  the assignment `n = hd(l)` raises an exception and `l` is empty: the
+  `ArgumentError` exception is caught during executing the property check, resulting
+  in an `ExUnitProperties.Error`. This exception is caught by `fail_eventually`
+  and lets the entire property succeed.
+
+      property "not all lists have a head" do
+        fail_eventually do
+          check all l <- list_of(positive_integer()) do
+            n = hd(l)
+            assert n > 0
+          end
+        end
+      end
+
+  The third example shows a failing property because all generated values
+  will satisfy the assertion: Positive integers are always greater
+  or equal to 0.
+
+      property "all positive integers are positive" do
+        fail_eventually do
+          check all n <- positive_integer() do
+            assert n >= 0
+          end
+        end
+      end
+      #=>     ** (ExUnitProperties.NoGeneratedDataWithFailuresError) all tests succeeded, but should eventually fail
+      #=> code: fail_eventually do
+      #=> stacktrace:
+      #=>   test/ex_unit_properites_test.exs:95: (test)
+
+  """
+
+  defmacro fail_eventually(block) do
+    quote do
+      try do
+        unquote(block)
+        raise NoGeneratedDataWithFailuresError, message: "all tests succeeded, but should eventually fail"
+      rescue
+        ExUnit.AssertionError -> {:ok, %{}}
+        ExUnitProperties.Error -> {:ok, %{}}
+      end
+    end
+  end
+
 end
