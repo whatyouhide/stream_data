@@ -172,7 +172,7 @@ defmodule ExUnitProperties do
 
   We can create a generator of users like this:
 
-      email_generator = map({binary(), binary()}, fn left, right -> left <> "@" <> right end)
+      email_generator = map({binary(), binary()}, fn {left, right} -> left <> "@" <> right end)
       gen all name <- binary(),
               email <- email_generator do
         %User{name: name, email: email}
