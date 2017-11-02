@@ -2000,5 +2000,6 @@ defmodule StreamData do
     def reduce(data, acc, fun), do: @for.__reduce__(data, acc, fun)
     def count(_data), do: {:error, __MODULE__}
     def member?(_data, _term), do: {:error, __MODULE__}
+    def slice(_data), do: {:error, __MODULE__}
   end
 end
