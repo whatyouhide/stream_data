@@ -1426,6 +1426,75 @@ defmodule StreamData do
     end)
   end
 
+  def float(options \\ []) do
+    min = Keyword.get(options, :min)
+    max = Keyword.get(options, :max)
+
+    case {min, max} do
+      {nil, nil} -> float_without_bounds()
+      {nil, max} -> float_with_max(max)
+      {min, nil} -> float_with_min(min)
+      {min, max} when min <= max -> float_with_bounds(min, max)
+    end
+  end
+
+  defp float_without_bounds() do
+    bind(positive_float_without_bounds(), fn float ->
+      bind(boolean(), fn negative? ->
+        constant(if negative?, do: -float, else: float)
+      end)
+    end)
+  end
+
+  defp positive_float_without_bounds() do
+    sized(fn size ->
+      exp_abs = min(size, 1023)
+
+      bind(false, fn
+        true = _negative_exp? ->
+          float_in_0_to_1(exp_abs)
+
+        false = _negative_exp? ->
+          max = power_of_two(exp_abs)
+          significant = integer(0..max)
+
+          bind(significant, fn
+            0 -> constant(0.0)
+            sig -> constant(max / sig)
+          end)
+      end)
+    end)
+  end
+
+  defp float_with_min(min) do
+    map(positive_float_without_bounds(), &(&1 + min))
+  end
+
+  defp float_with_max(max) do
+    map(positive_float_without_bounds(), &(-&1 + max))
+  end
+
+  defp float_with_bounds(min, max) do
+    sized(fn size ->
+      exponent_data = integer(0..min(size, 1023))
+
+      bind(exponent_data, fn exponent ->
+        bind(float_in_0_to_1(exponent), fn float ->
+          constant(float * (max - min) + min)
+        end)
+      end)
+    end)
+  end
+
+  defp power_of_two(0), do: 1
+  defp power_of_two(n), do: 2 * power_of_two(n - 1)
+
+  defp float_in_0_to_1(abs_exp) do
+    factor = :math.pow(2, -abs_exp)
+    significant = integer(0..power_of_two(abs_exp))
+    map(significant, &(&1 * factor))
+  end
+
   @doc """
   Generates bytes.
 
