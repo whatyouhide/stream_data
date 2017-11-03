@@ -1510,13 +1510,10 @@ defmodule StreamData do
   """
   @spec bitstring(keyword()) :: t(bitstring())
   def bitstring(options \\ []) do
-    bits = member_of([0, 1])
     list_options = Keyword.take(options, [:length, :min_length, :max_length])
 
-    map(list_of(bits, list_options), fn bits ->
-      Enum.reduce(bits, <<>>, fn bit, acc ->
-        <<bit::1, acc::bits>>
-      end)
+    map(list_of(integer(0..1), list_options), fn bits ->
+      Enum.reduce(bits, <<>>, fn bit, acc -> <<bit::1, acc::bits>> end)
     end)
   end
 
