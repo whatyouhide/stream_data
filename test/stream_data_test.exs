@@ -224,13 +224,6 @@ defmodule StreamDataTest do
     end
   end
 
-  property "uniform_float/0" do
-    check all float <- uniform_float() do
-      assert is_float(float)
-      assert float >= 0.0 and float <= 1.0
-    end
-  end
-
   describe "float/1" do
     property "without bounds" do
       check all float <- float() do
