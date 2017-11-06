@@ -2,10 +2,7 @@
 
 defmodule StreamDataTest do
   use ExUnit.Case, async: true
-
-  import StreamData
-
-  alias StreamData.LazyTree
+  use ExUnitProperties
 
   test "implementation of the Enumerable protocol" do
     values = Enum.take(Stream.zip(integer(), boolean()), 10)
@@ -16,48 +13,52 @@ defmodule StreamDataTest do
     end)
   end
 
-  test "terms used as generators" do
-    for_many(map(:foo, & &1), fn term -> assert term == :foo end)
+  describe "terms used as generators" do
+    property "atoms" do
+      check all term <- :foo do
+        assert term == :foo
+      end
+    end
 
-    data = map({integer(), boolean()}, & &1)
+    property "tuples" do
+      check all {integer, boolean} <- {integer(), boolean()} do
+        assert is_integer(integer)
+        assert is_boolean(boolean)
+      end
+    end
 
-    for_many(data, fn {int, boolean} ->
-      assert is_integer(int)
-      assert is_boolean(boolean)
-    end)
-
-    data = map({:ok, integer()}, & &1)
-
-    for_many(data, fn {atom, int} ->
-      assert atom == :ok
-      assert is_integer(int)
-    end)
+    property "nested generator terms" do
+      check all {atom, boolean} <- {:ok, boolean()} do
+        assert atom == :ok
+        assert is_boolean(boolean)
+      end
+    end
   end
 
   test "error message on invalid generators" do
     message = ~r/expected a generator, which can be a %StreamData{} struct/
 
     assert_raise ArgumentError, message, fn ->
-      for_many(one_of([1, 2, 3]), fn _ -> :ok end)
+      Enum.take(one_of([1, 2, 3]), 1)
     end
   end
 
-  test "constant/1" do
-    for_many(constant(:term), fn term ->
+  property "constant/1" do
+    check all term <- constant(:term) do
       assert term == :term
-    end)
+    end
   end
 
-  test "map/1" do
+  property "map/1" do
     data = map(integer(1..5), &(-&1))
 
-    for_many(data, fn int ->
+    check all int <- data do
       assert int in -1..-5
-    end)
+    end
   end
 
   describe "bind_filter/2" do
-    test "with a function of arity 1" do
+    property "with a function of arity 1" do
       require Integer
 
       bind_filter_fun = fn int ->
@@ -66,13 +67,13 @@ defmodule StreamDataTest do
 
       data = bind_filter(integer(1..5), bind_filter_fun, 1000)
 
-      for_many(data, fn int ->
+      check all int <- data do
         assert int in 1..5
         assert Integer.is_even(int)
-      end)
+      end
     end
 
-    test "with a function of arity 2" do
+    property "with a function of arity 2" do
       require Integer
 
       bind_filter_fun = fn _term, tries_left when is_integer(tries_left) ->
@@ -87,12 +88,12 @@ defmodule StreamDataTest do
     end
   end
 
-  test "bind/2" do
+  property "bind/2" do
     data = bind(integer(1..5), &constant(-&1))
 
-    for_many(data, fn int ->
+    check all int <- data do
       assert int in -1..-5
-    end)
+    end
   end
 
   describe "filter/2,3" do
@@ -124,26 +125,26 @@ defmodule StreamDataTest do
     end
   end
 
-  test "integer/1" do
-    for_many(integer(-10..10), fn int ->
+  property "integer/1" do
+    check all int <- integer(-10..10) do
       assert int in -10..10
-    end)
+    end
   end
 
-  test "resize/2" do
+  property "resize/2" do
     generator = fn seed, size ->
       case :rand.uniform_s(2, seed) do
-        {1, _seed} -> LazyTree.constant(size)
-        {2, _seed} -> LazyTree.constant(-size)
+        {1, _seed} -> StreamData.LazyTree.constant(size)
+        {2, _seed} -> StreamData.LazyTree.constant(-size)
       end
     end
 
-    for_many(resize(%StreamData{generator: generator}, 10), fn int ->
+    check all int <- resize(%StreamData{generator: generator}, 10) do
       assert int in [-10, 10]
-    end)
+    end
   end
 
-  test "sized/1" do
+  property "sized/1" do
     data =
       sized(fn size ->
         bind(boolean(), fn bool ->
@@ -155,18 +156,18 @@ defmodule StreamDataTest do
         end)
       end)
 
-    for_many(data, fn int ->
+    check all int <- data do
       assert is_integer(int)
-    end)
+    end
   end
 
-  test "scale/2" do
+  property "scale/2" do
     size_data = sized(&constant(&1))
     data = scale(size_data, fn size -> size + 1000 end)
 
-    for_many(data, fn int ->
+    check all int <- data do
       assert int >= 1000
-    end)
+    end
   end
 
   test "frequency/1" do
@@ -183,130 +184,128 @@ defmodule StreamDataTest do
     assert Enum.count(values, &(&1 == :small_chance)) < Enum.count(values, &(&1 == :big_chance))
   end
 
-  test "one_of/1" do
-    data = one_of([integer(1..5), integer(-1..-5)])
-
-    for_many(data, fn int ->
+  property "one_of/1" do
+    check all int <- one_of([integer(1..5), integer(-1..-5)]) do
       assert int in 1..5 or int in -1..-5
-    end)
+    end
   end
 
-  test "member_of/1" do
-    for_many(member_of([1, 2, 3]), fn elem ->
+  property "member_of/1" do
+    check all elem <- member_of([1, 2, 3]) do
       assert elem in [1, 2, 3]
-    end)
+    end
 
-    for_many(member_of(MapSet.new([1, 2, 3])), fn elem ->
+    check all elem <- member_of(MapSet.new([1, 2, 3])) do
       assert elem in [1, 2, 3]
-    end)
+    end
 
     assert_raise RuntimeError, "cannot generate elements from an empty enumerable", fn ->
       Enum.take(member_of([]), 1)
     end
   end
 
-  test "boolean/0" do
-    for_many(boolean(), fn bool ->
+  property "boolean/0" do
+    check all bool <- boolean() do
       assert is_boolean(bool)
-    end)
+    end
   end
 
-  test "integer/0" do
-    for_many(integer(), fn int ->
+  property "integer/0" do
+    check all int <- integer() do
       assert is_integer(int)
       assert abs(int) < 1000
-    end)
+    end
   end
 
-  test "positive_integer/0" do
-    for_many(positive_integer(), fn int ->
+  property "positive_integer/0" do
+    check all int <- positive_integer() do
       assert is_integer(int)
       assert int in 1..1000
-    end)
+    end
   end
 
-  test "uniform_float/0" do
-    for_many(uniform_float(), fn float ->
+  property "uniform_float/0" do
+    check all float <- uniform_float() do
       assert is_float(float)
       assert float >= 0.0 and float <= 1.0
-    end)
+    end
   end
 
-  test "byte/0" do
-    for_many(byte(), fn value ->
+  property "byte/0" do
+    check all value <- byte() do
       assert value in 0..255
-    end)
+    end
   end
 
   describe "binary/1" do
-    test "generates binaries" do
-      for_many(resize(binary(), 10), fn value ->
+    property "generates binaries" do
+      check all value <- resize(binary(), 10) do
         assert is_binary(value)
         assert byte_size(value) in 0..10
-      end)
+      end
     end
 
-    test "with length-related options" do
-      for_many(binary(length: 3), fn value ->
+    property "with length-related options" do
+      check all value <- binary(length: 3) do
         assert is_binary(value)
         assert byte_size(value) == 3
-      end)
+      end
     end
   end
 
   describe "bitstring/1" do
-    test "generates bitstrings" do
-      for_many(resize(bitstring(), 10), fn value ->
+    property "generates bitstrings" do
+      check all value <- resize(bitstring(), 10) do
         assert is_bitstring(value)
         assert bit_size(value) in 0..10
-      end)
+      end
     end
 
-    test "with length-related options" do
-      for_many(bitstring(length: 3), fn value ->
+    property "with length-related options" do
+      check all value <- bitstring(length: 3) do
         assert is_bitstring(value)
         assert bit_size(value) == 3
-      end)
+      end
     end
   end
 
   describe "list_of/2" do
-    test "generates lists" do
-      for_many(list_of(constant(:term)), fn value ->
+    property "generates lists" do
+      check all value <- list_of(constant(:term)) do
         assert is_list(value)
         assert Enum.all?(value, &(&1 == :term))
-      end)
+      end
     end
 
-    test "with the :length option as a integer" do
-      for_many(list_of(constant(:term), length: 10), fn value ->
+    property "with the :length option as a integer" do
+      check all value <- list_of(constant(:term), length: 10) do
         assert value == List.duplicate(:term, 10)
-      end)
+      end
     end
 
-    test "with the :length option as a min..max range" do
-      for_many(list_of(constant(:term), length: 5..10), fn value ->
+    property "with the :length option as a min..max range" do
+      check all value <- list_of(constant(:term), length: 5..10) do
         assert Enum.all?(value, &(&1 == :term))
         assert length(value) in 5..10
-      end)
+      end
 
-      for_many(resize(list_of(constant(:term), length: 5..10), 4), fn value ->
+      check all value <- resize(list_of(constant(:term), length: 5..10), 4) do
         assert value == List.duplicate(:term, 5)
-      end)
+      end
     end
 
-    test "with the :min_length option set" do
-      for_many(list_of(constant(:term), min_length: 5), fn value ->
+    property "with the :min_length option set" do
+      check all value <- list_of(constant(:term), min_length: 5) do
         assert Enum.all?(value, &(&1 == :term))
         assert length(value) >= 5
-      end)
+      end
     end
 
-    test "with the :max_length option set" do
-      for_many(list_of(constant(:term), max_length: 5), fn value ->
+    property "with the :max_length option set" do
+      check all value <- list_of(constant(:term), max_length: 5) do
         assert Enum.all?(value, &(&1 == :term))
         assert length(value) <= 5
-      end)
+      end
     end
 
     test "with invalid options" do
@@ -324,23 +323,23 @@ defmodule StreamDataTest do
   end
 
   describe "uniq_list_of/1" do
-    test "without options" do
-      for_many(uniq_list_of(integer(1..10000)), fn list ->
+    property "without options" do
+      check all list <- uniq_list_of(integer(1..10000)) do
         assert Enum.uniq(list) == list
-      end)
+      end
     end
 
-    test "with the :uniq_fun option" do
-      for_many(uniq_list_of(integer(-10000..10000), uniq_fun: &abs/1), fn list ->
+    property "with the :uniq_fun option" do
+      check all list <- uniq_list_of(integer(-10000..10000), uniq_fun: &abs/1) do
         assert Enum.uniq_by(list, &abs/1) == list
-      end)
+      end
     end
 
-    test "with length-related options" do
-      for_many(uniq_list_of(integer(), min_length: 3, max_tries: 1000), fn list ->
+    property "with length-related options" do
+      check all list <- uniq_list_of(integer(), min_length: 3, max_tries: 1000) do
         assert Enum.uniq(list) == list
         assert length(list) >= 3
-      end)
+      end
     end
 
     test "raises an error when :max_tries are reached" do
@@ -352,203 +351,181 @@ defmodule StreamDataTest do
     end
   end
 
-  test "nonempty_improper_list_of/2" do
-    for_many(nonempty_improper_list_of(integer(), constant("")), fn list ->
+  property "nonempty_improper_list_of/2" do
+    check all list <- nonempty_improper_list_of(integer(), constant("")) do
       assert list != []
       each_improper_list(list, &assert(is_integer(&1)), &assert(&1 == ""))
-    end)
+    end
   end
 
-  test "maybe_improper_list_of/2" do
-    for_many(maybe_improper_list_of(integer(), constant("")), fn list ->
+  property "maybe_improper_list_of/2" do
+    check all list <- maybe_improper_list_of(integer(), constant("")) do
       each_improper_list(list, &assert(is_integer(&1)), &assert(&1 == "" or is_integer(&1)))
-    end)
+    end
   end
 
-  test "tuple/1" do
-    for_many(tuple({integer(-1..-10), integer(1..10)}), fn value ->
+  property "tuple/1" do
+    check all value <- tuple({integer(-1..-10), integer(1..10)}) do
       assert {int1, int2} = value
       assert int1 in -1..-10
       assert int2 in 1..10
-    end)
+    end
   end
 
-  test "map_of/2" do
-    for_many(map_of(integer(), boolean()), _count = 50, fn map ->
+  property "map_of/2" do
+    check all map <- map_of(integer(), boolean()), max_runs: 50 do
       assert is_map(map)
 
       Enum.each(map, fn {key, value} ->
         assert is_integer(key)
         assert is_boolean(value)
       end)
-    end)
+    end
   end
 
-  test "fixed_map/1" do
-    data =
-      fixed_map(%{
-        integer: integer(),
-        binary: binary()
-      })
+  property "fixed_map/1" do
+    data_with_map = fixed_map(%{integer: integer(), binary: binary()})
+    data_with_keyword = fixed_map(integer: integer(), binary: binary())
 
-    for_many(data, fn map ->
-      assert map_size(map) == 2
-      assert is_integer(Map.fetch!(map, :integer))
-      assert is_binary(Map.fetch!(map, :binary))
-    end)
-
-    data = fixed_map(integer: integer(), binary: binary())
-
-    for_many(data, fn map ->
-      assert map_size(map) == 2
-      assert is_integer(Map.fetch!(map, :integer))
-      assert is_binary(Map.fetch!(map, :binary))
-    end)
-  end
-
-  test "optional_map/1" do
-    data =
-      optional_map(%{
-        integer: integer(),
-        binary: binary()
-      })
-
-    for_many(data, fn map ->
-      assert map_size(map) <= 2
-      assert map |> Map.keys() |> MapSet.new() |> MapSet.subset?(MapSet.new([:integer, :binary]))
-
-      if Map.has_key?(map, :integer) do
+    Enum.each([data_with_map, data_with_keyword], fn data ->
+      check all map <- data do
+        assert map_size(map) == 2
         assert is_integer(Map.fetch!(map, :integer))
-      end
-
-      if Map.has_key?(map, :binary) do
-        assert(is_binary(Map.fetch!(map, :binary)))
-      end
-    end)
-
-    data = optional_map(integer: integer(), binary: binary())
-
-    for_many(data, fn map ->
-      assert map_size(map) <= 2
-      assert map |> Map.keys() |> MapSet.new() |> MapSet.subset?(MapSet.new([:integer, :binary]))
-
-      if Map.has_key?(map, :integer) do
-        assert is_integer(Map.fetch!(map, :integer))
-      end
-
-      if Map.has_key?(map, :binary) do
         assert is_binary(Map.fetch!(map, :binary))
       end
     end)
   end
 
-  test "keyword_of/1" do
-    for_many(keyword_of(boolean()), _count = 50, fn keyword ->
+  property "optional_map/1" do
+    data_with_map = optional_map(%{integer: integer(), binary: binary()})
+    data_with_keyword = optional_map(integer: integer(), binary: binary())
+
+    Enum.each([data_with_map, data_with_keyword], fn data ->
+      check all map <- data do
+        assert map_size(map) <= 2
+
+        assert map
+               |> Map.keys()
+               |> MapSet.new()
+               |> MapSet.subset?(MapSet.new([:integer, :binary]))
+
+        if Map.has_key?(map, :integer) do
+          assert is_integer(Map.fetch!(map, :integer))
+        end
+
+        if Map.has_key?(map, :binary) do
+          assert(is_binary(Map.fetch!(map, :binary)))
+        end
+      end
+    end)
+  end
+
+  property "keyword_of/1" do
+    check all keyword <- keyword_of(boolean()), max_runs: 50 do
       assert Keyword.keyword?(keyword)
 
       Enum.each(keyword, fn {_key, value} ->
         assert is_boolean(value)
       end)
-    end)
+    end
   end
 
-  test "nonempty/1" do
-    data = nonempty(list_of(constant(:term)))
-    for_many(data, fn list -> assert length(list) > 0 end)
+  property "nonempty/1" do
+    check all list <- nonempty(list_of(:term)) do
+      assert length(list) > 0
+    end
   end
 
-  test "tree/2" do
-    data = tree(boolean(), &list_of/1)
-
-    for_many(data, 100, fn
-      tree when is_list(tree) ->
+  property "tree/2" do
+    check all tree <- tree(boolean(), &list_of/1), max_runs: 100 do
+      if is_list(tree) do
         assert Enum.all?(List.flatten(tree), &is_boolean/1)
-
-      other ->
-        assert is_boolean(other)
-    end)
+      else
+        assert is_boolean(tree)
+      end
+    end
   end
 
   describe "string/1" do
-    test "with a list of ranges and codepoints" do
-      for_many(string([?a..?z, ?A..?K, ?_]), fn string ->
+    property "with a list of ranges and codepoints" do
+      check all string <- string([?a..?z, ?A..?K, ?_]) do
         assert is_binary(string)
 
         Enum.each(String.to_charlist(string), fn char ->
           assert char in ?a..?z or char in ?A..?K or char == ?_
         end)
-      end)
+      end
     end
 
-    test "with a range" do
-      for_many(string(?a..?f, min_length: 1), fn string ->
+    property "with a range" do
+      check all string <- string(?a..?f, min_length: 1) do
         assert string =~ ~r/\A[a-f]+\z/
-      end)
+      end
     end
 
-    test "with :ascii" do
-      for_many(string(:ascii), fn string ->
+    property "with :ascii" do
+      check all string <- string(:ascii) do
         assert is_binary(string)
 
         Enum.each(String.to_charlist(string), fn char ->
           assert char in ?\s..?~
         end)
-      end)
+      end
     end
 
-    test "with :alphanumeric" do
-      for_many(string(:alphanumeric), fn string ->
+    property "with :alphanumeric" do
+      check all string <- string(:alphanumeric) do
         assert string =~ ~r/\A[a-zA-Z0-9]*\z/
-      end)
+      end
     end
 
-    test "with :printable" do
-      for_many(string(:printable), fn string ->
+    property "with :printable" do
+      check all string <- string(:printable) do
         assert String.printable?(string)
-      end)
+      end
     end
 
-    test "with a fixed length" do
-      for_many(string(:alphanumeric, length: 3), fn value ->
-        assert String.length(value) == 3
-      end)
+    property "with a fixed length" do
+      check all string <- string(:alphanumeric, length: 3) do
+        assert String.length(string) == 3
+      end
     end
   end
 
   describe "atom/1" do
-    test ":alphanumeric" do
-      for_many(atom(:alphanumeric), fn atom ->
+    property ":alphanumeric" do
+      check all atom <- atom(:alphanumeric) do
         assert is_atom(atom)
         refute String.starts_with?(inspect(atom), ":\"")
-      end)
+      end
     end
 
-    test ":alias" do
-      for_many(atom(:alias), _count = 50, fn module ->
+    property ":alias" do
+      check all module <- atom(:alias), max_runs: 50 do
         assert is_atom(module)
         assert String.starts_with?(Atom.to_string(module), "Elixir.")
-      end)
+      end
     end
   end
 
-  test "iolist/0" do
-    for_many(iolist(), _count = 50, fn iolist ->
+  property "iolist/0" do
+    check all iolist <- iolist(), max_runs: 50 do
       assert :erlang.iolist_size(iolist) >= 0
-    end)
+    end
   end
 
-  test "iodata/0" do
-    for_many(iodata(), fn iodata ->
+  property "iodata/0" do
+    check all iodata <- iodata(), max_runs: 50 do
       assert IO.iodata_length(iodata) >= 0
-    end)
+    end
   end
 
-  test "term/0" do
-    for_many(term(), _count = 50, fn term ->
+  property "term/0" do
+    check all term <- term(), max_runs: 25 do
       assert is_boolean(term) or is_integer(term) or is_float(term) or is_binary(term) or
                is_atom(term) or is_reference(term) or is_list(term) or is_map(term) or
                is_tuple(term)
-    end)
+    end
   end
 
   test "check_all/3 with :os.timestamp" do
@@ -583,12 +560,6 @@ defmodule StreamDataTest do
     end
 
     assert check_all(list_of(boolean()), options, property) == {:ok, %{}}
-  end
-
-  defp for_many(data, count \\ 150, fun) do
-    data
-    |> Stream.take(count)
-    |> Enum.each(fun)
   end
 
   defp each_improper_list([], _head_fun, _tail_fun) do
