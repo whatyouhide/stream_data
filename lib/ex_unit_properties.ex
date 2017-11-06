@@ -283,7 +283,7 @@ defmodule ExUnitProperties do
           unquote(compile_clauses(rest, body, line))
 
         tries_left == 1 ->
-          raise "foo"
+          raise StreamData.FilterTooNarrowError, last_generated_value: :none
 
         true ->
           :skip
