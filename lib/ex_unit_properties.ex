@@ -250,11 +250,10 @@ defmodule ExUnitProperties do
         StreamData.bind_filter(unquote(generator), fn
           # TODO: support when
           unquote(pattern) = generated_value, tries_left ->
-            var!(generated_values, unquote(__MODULE__)) =
-              [
-                {unquote(Macro.to_string(clause)), generated_value}
-                | var!(generated_values, unquote(__MODULE__))
-              ]
+            var!(generated_values, unquote(__MODULE__)) = [
+              {unquote(Macro.to_string(clause)), generated_value}
+              | var!(generated_values, unquote(__MODULE__))
+            ]
 
             unquote(compile_clauses(rest, body, line))
 
@@ -375,11 +374,12 @@ defmodule ExUnitProperties do
         # The value may be :undefined in a new process
         # though, which means we may need to generate one.
         initial_seed: {0, 0, ExUnit.configuration()[:seed]},
-        initial_size: options[:initial_size] ||
-          Application.fetch_env!(:stream_data, :initial_size),
+        initial_size:
+          options[:initial_size] || Application.fetch_env!(:stream_data, :initial_size),
         max_runs: options[:max_runs] || Application.fetch_env!(:stream_data, :max_runs),
-        max_shrinking_steps: options[:max_shrinking_steps] ||
-          Application.fetch_env!(:stream_data, :max_shrinking_steps)
+        max_shrinking_steps:
+          options[:max_shrinking_steps] ||
+            Application.fetch_env!(:stream_data, :max_shrinking_steps)
       ]
 
       property =
