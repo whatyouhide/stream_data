@@ -558,8 +558,7 @@ defmodule StreamData do
   @spec sized((size() -> t(a))) :: t(a) when a: term()
   def sized(fun) when is_function(fun, 1) do
     new(fn seed, size ->
-      new_data = fun.(size)
-      call(new_data, seed, size)
+      call(fun.(size), seed, size)
     end)
   end
 
@@ -675,7 +674,7 @@ defmodule StreamData do
   #
   @spec frequency([{pos_integer(), t(a)}]) :: t(a) when a: term()
   def frequency(frequencies) when is_list(frequencies) do
-    sum = Enum.reduce(frequencies, 0, fn {frequency, _data}, acc -> acc + frequency end)
+    sum = List.foldl(frequencies, 0, fn {frequency, _data}, acc -> acc + frequency end)
     bind(integer(0..(sum - 1)), &pick_frequency(frequencies, &1))
   end
 
@@ -707,9 +706,7 @@ defmodule StreamData do
   """
   @spec one_of([t(a)]) :: t(a) when a: term()
   def one_of([_ | _] = datas) do
-    bind(integer(0..(length(datas) - 1)), fn index ->
-      Enum.fetch!(datas, index)
-    end)
+    bind(integer(1..length(datas)), fn index -> :lists.nth(index, datas) end)
   end
 
   @doc """
@@ -736,9 +733,7 @@ defmodule StreamData do
       raise "cannot generate elements from an empty enumerable"
     end
 
-    bind(integer(0..(enum_length - 1)), fn index ->
-      constant(Enum.fetch!(enum, index))
-    end)
+    map(integer(0..(enum_length - 1)), fn index -> Enum.fetch!(enum, index) end)
   end
 
   ## Compound data types
@@ -1157,11 +1152,7 @@ defmodule StreamData do
   @spec fixed_map(map() | keyword()) :: t(map())
   def fixed_map(data)
 
-  def fixed_map(data) when is_list(data) do
-    fixed_map(Map.new(data))
-  end
-
-  def fixed_map(data_map) when is_map(data_map) do
+  def fixed_map(data_map) when is_list(data_map) or is_map(data_map) do
     data_map
     |> Enum.map(fn {key, value_data} -> {constant(key), value_data} end)
     |> fixed_list()
@@ -1353,7 +1344,7 @@ defmodule StreamData do
   """
   @spec boolean() :: t(boolean())
   def boolean() do
-    member_of([false, true])
+    map(integer(0..1), &(&1 == 1))
   end
 
   @doc """
@@ -1450,9 +1441,7 @@ defmodule StreamData do
       exponent_data = integer(0..min(size, 1023))
 
       bind(exponent_data, fn exponent ->
-        bind(float_in_0_to_1(exponent), fn float ->
-          constant(float * (max - min) + min)
-        end)
+        map(float_in_0_to_1(exponent), fn float -> float * (max - min) + min end)
       end)
     end)
   end
