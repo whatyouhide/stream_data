@@ -424,44 +424,46 @@ defmodule ExUnitProperties do
     %{
       original_failure: original_failure,
       shrunk_failure: shrunk_failure,
-      nodes_visited: nodes_visited
+      successful_runs: successful_runs
     } = test_result
 
-    choose_error_and_raise(original_failure, shrunk_failure, nodes_visited)
+    choose_error_and_raise(original_failure, shrunk_failure, successful_runs)
   end
 
-  defp choose_error_and_raise(_, %{exception: %AssertionError{}} = shrunk_failure, nodes_visited) do
-    reraise enrich_assertion_error(shrunk_failure, nodes_visited), shrunk_failure.stacktrace
+  defp choose_error_and_raise(
+         _,
+         %{exception: %AssertionError{}} = shrunk_failure,
+         successful_runs
+       ) do
+    reraise enrich_assertion_error(shrunk_failure, successful_runs), shrunk_failure.stacktrace
   end
 
   defp choose_error_and_raise(
          %{exception: %AssertionError{}} = original_failure,
          _,
-         nodes_visited
+         successful_runs
        ) do
-    reraise enrich_assertion_error(original_failure, nodes_visited), original_failure.stacktrace
+    reraise enrich_assertion_error(original_failure, successful_runs), original_failure.stacktrace
   end
 
-  defp choose_error_and_raise(_original_failure, shrunk_failure, nodes_visited) do
-    formatted =
-      indent(
-        Exception.format_banner(:error, shrunk_failure.exception, shrunk_failure.stacktrace),
-        "    "
-      )
+  defp choose_error_and_raise(_original_failure, shrunk_failure, successful_runs) do
+    formatted_exception =
+      Exception.format_banner(:error, shrunk_failure.exception, shrunk_failure.stacktrace)
 
     message =
-      "failed with generated values (after #{nodes_visited} attempt(s)):\n\n" <>
-        "#{format_generated_values(shrunk_failure.generated_values)}\n\n" <> formatted
+      "failed with generated values (after #{successful_runs} successful run(s)):\n\n" <>
+        "#{format_generated_values(shrunk_failure.generated_values)}\n\n" <>
+        indent(formatted_exception, "    ")
 
     reraise Error, [message: message], shrunk_failure.stacktrace
   end
 
   defp enrich_assertion_error(
          %{exception: exception, generated_values: generated_values},
-         nodes_visited
+         successful_runs
        ) do
     message =
-      "Failed with generated values (after #{nodes_visited} attempt(s)):\n\n" <>
+      "Failed with generated values (after #{successful_runs} successful run(s)):\n\n" <>
         indent(format_generated_values(generated_values), "    ") <>
         if(is_binary(exception.message), do: "\n\n" <> exception.message, else: "")
 

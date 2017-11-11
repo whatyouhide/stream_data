@@ -1843,6 +1843,8 @@ defmodule StreamData do
         the shrinking tree in order to find the smallest value. See also the
         `:max_shrinking_steps` option.
 
+      * `:successful_runs` - the number of successful runs before a failing value was found.
+
   ## Options
 
   This function takes the following options:
@@ -1927,8 +1929,9 @@ defmodule StreamData do
       {:error, reason} ->
         shrinking_result =
           shrink_failure(shrink_initial_cont(children), nil, reason, fun, 1, config)
+          |> Map.put(:original_failure, reason)
+          |> Map.put(:successful_runs, runs)
 
-        shrinking_result = Map.put(shrinking_result, :original_failure, reason)
         {:error, shrinking_result}
     end
   end
