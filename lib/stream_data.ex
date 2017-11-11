@@ -1991,10 +1991,8 @@ defmodule StreamData do
   end
 
   defp split_seed(seed) do
-    {int1, seed} = :rand.uniform_s(1_000_000_000, seed)
-    {int2, seed} = :rand.uniform_s(1_000_000_000, seed)
-    {int3, seed} = :rand.uniform_s(1_000_000_000, seed)
-    new_seed = :rand.seed_s(@rand_algorithm, {int1, int2, int3})
+    {int, seed} = :rand.uniform_s(1_000_000_000, seed)
+    new_seed = :rand.seed_s(@rand_algorithm, {int, 0, 0})
     {new_seed, seed}
   end
 
