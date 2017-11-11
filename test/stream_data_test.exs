@@ -575,6 +575,7 @@ defmodule StreamDataTest do
     assert is_list(info.original_failure) and 5 in info.original_failure
     assert info.shrunk_failure == [5]
     assert is_integer(info.nodes_visited) and info.nodes_visited >= 0
+    assert is_integer(info.successful_runs) and info.successful_runs >= 0
 
     assert check_all(list_of(boolean()), options, property) == {:ok, %{}}
   end
