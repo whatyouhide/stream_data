@@ -116,7 +116,7 @@ defmodule StreamData do
   @opaque t(a) :: %__MODULE__{generator: generator_fun(a)} | atom() | tuple()
 
   # TODO: remove once we depend on OTP 20+ since :exs64 is deprecated.
-  if System.otp_release() >= "20" do
+  if String.to_integer(System.otp_release()) >= 20 do
     @rand_algorithm :exsp
   else
     @rand_algorithm :exs64
