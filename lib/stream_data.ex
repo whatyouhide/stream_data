@@ -197,20 +197,20 @@ defmodule StreamData do
     call(data, seed, size)
   end
 
-  @compile {:inline, call: 3}
+  @compile {:inline, call: 3, lazy_tree: 2, lazy_tree_constant: 1}
 
   defp call(%__MODULE__{generator: generator}, seed, size) do
     %LazyTree{} = generator.(seed, size)
   end
 
   defp call(atom, _seed, _size) when is_atom(atom) do
-    LazyTree.constant(atom)
+    lazy_tree_constant(atom)
   end
 
   defp call(tuple, seed, size) when is_tuple(tuple) do
     case tuple_size(tuple) do
       0 ->
-        LazyTree.constant({})
+        lazy_tree_constant({})
 
       tuple_size ->
         {trees, _seed} =
@@ -248,7 +248,7 @@ defmodule StreamData do
   """
   @spec constant(a) :: t(a) when a: var
   def constant(term) do
-    new(fn _seed, _size -> LazyTree.constant(term) end)
+    new(fn _seed, _size -> lazy_tree_constant(term) end)
   end
 
   ## Combinators
@@ -516,7 +516,7 @@ defmodule StreamData do
       |> Stream.drop_while(&((int - &1) not in range))
       |> Stream.map(&integer_lazy_tree(int - &1, range))
 
-    LazyTree.new(int, children)
+    lazy_tree(int, children)
   end
 
   ## Generator modifiers
@@ -630,8 +630,7 @@ defmodule StreamData do
   @spec unshrinkable(t(a)) :: t(a) when a: term()
   def unshrinkable(data) do
     new(fn seed, size ->
-      %LazyTree{root: root} = call(data, seed, size)
-      LazyTree.constant(root)
+      %LazyTree{call(data, seed, size) | children: []}
     end)
   end
 
@@ -862,14 +861,14 @@ defmodule StreamData do
     length = length(list)
 
     if length == min_length do
-      LazyTree.constant(list)
+      lazy_tree_constant(list)
     else
       children =
         0..(length - 1)
         |> Stream.map(&List.delete_at(list, &1))
         |> Stream.map(&list_lazy_tree(&1, min_length))
 
-      LazyTree.new(list, children)
+      lazy_tree(list, children)
     end
   end
 
@@ -1462,8 +1461,8 @@ defmodule StreamData do
   def power_of_two_with_zero(abs_exp) do
     new(fn seed, _size ->
       integer = uniform_in_range(0..power_of_two(abs_exp), seed)
-      powers = Stream.map(abs_exp..0, &LazyTree.constant(power_of_two(&1)))
-      LazyTree.new(integer, Enum.concat(powers, [LazyTree.constant(0)]))
+      powers = Stream.map(abs_exp..0, &lazy_tree_constant(power_of_two(&1)))
+      lazy_tree(integer, Enum.concat(powers, [lazy_tree_constant(0)]))
     end)
   end
 
@@ -1802,7 +1801,7 @@ defmodule StreamData do
   @spec term() :: t(simple | [simple] | %{optional(simple) => simple} | tuple())
         when simple: boolean() | integer() | binary() | float() | atom() | reference()
   def term() do
-    ref = new(fn _seed, _size -> LazyTree.constant(make_ref()) end)
+    ref = new(fn _seed, _size -> lazy_tree_constant(make_ref()) end)
 
     simple_term = one_of([boolean(), integer(), binary(), float(), atom(:alphanumeric), ref])
 
@@ -2012,6 +2011,14 @@ defmodule StreamData do
     width = right - left
     {random_int, _seed} = :rand.uniform_s(width + 1, seed)
     random_int - 1 + left
+  end
+
+  defp lazy_tree(root, children) do
+    %LazyTree{root: root, children: children}
+  end
+
+  defp lazy_tree_constant(term) do
+    %LazyTree{root: term}
   end
 
   # This is the implementation of Enumerable.reduce/3. It's here because it

@@ -134,8 +134,8 @@ defmodule StreamDataTest do
   property "resize/2" do
     generator = fn seed, size ->
       case :rand.uniform_s(2, seed) do
-        {1, _seed} -> StreamData.LazyTree.constant(size)
-        {2, _seed} -> StreamData.LazyTree.constant(-size)
+        {1, _seed} -> %StreamData.LazyTree{root: size}
+        {2, _seed} -> %StreamData.LazyTree{root: -size}
       end
     end
 

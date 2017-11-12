@@ -3,19 +3,7 @@ defmodule StreamData.LazyTreeTest do
 
   alias StreamData.LazyTree
 
-  test "new/2" do
-    assert %LazyTree{} = tree = LazyTree.new(:root, [:child1, :child2])
-    assert tree.root == :root
-    assert tree.children == [:child1, :child2]
-  end
-
-  test "constant/1" do
-    assert %LazyTree{} = tree = LazyTree.constant(:term)
-    assert realize_tree(tree).children == []
-  end
-
   test "map/2" do
-    import LazyTree, only: [new: 2, constant: 1]
     tree = new(1, [constant(2), constant(3)])
     mapped_tree = LazyTree.map(tree, &Integer.to_string/1)
     expected = new("1", [constant("2"), constant("3")])
@@ -24,7 +12,6 @@ defmodule StreamData.LazyTreeTest do
   end
 
   test "filter_map/2" do
-    import LazyTree, only: [new: 2, constant: 1]
     require Integer
 
     tree = new(1, [constant(2), constant(3)])
@@ -44,8 +31,6 @@ defmodule StreamData.LazyTreeTest do
   end
 
   test "flatten/1" do
-    import LazyTree, only: [new: 2, constant: 1]
-
     tree1 = new(:root1, [constant(:child1_a), constant(:child1_b)])
     tree2 = new(:root2, [constant(:child2_a), constant(:child2_b)])
     tree = new(tree1, [constant(tree2)])
@@ -63,8 +48,6 @@ defmodule StreamData.LazyTreeTest do
   end
 
   test "filter/2" do
-    import LazyTree, only: [new: 2, constant: 1]
-
     tree =
       new(1, [
         # Here only an inner child is removed since it doesn't pass the filter
@@ -81,7 +64,6 @@ defmodule StreamData.LazyTreeTest do
   end
 
   test "zip/1" do
-    import LazyTree, only: [new: 2, constant: 1]
     tree1 = new(11, [new(13, [constant(14)])])
     tree2 = new(21, [constant(22), constant(23)])
 
@@ -91,11 +73,19 @@ defmodule StreamData.LazyTreeTest do
   end
 
   test "implementation of the Inspect protocol" do
-    assert inspect(LazyTree.constant(:root)) == "#LazyTree<:root, []>"
-    assert inspect(LazyTree.new(:root, [1, 2, 3])) == "#LazyTree<:root, [...]>"
+    assert inspect(constant(:root)) == "#LazyTree<:root, []>"
+    assert inspect(new(:root, [1, 2, 3])) == "#LazyTree<:root, [...]>"
   end
 
   defp realize_tree(tree) do
     %{tree | children: Enum.map(tree.children, &realize_tree/1)}
+  end
+
+  defp new(root, children) do
+    %LazyTree{root: root, children: children}
+  end
+
+  defp constant(term) do
+    %LazyTree{root: term}
   end
 end

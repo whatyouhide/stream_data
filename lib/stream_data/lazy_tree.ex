@@ -8,38 +8,12 @@ defmodule StreamData.LazyTree do
   # infinitely deep trees where the children are a lazy stream that can be
   # realized on demand.
 
-  defstruct [:root, :children]
+  defstruct [:root, children: []]
 
   @type t(node) :: %__MODULE__{
           root: node,
           children: Enumerable.t()
         }
-
-  @doc """
-  Creates a new lazy tree from the given `root` and enumerable of `children`.
-
-  ## Examples
-
-      StreamData.LazyTree.new(1, Stream.map([StreamData.LazyTree.constant(2)], & &1 * 2))
-
-  """
-  @spec new(a, Enumerable.t()) :: t(a) when a: term()
-  def new(root, children) do
-    %__MODULE__{root: root, children: children}
-  end
-
-  @doc """
-  Creates a "constant" tree where `term` is the root and there are no children.
-
-  ## Examples
-
-      StreamData.LazyTree.constant(:some_term)
-
-  """
-  @spec constant(a) :: t(a) when a: term()
-  def constant(term) do
-    new(term, [])
-  end
 
   @doc """
   Maps the given `fun` over the given `lazy_tree`.
@@ -57,7 +31,7 @@ defmodule StreamData.LazyTree do
   """
   @spec map(t(a), (a -> b)) :: t(b) when a: term(), b: term()
   def map(%__MODULE__{root: root, children: children}, fun) when is_function(fun, 1) do
-    new(fun.(root), Stream.map(children, &map(&1, fun)))
+    %__MODULE__{root: fun.(root), children: Stream.map(children, &map(&1, fun))}
   end
 
   @doc """
@@ -116,7 +90,10 @@ defmodule StreamData.LazyTree do
   """
   @spec flatten(t(t(a))) :: t(a) when a: term()
   def flatten(%__MODULE__{root: %__MODULE__{}} = tree) do
-    new(tree.root.root, Stream.concat(tree.root.children, Stream.map(tree.children, &flatten/1)))
+    %__MODULE__{
+      root: tree.root.root,
+      children: Stream.concat(tree.root.children, Stream.map(tree.children, &flatten/1))
+    }
   end
 
   @doc """
@@ -147,7 +124,7 @@ defmodule StreamData.LazyTree do
         end
       end)
 
-    %{tree | children: children}
+    %__MODULE__{tree | children: children}
   end
 
   @doc """
@@ -167,21 +144,20 @@ defmodule StreamData.LazyTree do
   """
   @spec zip([t(a)]) :: t([a]) when a: term()
   def zip(trees) do
-    root = Enum.map(trees, & &1.root)
-
-    children =
-      trees
-      |> permutations()
-      |> Stream.map(&zip/1)
-
-    new(root, children)
+    %__MODULE__{
+      root: Enum.map(trees, & &1.root),
+      children:
+        trees
+        |> permutations()
+        |> Stream.map(&zip/1)
+    }
   end
 
   defp permutations(trees) when is_list(trees) do
     trees
     |> Stream.with_index()
-    |> Stream.flat_map(fn {tree, index} ->
-         Enum.map(tree.children, &List.replace_at(trees, index, &1))
+    |> Stream.flat_map(fn {%__MODULE__{children: children}, index} ->
+         Enum.map(children, &List.replace_at(trees, index, &1))
        end)
   end
 
