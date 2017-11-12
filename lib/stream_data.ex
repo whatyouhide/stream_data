@@ -500,18 +500,21 @@ defmodule StreamData do
     new(fn seed, _size ->
       range
       |> uniform_in_range(seed)
-      |> integer_lazy_tree()
-      |> LazyTree.filter(&(&1 in range))
+      |> integer_lazy_tree(range)
     end)
   end
 
-  defp integer_lazy_tree(int) do
+  defp integer_lazy_tree(int, range) do
+    next_division = fn
+      0 -> nil
+      n -> {n, div(n, 2)}
+    end
+
     children =
       int
-      |> Stream.iterate(&div(&1, 2))
-      |> Stream.take_while(&(&1 != 0))
-      |> Stream.map(&(int - &1))
-      |> Stream.map(&integer_lazy_tree/1)
+      |> Stream.unfold(next_division)
+      |> Stream.drop_while(&((int - &1) not in range))
+      |> Stream.map(&integer_lazy_tree(int - &1, range))
 
     LazyTree.new(int, children)
   end
