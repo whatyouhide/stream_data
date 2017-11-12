@@ -581,7 +581,7 @@ defmodule StreamDataTest do
   end
 
   test "check_all/3 with :rand.export_seed()" do
-    seed = :rand.seed_s(:exs1024)
+    seed = :rand.seed_s(:exs64)
     options = [initial_seed: :rand.export_seed_s(seed)]
 
     property = fn list ->
