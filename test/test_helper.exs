@@ -1,1 +1,1 @@
-ExUnit.start(exclude: [:stdlib_properties])
+ExUnit.start(exclude: [:stdlib])
