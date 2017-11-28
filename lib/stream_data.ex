@@ -2003,14 +2003,13 @@ defmodule StreamData do
     {new_seed, seed}
   end
 
-  defp uniform_in_range(left..right, seed) when left > right do
-    uniform_in_range(right..left, seed)
+  defp uniform_in_range(left..right, seed) when left <= right do
+    {random_int, _seed} = :rand.uniform_s(right - left + 1, seed)
+    random_int - 1 + left
   end
 
-  defp uniform_in_range(left..right, seed) do
-    width = right - left
-    {random_int, _seed} = :rand.uniform_s(width + 1, seed)
-    random_int - 1 + left
+  defp uniform_in_range(left..right, seed) when left > right do
+    uniform_in_range(right..left, seed)
   end
 
   defp lazy_tree(root, children) do

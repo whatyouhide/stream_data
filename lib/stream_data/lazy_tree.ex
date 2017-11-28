@@ -89,10 +89,12 @@ defmodule StreamData.LazyTree do
 
   """
   @spec flatten(t(t(a))) :: t(a) when a: term()
-  def flatten(%__MODULE__{root: %__MODULE__{}} = tree) do
+  def flatten(%__MODULE__{root: child, children: children}) do
+    %__MODULE__{root: child_root, children: child_children} = child
+
     %__MODULE__{
-      root: tree.root.root,
-      children: Stream.concat(tree.root.children, Stream.map(tree.children, &flatten/1))
+      root: child_root,
+      children: Stream.concat(child_children, Stream.map(children, &flatten/1))
     }
   end
 
@@ -114,10 +116,10 @@ defmodule StreamData.LazyTree do
 
   """
   @spec filter(t(a), (a -> as_boolean(term()))) :: t(a) when a: term()
-  def filter(%__MODULE__{} = tree, predicate) when is_function(predicate, 1) do
+  def filter(%__MODULE__{children: children} = tree, predicate) when is_function(predicate, 1) do
     children =
-      Stream.flat_map(tree.children, fn child ->
-        if predicate.(child.root) do
+      Stream.flat_map(children, fn %__MODULE__{root: child_root} = child ->
+        if predicate.(child_root) do
           [filter(child, predicate)]
         else
           []
@@ -145,7 +147,7 @@ defmodule StreamData.LazyTree do
   @spec zip([t(a)]) :: t([a]) when a: term()
   def zip(trees) do
     %__MODULE__{
-      root: Enum.map(trees, & &1.root),
+      root: Enum.map(trees, fn %{root: root} -> root end),
       children:
         trees
         |> permutations()
