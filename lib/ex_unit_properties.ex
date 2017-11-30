@@ -106,7 +106,7 @@ defmodule ExUnitProperties do
   @doc false
   defmacro __using__(_opts) do
     quote do
-      import unquote(__MODULE__), only: [property: 2, property: 3, check: 2, gen: 2]
+      import unquote(__MODULE__)
       import StreamData
     end
   end
