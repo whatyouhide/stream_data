@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.4.0
+
+  * Add a `StreamData.term/0` generator
+  * Bump the number of allowed consecutive failures in `StreamData.filter/3` and `StreamData.bind_filter/3`
+  * Improve error message for `StreamData.filter/3`
+  * Add `ExUnitProperties.pick/1`
+  * Add `Enumerable.slice/1` to `StreamData` structs
+  * Improve the performance of `StreamData.bitstring/1`
+
+#### Breaking changes
+
+  * Remove `StreamData.unquoted_atom/0` in favour of `StreamData.atom(:unquoted | :alias)`
+  * Start behaving like filtering when patterns don't match in `check all` or `gen all`
+  * Remove special casing of `=` clauses in `check all` and `gen all`
+  * Introduce `StreamData.float/1` replacing `StreamData.uniform_float/0`
+
 ## v0.3.0
 
   * Add length-related options to `StreamData.string/2`
