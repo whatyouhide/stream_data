@@ -505,18 +505,31 @@ defmodule StreamData do
   end
 
   defp integer_lazy_tree(int, range) do
-    next_division = fn
-      0 -> nil
-      n -> {n, div(n, 2)}
+    lazy_tree(int, &integer_lazy_tree(int, range, _current = int, &1, &2))
+  end
+
+  defp integer_lazy_tree(_int, _range, _current, {:halt, acc}, _fun) do
+    {:halted, acc}
+  end
+
+  defp integer_lazy_tree(int, range, current, {:suspend, acc}, fun) do
+    {:suspended, acc, &integer_lazy_tree(int, range, current, &1, fun)}
+  end
+
+  defp integer_lazy_tree(int, range, current, {:cont, acc}, fun) do
+    to_emit = int - current
+
+    cond do
+      to_emit == int ->
+        {:done, acc}
+
+      to_emit in range ->
+        lazy_tree = integer_lazy_tree(to_emit, range)
+        integer_lazy_tree(int, range, div(current, 2), fun.(lazy_tree, acc), fun)
+
+      true ->
+        integer_lazy_tree(int, range, div(current, 2), {:cont, acc}, fun)
     end
-
-    children =
-      int
-      |> Stream.unfold(next_division)
-      |> Stream.drop_while(&((int - &1) not in range))
-      |> Stream.map(&integer_lazy_tree(int - &1, range))
-
-    lazy_tree(int, children)
   end
 
   ## Generator modifiers
