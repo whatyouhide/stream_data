@@ -864,9 +864,9 @@ defmodule StreamData do
       lazy_tree_constant(list)
     else
       children =
-        0..(length - 1)
-        |> Stream.map(&List.delete_at(list, &1))
-        |> Stream.map(&list_lazy_tree(&1, min_length))
+        Stream.map(0..(length - 1), fn index ->
+          list_lazy_tree(List.delete_at(list, index), min_length)
+        end)
 
       lazy_tree(list, children)
     end
