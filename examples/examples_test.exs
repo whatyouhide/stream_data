@@ -27,6 +27,12 @@ defmodule StdlibSamplesTest do
     end
   end
 
+  property "FunctionClauseErrors are blamed" do
+    check all atom <- atom(:alphanumeric) do
+      Access.get(atom, :key)
+    end
+  end
+
   test "non-assertion error" do
     import StreamData
 
