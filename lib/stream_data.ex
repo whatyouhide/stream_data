@@ -526,17 +526,15 @@ defmodule StreamData do
   end
 
   defp integer_lazy_tree(int, lower, upper, current, {:cont, acc}, fun) do
-    to_emit = int - current
-
-    cond do
-      to_emit == int ->
+    case int - current do
+      ^int ->
         {:done, acc}
 
-      to_emit in lower..upper ->
+      to_emit when to_emit >= lower and to_emit <= upper ->
         lazy_tree = integer_lazy_tree(to_emit, lower, upper)
         integer_lazy_tree(int, lower, upper, div(current, 2), fun.(lazy_tree, acc), fun)
 
-      true ->
+      _ ->
         integer_lazy_tree(int, lower, upper, div(current, 2), {:cont, acc}, fun)
     end
   end
