@@ -1471,7 +1471,7 @@ defmodule StreamData do
     map(power_of_two_with_zero(abs_exp), &(&1 * factor))
   end
 
-  def power_of_two_with_zero(abs_exp) do
+  defp power_of_two_with_zero(abs_exp) do
     new(fn seed, _size ->
       integer = uniform_in_range(0..power_of_two(abs_exp), seed)
       powers = Stream.map(abs_exp..0, &lazy_tree_constant(power_of_two(&1)))
