@@ -104,7 +104,7 @@ defmodule ExUnitProperties do
   end
 
   @doc """
-  Setus up an `ExUnit.Case` module for property-based testing.
+  Sets up an `ExUnit.Case` module for property-based testing.
   """
   defmacro __using__(_opts) do
     quote do
