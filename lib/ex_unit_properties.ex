@@ -103,7 +103,9 @@ defmodule ExUnitProperties do
     defexception [:message]
   end
 
-  @doc false
+  @doc """
+  Sets up an `ExUnit.Case` module for property-based testing.
+  """
   defmacro __using__(_opts) do
     quote do
       import unquote(__MODULE__)
