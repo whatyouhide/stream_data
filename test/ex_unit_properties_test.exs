@@ -35,18 +35,20 @@ defmodule ExUnitPropertiesTest do
     end
   end
 
-  property "supports rescue" do
-    raise "some error"
-  rescue
-    exception in [RuntimeError] ->
-      assert Exception.message(exception) == "some error"
-  end
+  describe "error handling" do
+    property "supports rescue" do
+      raise "some error"
+    rescue
+      exception in [RuntimeError] ->
+        assert Exception.message(exception) == "some error"
+    end
 
-  property "supports catch" do
-    throw(:some_error)
-  catch
-    :throw, term ->
-      assert term == :some_error
+    property "supports catch" do
+      throw(:some_error)
+    catch
+      :throw, term ->
+        assert term == :some_error
+    end
   end
 
   describe "check all" do
@@ -70,6 +72,52 @@ defmodule ExUnitPropertiesTest do
       end
 
       assert Agent.get(counter, & &1) == 10
+    end
+
+    property "runs for the specified number of milliseconds" do
+      {:ok, counter} = Agent.start_link(fn -> 0 end)
+
+      # I'm explicitly passing max_runs: :not_set to override the project-wide
+      # config in the `mix.exs` file of `max_runs: 100`.
+      check all :ok <- :ok, max_runs: :not_set, max_run_time: 250 do
+        :timer.sleep(1)
+        Agent.update(counter, &(&1 + 1))
+        :ok
+      end
+
+      total_runs = Agent.get(counter, & &1)
+      # I want to make sure there are more than 100 executions since that's the
+      # default number of runs. Because of variation of runtimes of the other
+      # code in that property, we shouldn't make assertions that are too
+      # specific.
+      assert total_runs > 100
+      assert total_runs < 250
+    end
+
+    property "ends at either max_runs or max_run_time, whichever is first" do
+      {:ok, counter} = Agent.start_link(fn -> 0 end)
+
+      check all :ok <- :ok, max_runs: 5, max_run_time: 100 do
+        :timer.sleep(1)
+        Agent.update(counter, &(&1 + 1))
+        :ok
+      end
+
+      # Because the `max_runs` is less than `max_run_time`, we should only
+      # execute the property test 5 times.
+      assert Agent.get(counter, & &1) == 5
+
+      check all :ok <- :ok, max_runs: 25, max_run_time: 10 do
+        :timer.sleep(1)
+        Agent.update(counter, &(&1 + 1))
+        :ok
+      end
+
+      # Because `max_run_time` is less than `max_runs` in this case because
+      # we're sleeping for 1ms every run, we should stop at that `max_run_time`.
+      total_runs = Agent.get(counter, & &1)
+      assert total_runs > 5
+      assert total_runs <= 15
     end
 
     property "works with errors that are not assertion errors" do

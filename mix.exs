@@ -36,6 +36,7 @@ defmodule StreamData.Mixfile do
       env: [
         initial_size: 1,
         max_runs: 100,
+        max_run_time: :infinity,
         max_shrinking_steps: 100
       ]
     ]
