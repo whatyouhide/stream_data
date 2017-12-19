@@ -1930,11 +1930,22 @@ defmodule StreamData do
     seed = new_seed(Keyword.fetch!(options, :initial_seed))
     size = Keyword.get(options, :initial_size, 1)
     max_shrinking_steps = Keyword.get(options, :max_shrinking_steps, 100)
-    max_runs = Keyword.get(options, :max_runs, :not_set)
-    max_run_time = Keyword.get(options, :max_run_time, :infinity)
-    config = generate_config(max_runs, max_shrinking_steps, max_run_time)
+    start_time = System.system_time(:millisecond)
+    config = %{max_shrinking_steps: max_shrinking_steps}
 
-    check_all(data, seed, size, fun, _runs = 0, System.system_time(:millisecond), config)
+    config =
+      case {Keyword.get(options, :max_runs), Keyword.get(options, :max_run_time, :infinity)} do
+        {max_runs, :infinity} ->
+          Map.put(config, :max_runs, max_runs || 100)
+
+        {nil, max_run_time} ->
+          Map.put(config, :max_run_time, start_time + max_run_time)
+
+        {max_runs, max_run_time} ->
+          Map.merge(config, %{max_run_time: start_time + max_run_time, max_runs: max_runs})
+      end
+
+    check_all(data, seed, size, fun, _runs = 0, start_time, config)
   end
 
   defp check_all(_data, _seed, _size, _fun, _runs, current_time, %{max_run_time: end_time}) when current_time >= end_time do
@@ -1961,39 +1972,6 @@ defmodule StreamData do
 
         {:error, shrinking_result}
     end
-  end
-
-  # max_runs and max_run_time both not set by user, default to 100 runs.
-  defp generate_config(:not_set, max_shrinking_steps, :infinity) do
-    %{
-      max_shrinking_steps: max_shrinking_steps,
-      max_runs: 100
-    }
-  end
-
-  # max_runs set by user, max_run_time not set by user. Use just max_runs.
-  defp generate_config(max_runs, max_shrinking_steps, :infinity) do
-    %{
-      max_runs: max_runs,
-      max_shrinking_steps: max_shrinking_steps
-    }
-  end
-
-  # max_run_time set by user, max_runs not set by user. Use just max_run_time.
-  defp generate_config(:not_set, max_shrinking_steps, max_run_time) do
-    %{
-      max_shrinking_steps: max_shrinking_steps,
-      max_run_time: System.system_time(:millisecond) + max_run_time
-    }
-  end
-
-  # max_run_time and max_runs both set by user
-  defp generate_config(max_runs, max_shrinking_steps, max_run_time) do
-    %{
-      max_runs: max_runs,
-      max_shrinking_steps: max_shrinking_steps,
-      max_run_time: System.system_time(:millisecond) + max_run_time
-    }
   end
 
   defp shrink_initial_cont(nodes) do
