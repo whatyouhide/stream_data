@@ -354,6 +354,21 @@ defmodule StreamDataTest do
     end
   end
 
+  describe "unfold/2" do
+
+    property "duck duck goose" do
+      dg_fun = fn
+        :duck -> {constant(:duck), :duck}
+        :goose -> {constant(:goose), :duck}
+      end
+      check all l <- unfold(:goose, dg_fun, min_length: 1) do
+        IO.puts "l = #{inspect l}"
+        goose = Enum.drop_while(l, & &1 == :duck)
+        assert goose == [:goose]
+      end
+    end
+  end
+
   describe "uniq_list_of/1" do
     property "without options" do
       check all list <- uniq_list_of(integer(1..10000)) do
