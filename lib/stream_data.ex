@@ -506,7 +506,9 @@ defmodule StreamData do
   Shrinks towards with the smallest absolute value that still lie in `range`.
   """
   @spec integer(Range.t()) :: t(integer())
-  def integer(lower..upper = _range) do
+  def integer(left..right = _range) do
+    {lower, upper} = order(left, right)
+
     new(fn seed, _size ->
       {init, _next_seed} = uniform_in_range(lower, upper, seed)
       integer_lazy_tree(init, lower, upper)
@@ -826,7 +828,7 @@ defmodule StreamData do
     list_length_range_fun = list_length_range_fun(options)
 
     new(fn seed, size ->
-      min_length..max_length = list_length_range_fun.(size)
+      {min_length, max_length} = list_length_range_fun.(size)
       {length, next_seed} = uniform_in_range(min_length, max_length, seed)
 
       data
@@ -861,7 +863,7 @@ defmodule StreamData do
           {length, length}
 
         {:ok, min..max} when min >= 0 and max >= 0 ->
-          {min(min, max), max(min, max)}
+          order(min, max)
 
         {:ok, other} ->
           raise ArgumentError,
@@ -885,7 +887,7 @@ defmodule StreamData do
           {min_length, max_length}
       end
 
-    fn size -> min..(max |> min(size) |> max(min)) end
+    fn size -> {min, max |> min(size) |> max(min)} end
   end
 
   defp call_n_times(_data, _seed, _size, 0, acc) do
@@ -968,7 +970,7 @@ defmodule StreamData do
     list_length_range_fun = list_length_range_fun(options)
 
     new(fn seed, size ->
-      min_length..max_length = list_length_range_fun.(size)
+      {min_length, max_length} = list_length_range_fun.(size)
       {length, next_seed} = uniform_in_range(min_length, max_length, seed)
 
       data
@@ -2047,7 +2049,7 @@ defmodule StreamData do
     :rand.seed_s(exported_seed)
   end
 
-  @compile {:inline, split_seed: 1, uniform_in_range: 3, lazy_tree: 2, lazy_tree_constant: 1}
+  @compile {:inline, split_seed: 1, order: 2, uniform_in_range: 3, lazy_tree: 2, lazy_tree_constant: 1}
 
   defp split_seed(seed) do
     {int, seed} = :rand.uniform_s(1_000_000_000, seed)
@@ -2055,14 +2057,12 @@ defmodule StreamData do
     {new_seed, seed}
   end
 
-  defp uniform_in_range(left, right, seed) when left <= right do
+  defp order(left, right) when left > right, do: {right, left}
+  defp order(left, right), do: {left, right}
+
+  defp uniform_in_range(left, right, seed) do
     {random_int, next_seed} = :rand.uniform_s(right - left + 1, seed)
     {random_int - 1 + left, next_seed}
-  end
-
-  defp uniform_in_range(left, right, seed) when left > right do
-    {random_int, next_seed} = :rand.uniform_s(left - right + 1, seed)
-    {random_int - 1 + right, next_seed}
   end
 
   defp lazy_tree(root, children) do
