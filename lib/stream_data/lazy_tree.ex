@@ -58,17 +58,17 @@ defmodule StreamData.LazyTree do
   @spec filter_map(t(a), (a -> {:cont, b} | :skip)) :: {:ok, t(b)} | :error
         when a: term(),
              b: term()
-  def filter_map(%__MODULE__{} = tree, fun) when is_function(fun, 1) do
-    %__MODULE__{root: root} = tree = map(tree, fun)
+  def filter_map(%__MODULE__{root: root, children: children}, fun) when is_function(fun, 1) do
+    case fun.(root) do
+      {:cont, new_root} ->
+        new_children = Stream.flat_map(children, fn child ->
+          case filter_map(child, fun) do
+            {:ok, new_child} -> [new_child]
+            :error -> []
+          end
+        end)
 
-    case root do
-      {:cont, _} ->
-        tree =
-          tree
-          |> filter(&match?({:cont, _}, &1))
-          |> map(fn {:cont, elem} -> elem end)
-
-        {:ok, tree}
+        {:ok, %__MODULE__{root: new_root, children: new_children}}
 
       :skip ->
         :error
