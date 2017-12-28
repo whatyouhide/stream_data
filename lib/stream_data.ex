@@ -216,9 +216,9 @@ defmodule StreamData do
 
       tuple_size ->
         {trees, _seed} =
-          Enum.map_reduce(1..tuple_size, seed, fn index, acc ->
+          Enum.map_reduce(0..(tuple_size - 1), seed, fn index, acc ->
             {seed1, seed2} = split_seed(acc)
-            data = :erlang.element(index, tuple)
+            data = elem(tuple, index)
             {call(data, seed1, size), seed2}
           end)
 
@@ -740,7 +740,7 @@ defmodule StreamData do
   @spec one_of([t(a)]) :: t(a) when a: term()
   def one_of([_ | _] = datas) do
     datas = List.to_tuple(datas)
-    bind(integer(1..tuple_size(datas)), fn index -> :erlang.element(index, datas) end)
+    bind(integer(0..(tuple_size(datas) - 1)), fn index -> elem(datas, index) end)
   end
 
   @doc """
