@@ -824,16 +824,9 @@ defmodule StreamData do
   #     end)
   #
 
-  #######################################################
-  # TODO:
-  # 1. copy the unfold implementation
-  # 2. implement list_of by unfold
-  # 3. implement tests for unfold
-  #######################################################
-
   @spec list_of(t(a), keyword()) :: t([a]) when a: term()
   def list_of(data, options \\ []) do
-    unfold(nil, fn _ -> {nil, data} end, options)
+    unfold(nil, fn _ -> {data, nil} end, options)
   end
 
   @doc """
@@ -902,6 +895,24 @@ defmodule StreamData do
     end
   end
 
+  @doc """
+  Generates a list of values and takes the same options as `list_of/2`.
+
+  Similar to `Stream.unfold/2`, the list generation takes an accumulator
+  `next_acc` and a function `next_fun` as arguments. The function
+  takes the current accumulator value as argument and returns a tuple
+  consisting of new generator as list value and the accumulator for the
+  next round of value generation.
+
+  ## Examples
+
+
+  ## Shrinking
+  This generator shrinks by taking elements out of the generated list and also
+  by shrinking the elements of the generated list. Shrinking still respects any
+  possible length-related option: for example, if `:min_length` is provided, all
+  shrinked list will have more than `:min_length` elements.
+  """
   @spec unfold(acc_t, (acc_t -> {StreamData.t(data_t), acc_t})) :: StreamData.t([data_t]) when acc_t: var, data_t: var
   def unfold(next_acc, next_fun, options \\ []) do
     list_length_range_fun = list_length_range_fun(options)
@@ -920,7 +931,7 @@ defmodule StreamData do
   def do_unfold(_next_acc, _next_fun, _seed, _size, 0, result), do: result
   def do_unfold(next_acc, next_fun, seed, size, length, result) do
     {seed1, seed2} = split_seed(seed)
-    {new_acc, data} = next_fun.(next_acc)
+    {data, new_acc} = next_fun.(next_acc)
     do_unfold(new_acc, next_fun, seed2, size, length - 1,
       [StreamData.__call__(data, seed1, size) | result])
   end
