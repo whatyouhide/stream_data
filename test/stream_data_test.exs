@@ -362,7 +362,7 @@ defmodule StreamDataTest do
         :goose -> {constant(:goose), :duck}
       end
       check all l <- unfold(:goose, dg_fun, min_length: 1) do
-        IO.puts "l = #{inspect l}"
+        # IO.puts "l = #{inspect l}"
         goose = Enum.drop_while(l, & &1 == :duck)
         assert goose == [:goose]
       end
@@ -398,23 +398,13 @@ defmodule StreamDataTest do
       end
       assert_raise ExUnit.AssertionError, ~r/#=> \[:c\]/, fn ->
         check all l <- unfold(:b, pre_fun, min_length: 1) do
-          IO.puts "l = #{inspect l}"
+          # IO.puts "l = #{inspect l}"
           bs = Enum.drop_while(l, & &1 == :a)
           assert Enum.all?(bs, & &1 == :b)
         end
       end
     end
 
-    property "first n elements are consistent" do
-      check all n <- positive_integer() do
-        c = one_of([:a, :b])
-        l1 = Enum.take(c, n)
-        l2 = Enum.take(c, n)
-        assert length(l1) == n
-        assert length(l2) == n
-        assert l1 ==  l2
-      end
-    end
   end
 
   describe "uniq_list_of/1" do
