@@ -181,6 +181,14 @@ defmodule StreamData do
     end
   end
 
+  defmodule InfiniteLoopError do
+    defexception message: """
+    You have attempted to set the `max_runs` and `max_run_time` settings both to
+    `:infinity`, which will result in an infinte loop. Please be sure to set at least
+    one of these settings to avoid this error.
+    """
+  end
+
   ### Minimal interface
 
   ## Helpers
@@ -1935,10 +1943,13 @@ defmodule StreamData do
 
     config =
       case {Keyword.get(options, :max_runs), Keyword.get(options, :max_run_time, :infinity)} do
+        {:infinity, :infinity} ->
+          raise StreamData.InfiniteLoopError
+
         {max_runs, :infinity} ->
           Map.put(config, :max_runs, max_runs || 100)
 
-        {nil, max_run_time} ->
+        {:infinity, max_run_time} ->
           Map.put(config, :max_run_time, start_time + max_run_time)
 
         {max_runs, max_run_time} ->
