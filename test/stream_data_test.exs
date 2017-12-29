@@ -356,7 +356,7 @@ defmodule StreamDataTest do
 
   describe "unfold/2" do
 
-    property "duck duck goose" do
+    property "automaton (duck)*(goose)" do
       dg_fun = fn
         :duck -> {constant(:duck), :duck}
         :goose -> {constant(:goose), :duck}
@@ -365,6 +365,54 @@ defmodule StreamDataTest do
         IO.puts "l = #{inspect l}"
         goose = Enum.drop_while(l, & &1 == :duck)
         assert goose == [:goose]
+      end
+    end
+
+    property "automaton prefix a+b+" do
+      # NOTE: first/pick(...) may not work, since reduce introduces
+      #       a new seed.
+      # This property requires that we take a look into the generated values
+      # Perhaps we require a bind here.
+      first = fn l -> l |> Enum.take(1) |> hd() end
+      pre_fun = fn
+        :a -> {constant(:a), :a}
+        :b -> {constant(:b), first.(one_of([:a, :b]))}
+      end
+      check all l <- unfold(:b, pre_fun, min_length: 1) do
+        #IO.puts "l = #{inspect l}"
+        bs = Enum.drop_while(l, & &1 == :a)
+        assert Enum.all?(bs, & &1 == :b)
+      end
+    end
+
+    test "shrinking automaton prefix a+b+" do
+      # NOTE: first/pick(...) may not work, since reduce introduces
+      #       a new seed.
+      # This property requires that we take a look into the generated values
+      # Perhaps we require a bind here.
+      first = fn l -> l |> Enum.take(1) |> hd() end
+      pre_fun = fn
+        :a -> {constant(:a), first.(frequency([{90, :a}, {1, :c}]))}
+        :b -> {constant(:b), first.(one_of([:a, :b]))}
+        :c -> {constant(:c), :a}
+      end
+      assert_raise ExUnit.AssertionError, ~r/#=> \[:c\]/, fn ->
+        check all l <- unfold(:b, pre_fun, min_length: 1) do
+          IO.puts "l = #{inspect l}"
+          bs = Enum.drop_while(l, & &1 == :a)
+          assert Enum.all?(bs, & &1 == :b)
+        end
+      end
+    end
+
+    property "first n elements are consistent" do
+      check all n <- positive_integer() do
+        c = one_of([:a, :b])
+        l1 = Enum.take(c, n)
+        l2 = Enum.take(c, n)
+        assert length(l1) == n
+        assert length(l2) == n
+        assert l1 ==  l2
       end
     end
   end
