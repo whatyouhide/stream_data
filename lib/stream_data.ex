@@ -946,11 +946,11 @@ defmodule StreamData do
       to manipulate the size (for example by setting a minimum generation size
       of `3`) in such cases.
 
-    * `:length` - (non-negative integer) same as in `list_of/3`.
+    * `:length` - (non-negative integer) same as in `list_of/2`.
 
-    * `:min_length` - (non-negative integer) same as in `list_of/3`.
+    * `:min_length` - (non-negative integer) same as in `list_of/2`.
 
-    * `:max_length` - (non-negative integer) same as in `list_of/3`.
+    * `:max_length` - (non-negative integer) same as in `list_of/2`.
 
   ## Examples
 
@@ -1155,7 +1155,7 @@ defmodule StreamData do
   Generates maps with keys from `key_data` and values from `value_data`.
 
   Since maps require keys to be unique, this generator behaves similarly to
-  `uniq_list_of/3`: if more than `max_tries` duplicate keys are generated
+  `uniq_list_of/2`: if more than `max_tries` duplicate keys are generated
   consequently, it raises a `StreamData.TooManyDuplicatesError` exception.
 
   ## Examples
@@ -1549,14 +1549,14 @@ defmodule StreamData do
   ## Options
 
     * `:length` - (non-negative integer) sets the exact length of the generated
-      binaries (same as in `list_of/3`).
+      binaries (same as in `list_of/2`).
 
     * `:min_length` - (non-negative integer) sets the minimum length of the
-      generated binaries (same as in `list_of/3`). Ignored if `:length` is
+      generated binaries (same as in `list_of/2`). Ignored if `:length` is
       present.
 
     * `:max_length` - (non-negative integer) sets the maximum length of the
-      generated binaries (same as in `list_of/3`). Ignored if `:length` is
+      generated binaries (same as in `list_of/2`). Ignored if `:length` is
       present.
 
   ## Examples
@@ -1583,14 +1583,14 @@ defmodule StreamData do
   ## Options
 
     * `:length` - (non-negative integer) sets the exact length of the generated
-      bitstrings (same as in `list_of/3`).
+      bitstrings (same as in `list_of/2`).
 
     * `:min_length` - (non-negative integer) sets the minimum length of the
-      generated bitstrings (same as in `list_of/3`). Ignored if `:length` is
+      generated bitstrings (same as in `list_of/2`). Ignored if `:length` is
       present.
 
     * `:max_length` - (non-negative integer) sets the maximum length of the
-      generated bitstrings (same as in `list_of/3`). Ignored if `:length` is
+      generated bitstrings (same as in `list_of/2`). Ignored if `:length` is
       present.
 
   ## Examples
@@ -1651,6 +1651,10 @@ defmodule StreamData do
     * a list of ranges or single codepoints - strings with characters from the
       ranges or codepoints are generated. Such strings shrink towards earlier
       elements of the given list and towards the beginning of ranges.
+
+  ## Options
+
+  See the documentation of `list_of/2` for the possible values of options.
 
   ## Examples
 
