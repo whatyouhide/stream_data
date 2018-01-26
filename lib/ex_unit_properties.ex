@@ -182,8 +182,8 @@ defmodule ExUnitProperties do
 
   Everything between `gen all` and `do` is referred to as **clauses**. Clauses
   are used to specify the values to generate to be used in the body. The newly
-  created generator will generated values that are the return value of the
-  `do` body for the generated values from the clauses.
+  created generator will generate values that are the return value of the
+  `do` body using the generated values in the clauses.
 
   ### Clauses
 
