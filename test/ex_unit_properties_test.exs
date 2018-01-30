@@ -35,7 +35,7 @@ defmodule ExUnitPropertiesTest do
     end
   end
 
-  describe "error handling" do
+  describe "property" do
     property "supports rescue" do
       raise "some error"
     rescue
@@ -77,41 +77,43 @@ defmodule ExUnitPropertiesTest do
     property "runs for the specified number of milliseconds" do
       {:ok, counter} = Agent.start_link(fn -> 0 end)
 
-      check all :ok <- :ok, max_runs: :infinity, max_run_time: 250 do
-        :timer.sleep(1)
+      check all :ok <- :ok, max_runs: :infinity, max_run_time: 100 do
+        Process.sleep(25)
         Agent.update(counter, &(&1 + 1))
         :ok
       end
 
-      total_runs = Agent.get(counter, & &1)
-      assert total_runs > 100
-      assert total_runs < 250
+      assert Agent.get(counter, & &1) in 3..5
     end
 
-    property "ends at either max_runs or max_run_time, whichever is first" do
+    property "ends at :max_runs if it ends before :max_run_time" do
       {:ok, counter} = Agent.start_link(fn -> 0 end)
 
-      check all :ok <- :ok, max_runs: 5, max_run_time: 100 do
-        :timer.sleep(1)
+      check all :ok <- :ok, max_runs: 5, max_run_time: 500 do
+        Process.sleep(1)
         Agent.update(counter, &(&1 + 1))
         :ok
       end
 
       assert Agent.get(counter, & &1) == 5
+    end
 
-      check all :ok <- :ok, max_runs: 25, max_run_time: 10 do
-        :timer.sleep(1)
+    property "ends at :max_run_time if it ends before :max_runs" do
+      {:ok, counter} = Agent.start_link(fn -> 0 end)
+
+      check all :ok <- :ok, max_runs: 100_000, max_run_time: 100 do
+        Process.sleep(25)
         Agent.update(counter, &(&1 + 1))
         :ok
       end
 
-      total_runs = Agent.get(counter, & &1)
-      assert total_runs > 5
-      assert total_runs <= 15
+      assert Agent.get(counter, & &1) in 3..5
     end
 
-    property "raises an error instead of running an infinite loop" do
-      assert_raise StreamData.InfiniteLoopError, fn ->
+    test "raises an error instead of running an infinite loop" do
+      message = ~r/both the :max_runs and :max_run_time options are set to :infinity/
+
+      assert_raise ArgumentError, message, fn ->
         check all :ok <- :ok, max_runs: :infinity, max_run_time: :infinity do
           :ok
         end

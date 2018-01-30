@@ -181,14 +181,6 @@ defmodule StreamData do
     end
   end
 
-  defmodule InfiniteLoopError do
-    defexception message: """
-    You have attempted to set the `max_runs` and `max_run_time` settings both to
-    `:infinity`, which will result in an infinte loop. Please be sure to set at least
-    one of these settings to avoid this error.
-    """
-  end
-
   ### Minimal interface
 
   ## Helpers
@@ -1889,9 +1881,9 @@ defmodule StreamData do
     * `:max_runs` - (non-negative integer) the total number of elements to
       generate out of `data` and check through `fun`. Defaults to `100`.
 
-    * `:max_run_time` - (non-negative integer) the total number of time in milliseconds
-      to run a given property check for. This is not used by default, so unless a value
-      is given, then the length of the test will be determined by `:max_runs`.
+    * `:max_run_time` - (non-negative integer) the total number of time (in milliseconds)
+      to run a given check for. This is not used by default, so unless a value
+      is given, then the length of the check will be determined by `:max_runs`.
       If both `:max_runs` and `:max_run_time` are given, then the check will finish at
       whichever comes first, `:max_runs` or `:max_run_time`.
 
@@ -1944,22 +1936,28 @@ defmodule StreamData do
     config =
       case {Keyword.get(options, :max_runs), Keyword.get(options, :max_run_time, :infinity)} do
         {:infinity, :infinity} ->
-          raise StreamData.InfiniteLoopError
+          raise ArgumentError,
+                "both the :max_runs and :max_run_time options are set to :infinity. " <>
+                  "This would result in an infinite loop. Be sure to set at least one of " <>
+                  "these options to an integer to avoid this error. Note that :max_run_time " <>
+                  "defaults to :infinity, so if you set \"max_runs: :infinity\" then you need " <>
+                  "to explicitly set :max_run_time to an integer."
 
         {max_runs, :infinity} ->
           Map.put(config, :max_runs, max_runs || 100)
 
         {:infinity, max_run_time} ->
-          Map.put(config, :max_run_time, start_time + max_run_time)
+          Map.put(config, :max_end_time, start_time + max_run_time)
 
         {max_runs, max_run_time} ->
-          Map.merge(config, %{max_run_time: start_time + max_run_time, max_runs: max_runs})
+          Map.merge(config, %{max_end_time: start_time + max_run_time, max_runs: max_runs})
       end
 
     check_all(data, seed, size, fun, _runs = 0, start_time, config)
   end
 
-  defp check_all(_data, _seed, _size, _fun, _runs, current_time, %{max_run_time: end_time}) when current_time >= end_time do
+  defp check_all(_data, _seed, _size, _fun, _runs, current_time, %{max_end_time: end_time})
+       when current_time >= end_time do
     {:ok, %{}}
   end
 
