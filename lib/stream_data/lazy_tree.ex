@@ -61,12 +61,13 @@ defmodule StreamData.LazyTree do
   def filter_map(%__MODULE__{root: root, children: children}, fun) when is_function(fun, 1) do
     case fun.(root) do
       {:cont, new_root} ->
-        new_children = Stream.flat_map(children, fn child ->
-          case filter_map(child, fun) do
-            {:ok, new_child} -> [new_child]
-            :error -> []
-          end
-        end)
+        new_children =
+          Stream.flat_map(children, fn child ->
+            case filter_map(child, fun) do
+              {:ok, new_child} -> [new_child]
+              :error -> []
+            end
+          end)
 
         {:ok, %__MODULE__{root: new_root, children: new_children}}
 
@@ -159,8 +160,8 @@ defmodule StreamData.LazyTree do
     trees
     |> Stream.with_index()
     |> Stream.flat_map(fn {%__MODULE__{children: children}, index} ->
-         Enum.map(children, &List.replace_at(trees, index, &1))
-       end)
+      Enum.map(children, &List.replace_at(trees, index, &1))
+    end)
   end
 
   defimpl Inspect do

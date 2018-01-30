@@ -975,15 +975,15 @@ defmodule StreamData do
 
       data
       |> uniq_list_of(
-           uniq_fun,
-           next_seed,
-           size,
-           _seen = MapSet.new(),
-           max_tries,
-           max_tries,
-           length,
-           []
-         )
+        uniq_fun,
+        next_seed,
+        size,
+        _seen = MapSet.new(),
+        max_tries,
+        max_tries,
+        length,
+        []
+      )
       |> LazyTree.zip()
       |> LazyTree.map(&list_lazy_tree(&1, min_length))
       |> LazyTree.flatten()
@@ -2080,7 +2080,8 @@ defmodule StreamData do
     :rand.seed_s(exported_seed)
   end
 
-  @compile {:inline, split_seed: 1, order: 2, uniform_in_range: 3, lazy_tree: 2, lazy_tree_constant: 1}
+  @compile {:inline,
+            split_seed: 1, order: 2, uniform_in_range: 3, lazy_tree: 2, lazy_tree_constant: 1}
 
   defp split_seed(seed) do
     {int, seed} = :rand.uniform_s(1_000_000_000, seed)
