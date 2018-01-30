@@ -1,8 +1,9 @@
 sudo: false
 language: elixir
 
-elixir: 1.5.2
+elixir: 1.6.1
 otp_release: 20.0
 
 script:
+  - mix format --dry-run --check-formatted
   - mix test --include stldib
