@@ -35,18 +35,20 @@ defmodule ExUnitPropertiesTest do
     end
   end
 
-  property "supports rescue" do
-    raise "some error"
-  rescue
-    exception in [RuntimeError] ->
-      assert Exception.message(exception) == "some error"
-  end
+  describe "property" do
+    property "supports rescue" do
+      raise "some error"
+    rescue
+      exception in [RuntimeError] ->
+        assert Exception.message(exception) == "some error"
+    end
 
-  property "supports catch" do
-    throw(:some_error)
-  catch
-    :throw, term ->
-      assert term == :some_error
+    property "supports catch" do
+      throw(:some_error)
+    catch
+      :throw, term ->
+        assert term == :some_error
+    end
   end
 
   describe "check all" do
@@ -70,6 +72,52 @@ defmodule ExUnitPropertiesTest do
       end
 
       assert Agent.get(counter, & &1) == 10
+    end
+
+    property "runs for the specified number of milliseconds" do
+      {:ok, counter} = Agent.start_link(fn -> 0 end)
+
+      check all :ok <- :ok, max_runs: :infinity, max_run_time: 100 do
+        Process.sleep(25)
+        Agent.update(counter, &(&1 + 1))
+        :ok
+      end
+
+      assert Agent.get(counter, & &1) in 3..5
+    end
+
+    property "ends at :max_runs if it ends before :max_run_time" do
+      {:ok, counter} = Agent.start_link(fn -> 0 end)
+
+      check all :ok <- :ok, max_runs: 5, max_run_time: 500 do
+        Process.sleep(1)
+        Agent.update(counter, &(&1 + 1))
+        :ok
+      end
+
+      assert Agent.get(counter, & &1) == 5
+    end
+
+    property "ends at :max_run_time if it ends before :max_runs" do
+      {:ok, counter} = Agent.start_link(fn -> 0 end)
+
+      check all :ok <- :ok, max_runs: 100_000, max_run_time: 100 do
+        Process.sleep(25)
+        Agent.update(counter, &(&1 + 1))
+        :ok
+      end
+
+      assert Agent.get(counter, & &1) in 3..5
+    end
+
+    test "raises an error instead of running an infinite loop" do
+      message = ~r/both the :max_runs and :max_run_time options are set to :infinity/
+
+      assert_raise ArgumentError, message, fn ->
+        check all :ok <- :ok, max_runs: :infinity, max_run_time: :infinity do
+          :ok
+        end
+      end
     end
 
     property "works with errors that are not assertion errors" do

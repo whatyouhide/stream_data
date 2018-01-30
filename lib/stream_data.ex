@@ -1924,6 +1924,12 @@ defmodule StreamData do
     * `:max_runs` - (non-negative integer) the total number of elements to
       generate out of `data` and check through `fun`. Defaults to `100`.
 
+    * `:max_run_time` - (non-negative integer) the total number of time (in milliseconds)
+      to run a given check for. This is not used by default, so unless a value
+      is given, then the length of the check will be determined by `:max_runs`.
+      If both `:max_runs` and `:max_run_time` are given, then the check will finish at
+      whichever comes first, `:max_runs` or `:max_run_time`.
+
     * `:max_shrinking_steps` - (non-negative integer) the maximum numbers of
       shrinking steps to perform in case `check_all/3` finds an element that
       doesn't satisfy `fun`. Defaults to `100`.
@@ -1967,27 +1973,48 @@ defmodule StreamData do
     seed = new_seed(Keyword.fetch!(options, :initial_seed))
     size = Keyword.get(options, :initial_size, 1)
     max_shrinking_steps = Keyword.get(options, :max_shrinking_steps, 100)
-    max_runs = Keyword.get(options, :max_runs, 100)
+    start_time = System.system_time(:millisecond)
+    config = %{max_shrinking_steps: max_shrinking_steps}
 
-    config = %{
-      max_runs: max_runs,
-      max_shrinking_steps: max_shrinking_steps
-    }
+    config =
+      case {Keyword.get(options, :max_runs), Keyword.get(options, :max_run_time, :infinity)} do
+        {:infinity, :infinity} ->
+          raise ArgumentError,
+                "both the :max_runs and :max_run_time options are set to :infinity. " <>
+                  "This would result in an infinite loop. Be sure to set at least one of " <>
+                  "these options to an integer to avoid this error. Note that :max_run_time " <>
+                  "defaults to :infinity, so if you set \"max_runs: :infinity\" then you need " <>
+                  "to explicitly set :max_run_time to an integer."
 
-    check_all(data, seed, size, fun, _runs = 0, config)
+        {max_runs, :infinity} ->
+          Map.put(config, :max_runs, max_runs || 100)
+
+        {:infinity, max_run_time} ->
+          Map.put(config, :max_end_time, start_time + max_run_time)
+
+        {max_runs, max_run_time} ->
+          Map.merge(config, %{max_end_time: start_time + max_run_time, max_runs: max_runs})
+      end
+
+    check_all(data, seed, size, fun, _runs = 0, start_time, config)
   end
 
-  defp check_all(_data, _seed, _size, _fun, runs, %{max_runs: runs}) do
+  defp check_all(_data, _seed, _size, _fun, _runs, current_time, %{max_end_time: end_time})
+       when current_time >= end_time do
     {:ok, %{}}
   end
 
-  defp check_all(data, seed, size, fun, runs, config) do
+  defp check_all(_data, _seed, _size, _fun, runs, _current_time, %{max_runs: runs}) do
+    {:ok, %{}}
+  end
+
+  defp check_all(data, seed, size, fun, runs, _current_time, config) do
     {seed1, seed2} = split_seed(seed)
     %LazyTree{root: root, children: children} = call(data, seed1, size)
 
     case fun.(root) do
       {:ok, _term} ->
-        check_all(data, seed2, size + 1, fun, runs + 1, config)
+        check_all(data, seed2, size + 1, fun, runs + 1, System.system_time(:millisecond), config)
 
       {:error, reason} ->
         shrinking_result =

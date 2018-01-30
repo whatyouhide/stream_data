@@ -327,6 +327,12 @@ defmodule ExUnitProperties do
     * `:max_runs` - (non-negative integer) the total number of generations to
       run. Defaults to `100`.
 
+    * `:max_run_time` - (non-negative integer) the total number of time (in milliseconds)
+      to run a given check for. This is not used by default, so unless a value
+      is given then the length of the test will be determined by `:max_runs`.
+      If both `:max_runs` and `:max_run_time` are given, then the check will finish at
+      whichever comes first, `:max_runs` or `:max_run_time`.
+
     * `:max_shrinking_steps` - (non-negative integer) the maximum numbers of
       shrinking steps to perform in case a failing case is found. Defaults to
       `100`.
@@ -379,6 +385,8 @@ defmodule ExUnitProperties do
         initial_size:
           options[:initial_size] || Application.fetch_env!(:stream_data, :initial_size),
         max_runs: options[:max_runs] || Application.fetch_env!(:stream_data, :max_runs),
+        max_run_time:
+          options[:max_run_time] || Application.fetch_env!(:stream_data, :max_run_time),
         max_shrinking_steps:
           options[:max_shrinking_steps] ||
             Application.fetch_env!(:stream_data, :max_shrinking_steps)
