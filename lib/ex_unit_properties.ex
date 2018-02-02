@@ -457,14 +457,16 @@ defmodule ExUnitProperties do
   end
 
   defp choose_error_and_raise(_original_failure, shrunk_failure, successful_runs) do
-    %{exception: exception, stacktrace: stacktrace, generated_values: generated_values} = shrunk_failure
+    %{exception: exception, stacktrace: stacktrace, generated_values: generated_values} =
+      shrunk_failure
+
     {exception, stacktrace} = Exception.blame(:error, exception, stacktrace)
     formatted_exception = Exception.format_banner(:error, exception, stacktrace)
 
     message =
       "failed with generated values (after #{successful_runs} successful run(s)):\n\n" <>
-        indent(format_generated_values(generated_values), "    ") <> "\n\ngot exception:\n\n" <>
-        indent(formatted_exception, "    ")
+        indent(format_generated_values(generated_values), "    ") <>
+        "\n\ngot exception:\n\n" <> indent(formatted_exception, "    ")
 
     reraise Error, [message: message], shrunk_failure.stacktrace
   end
