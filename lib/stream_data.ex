@@ -8,21 +8,21 @@ defmodule StreamData do
 
   Similar to the `Stream` module, the functions in this module returns a lazy
   construct. We can get values out of a generator by enumerating the generator.
-  Generators are infinite and most generators are randomic too.
+  Generators always generate an infinite stream of values (which are randomized
+  most of the time).
 
   For example, to get an infinite stream of integers that starts with small
-  integers and progressively grows the boundaries, you can just use `integer/0`:
+  integers and progressively grows the boundaries, you can use `integer/0`:
 
       Enum.take(StreamData.integer(), 10)
       #=> [-1, 0, -3, 4, -4, 5, -1, -3, 5, 8]
 
-  You can also note that the values emitted by a generator is not unique.
+  As you can see above, values emitted by a generator are not unique.
 
-  Generally speaking, the longer the generators runs, the larger the generated
-  values will be. For an integer, a larger integer means a bigger number. For a
-  list, it may mean a list with more elements. We call this parameter the
-  **generator size** and StreamData provides functions to manipulate the size
-  as we compose generators.
+  In many applications of generators, the longer the generators runs the larger
+  the generated values will be. For integers, a larger integer means a bigger number.
+  For lists, it may mean a list with more elements. This is controlled by a parameter
+  that we call the **generation size** (see the "Generation size" section below).
 
   StreamData is often used to generate random values. It is also the foundation
   for property-based testing. See `ExUnitProperties` for more information.
@@ -73,7 +73,7 @@ defmodule StreamData do
   Each generator has its own logic to shrink values. Those are outlined in each
   generator documentation.
 
-  Note that the generation size is not related in any way with shrinking: while
+  Note that the generation size is not related in any way to shrinking: while
   intuitively one may think that shrinking just means decreasing the generation
   size, in reality the shrinking rule is bound to each generated value. One way
   to look at it is that shrinking a list is always the same, regardless of its
@@ -92,7 +92,7 @@ defmodule StreamData do
       `tuple/1`. For example, `{StreamData.integer(), StreamData.boolean()}`
       generates entries like `{10, false}`.
 
-  Note that *these terms must be explicitly converted to stream data generators*.
+  Note that *these terms must be explicitly converted to StreamData generators*.
   This means that these terms are not full-fledged generators. For example, atoms
   cannot be enumerated directly as they don't implement the `Enumerable` protocol.
   However, `StreamData.constant(:foo)` is enumerable as it has been wrapped in
