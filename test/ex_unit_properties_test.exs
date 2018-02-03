@@ -33,6 +33,19 @@ defmodule ExUnitPropertiesTest do
         Enum.take(data, 1)
       end
     end
+
+    test "supports do keyword syntax" do
+      gen all _boolean <- boolean(), do: :ok
+
+      data =
+        gen all string <- binary(),
+                list <- list_of(integer()), do: {string, list}
+
+      check all {string, list} <- data do
+        assert is_binary(string)
+        assert is_list(list)
+      end
+    end
   end
 
   describe "property" do

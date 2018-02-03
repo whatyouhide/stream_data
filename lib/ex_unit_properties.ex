@@ -222,7 +222,11 @@ defmodule ExUnitProperties do
     * value generation clauses affect shrinking similarly to `bind/2`
 
   """
-  # TODO: support do: syntax
+  defmacro gen({:all, _meta, clauses_with_body}) do
+    [[do: body] | clauses] = Enum.reverse(clauses_with_body)
+    compile(clauses, body)
+  end
+
   defmacro gen({:all, _meta, clauses} = _generation_clauses, [do: body] = _block) do
     compile(clauses, body)
   end
