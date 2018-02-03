@@ -35,11 +35,14 @@ defmodule ExUnitPropertiesTest do
     end
 
     test "supports do keyword syntax" do
-      gen all _boolean <- boolean(), do: :ok
+      gen(all _boolean <- boolean(), do: :ok)
 
       data =
-        gen all string <- binary(),
-                list <- list_of(integer()), do: {string, list}
+        gen(
+          all string <- binary(),
+              list <- list_of(integer()),
+              do: {string, list}
+        )
 
       check all {string, list} <- data do
         assert is_binary(string)
