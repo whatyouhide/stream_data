@@ -374,8 +374,18 @@ defmodule ExUnitProperties do
       end
 
   """
+  defmacro check({:all, _meta, clauses_with_body}) when is_list(clauses_with_body) do
+    [[do: body] | options_and_clauses] = Enum.reverse(clauses_with_body)
+    clauses_and_options = Enum.reverse(options_and_clauses)
+    compile_check_all(clauses_and_options, body)
+  end
+
   defmacro check({:all, _meta, clauses_and_options} = _generation_clauses, [do: body] = _block)
            when is_list(clauses_and_options) do
+    compile_check_all(clauses_and_options, body)
+  end
+
+  defp compile_check_all(clauses_and_options, body) do
     {clauses, options} = split_clauses_and_options(clauses_and_options)
 
     quote do

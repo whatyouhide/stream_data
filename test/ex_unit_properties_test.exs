@@ -151,6 +151,19 @@ defmodule ExUnitPropertiesTest do
         end
       end
     end
+
+    test "supports do keyword syntax" do
+      check all int <- integer(), do: assert(is_integer(int))
+
+      check all a <- binary(),
+                b <- binary(),
+                do: assert(String.starts_with?(a <> b, a))
+
+      check all int1 <- integer(),
+                int2 <- integer(),
+                sum = abs(int1) + abs(int2),
+                do: assert(sum >= int1)
+    end
   end
 
   if Version.compare(System.version(), "1.6.0-dev") in [:eq, :gt] do
