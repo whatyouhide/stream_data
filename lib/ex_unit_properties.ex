@@ -223,12 +223,11 @@ defmodule ExUnitProperties do
 
   """
   defmacro gen({:all, _meta, clauses_with_body}) do
-    [[do: body] | reversed_clauses] = Enum.reverse(clauses_with_body)
-    clauses = Enum.reverse(reversed_clauses)
+    {clauses, [[do: body]]} = Enum.split(clauses_with_body, -1)
     compile(clauses, body)
   end
 
-  defmacro gen({:all, _meta, clauses} = _generation_clauses, [do: body] = _block) do
+  defmacro gen({:all, _meta, clauses}, do: body) do
     compile(clauses, body)
   end
 
@@ -376,12 +375,11 @@ defmodule ExUnitProperties do
 
   """
   defmacro check({:all, _meta, clauses_with_body}) when is_list(clauses_with_body) do
-    [[do: body] | options_and_clauses] = Enum.reverse(clauses_with_body)
-    clauses_and_options = Enum.reverse(options_and_clauses)
+    {clauses_and_options, [[do: body]]} = Enum.split(clauses_with_body, -1)
     compile_check_all(clauses_and_options, body)
   end
 
-  defmacro check({:all, _meta, clauses_and_options} = _generation_clauses, [do: body] = _block)
+  defmacro check({:all, _meta, clauses_and_options}, do: body)
            when is_list(clauses_and_options) do
     compile_check_all(clauses_and_options, body)
   end

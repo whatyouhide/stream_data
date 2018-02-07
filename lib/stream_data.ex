@@ -2077,9 +2077,9 @@ defmodule StreamData do
   end
 
   @compile {
-             :inline,
-             split_seed: 1, order: 2, uniform_in_range: 3, lazy_tree: 2, lazy_tree_constant: 1
-           }
+    :inline,
+    split_seed: 1, order: 2, uniform_in_range: 3, lazy_tree: 2, lazy_tree_constant: 1
+  }
 
   defp split_seed(seed) do
     {int, seed} = :rand.uniform_s(1_000_000_000, seed)
