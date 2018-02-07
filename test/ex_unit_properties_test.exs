@@ -33,6 +33,22 @@ defmodule ExUnitPropertiesTest do
         Enum.take(data, 1)
       end
     end
+
+    test "supports do keyword syntax" do
+      gen(all _boolean <- boolean(), do: :ok)
+
+      data =
+        gen(
+          all string <- binary(),
+              list <- list_of(integer()),
+              do: {string, list}
+        )
+
+      check all {string, list} <- data do
+        assert is_binary(string)
+        assert is_list(list)
+      end
+    end
   end
 
   describe "property" do
@@ -134,6 +150,19 @@ defmodule ExUnitPropertiesTest do
           assert 5 not in list
         end
       end
+    end
+
+    test "supports do keyword syntax" do
+      check all int <- integer(), do: assert(is_integer(int))
+
+      check all a <- binary(),
+                b <- binary(),
+                do: assert(String.starts_with?(a <> b, a))
+
+      check all int1 <- integer(),
+                int2 <- integer(),
+                sum = abs(int1) + abs(int2),
+                do: assert(sum >= int1)
     end
   end
 
