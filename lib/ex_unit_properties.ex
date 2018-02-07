@@ -223,7 +223,8 @@ defmodule ExUnitProperties do
 
   """
   defmacro gen({:all, _meta, clauses_with_body}) do
-    [[do: body] | clauses] = Enum.reverse(clauses_with_body)
+    [[do: body] | reversed_clauses] = Enum.reverse(clauses_with_body)
+    clauses = Enum.reverse(reversed_clauses)
     compile(clauses, body)
   end
 
