@@ -1629,7 +1629,7 @@ defmodule StreamData do
   @doc """
   Generates a string of the given kind or from the given characters.
 
-  `kind_or_chars` can be:
+  `kind_or_codepoints` can be:
 
     * `:ascii` - strings containing only ASCII characters are generated. Such
       strings shrink towards lower codepoints.
@@ -1663,7 +1663,7 @@ defmodule StreamData do
   ## Shrinking
 
   Shrinks towards smaller strings and as described in the description of the
-  possible values of `kind_or_chars` above.
+  possible values of `kind_or_codepoints` above.
   """
   @spec string(:ascii | :alphanumeric | :printable | Range.t() | [Range.t() | pos_integer()]) ::
           t(String.t())
