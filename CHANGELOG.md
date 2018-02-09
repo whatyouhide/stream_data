@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.1
+
+  * Import all functions/macros from `ExUnitProperties` when `use`d
+  * Various optimizations
+  * Add the `:max_run_time` configuration option to go together with `:max_runs`
+  * Add support for `:do` syntax in `gen all`/`check all`
+
 ## v0.4.0
 
   * Add a `StreamData.term/0` generator
