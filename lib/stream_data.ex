@@ -1154,9 +1154,17 @@ defmodule StreamData do
   `uniq_list_of/2`: if more than `max_tries` duplicate keys are generated
   consequently, it raises a `StreamData.TooManyDuplicatesError` exception.
 
+  ## Options
+
+    * `:length` - (non-negative integer) same as in `list_of/2`.
+
+    * `:min_length` - (non-negative integer) same as in `list_of/2`.
+
+    * `:max_length` - (non-negative integer) same as in `list_of/2`.
+
   ## Examples
 
-      Enum.take(StreamData.map_of(StreamData.integer(), StreamData.boolean()), max_tries: 3)
+      Enum.take(StreamData.map_of(StreamData.integer(), StreamData.boolean()), 3)
       #=> [%{}, %{1 => false}, %{-2 => true, -1 => false}]
 
   ## Shrinking
