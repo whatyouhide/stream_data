@@ -5,5 +5,5 @@ elixir: 1.6.1
 otp_release: 20.0
 
 script:
-  - mix format --dry-run --check-formatted
+  - mix format --check-formatted
   - mix test --include stldib
