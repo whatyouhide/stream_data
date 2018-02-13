@@ -477,7 +477,7 @@ defmodule ExUnitProperties do
     formatted_exception = Exception.format_banner(:error, exception, stacktrace)
 
     message =
-      "failed with generated values (after #{successful_runs} successful run(s)):\n\n" <>
+      "failed with generated values (after #{successful_runs(successful_runs)}):\n\n" <>
         indent(format_generated_values(generated_values), "    ") <>
         "\n\ngot exception:\n\n" <> indent(formatted_exception, "    ")
 
@@ -489,7 +489,7 @@ defmodule ExUnitProperties do
          successful_runs
        ) do
     message =
-      "Failed with generated values (after #{successful_runs} successful run(s)):\n\n" <>
+      "Failed with generated values (after #{successful_runs(successful_runs)}):\n\n" <>
         indent(format_generated_values(generated_values), "    ") <>
         if(is_binary(exception.message), do: "\n\n" <> exception.message, else: "")
 
@@ -505,6 +505,9 @@ defmodule ExUnitProperties do
   defp indent(string, indentation) do
     indentation <> String.replace(string, "\n", "\n" <> indentation)
   end
+
+  defp successful_runs(1), do: "1 successful run"
+  defp successful_runs(n), do: "#{n} successful runs"
 
   defp split_clauses_and_options(clauses_and_options) do
     case Enum.split_while(clauses_and_options, &(not Keyword.keyword?(&1))) do
