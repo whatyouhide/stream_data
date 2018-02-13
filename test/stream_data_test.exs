@@ -415,6 +415,19 @@ defmodule StreamDataTest do
     end
   end
 
+  property "map_of/3" do
+    check all map <- map_of(integer(), boolean(), max_length: 5), max_runs: 50 do
+      assert is_map(map)
+
+      assert map_size(map) <= 5
+
+      Enum.each(map, fn {key, value} ->
+        assert is_integer(key)
+        assert is_boolean(value)
+      end)
+    end
+  end
+
   property "fixed_map/1" do
     data_with_map = fixed_map(%{integer: integer(), binary: binary()})
     data_with_keyword = fixed_map(integer: integer(), binary: binary())

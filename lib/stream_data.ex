@@ -1154,6 +1154,14 @@ defmodule StreamData do
   `uniq_list_of/2`: if more than `max_tries` duplicate keys are generated
   consequently, it raises a `StreamData.TooManyDuplicatesError` exception.
 
+  ## Options
+
+    * `:length` - (non-negative integer) same as in `list_of/2`.
+
+    * `:min_length` - (non-negative integer) same as in `list_of/2`.
+
+    * `:max_length` - (non-negative integer) same as in `list_of/2`.
+
   ## Examples
 
       Enum.take(StreamData.map_of(StreamData.integer(), StreamData.boolean()), 3)
@@ -1164,12 +1172,14 @@ defmodule StreamData do
   Shrinks towards smallest maps and towards shrinking keys and values according
   to the respective generators.
   """
-  @spec map_of(t(key), t(value), non_neg_integer()) :: t(%{optional(key) => value})
+  @spec map_of(t(key), t(value), keyword()) :: t(%{optional(key) => value})
         when key: term(),
              value: term()
-  def map_of(key_data, value_data, max_tries \\ 10) do
+  def map_of(key_data, value_data, options \\ []) do
+    options = Keyword.put(options, :uniq_fun, fn {key, _value} -> key end)
+
     {key_data, value_data}
-    |> uniq_list_of(uniq_fun: fn {key, _value} -> key end, max_tries: max_tries)
+    |> uniq_list_of(options)
     |> map(&Map.new/1)
   end
 
