@@ -13,6 +13,11 @@ defmodule StreamDataTest do
     end)
   end
 
+  test "implementation of the Inspect protocol" do
+    data = constant(:foo)
+    assert inspect(data) =~ ~r/\A#StreamData<\d{2}\./
+  end
+
   describe "terms used as generators" do
     property "atoms" do
       check all term <- :foo do

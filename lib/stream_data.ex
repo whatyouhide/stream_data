@@ -2142,4 +2142,15 @@ defmodule StreamData do
     def member?(_data, _term), do: {:error, __MODULE__}
     def slice(_data), do: {:error, __MODULE__}
   end
+
+  ## Inspect
+
+  defimpl Inspect do
+    def inspect(%StreamData{generator: generator}, opts) do
+      case @protocol.inspect(generator, opts) do
+        "#Function<" <> rest -> "#StreamData<" <> rest
+        other -> "#StreamData<#{other}>"
+      end
+    end
+  end
 end
