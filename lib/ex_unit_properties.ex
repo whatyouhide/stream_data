@@ -495,7 +495,10 @@ defmodule ExUnitProperties do
 
   defp format_generated_values(values) do
     Enum.map_join(values, "\n\n", fn {gen_string, value} ->
-      gen_string <> "\n#=> " <> inspect(value)
+      String.trim_trailing("""
+      * Clause:    #{gen_string}
+        Generated: #{inspect(value)}
+      """)
     end)
   end
 
