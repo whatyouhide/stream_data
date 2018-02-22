@@ -434,11 +434,8 @@ defmodule ExUnitProperties do
         end
 
       case StreamData.check_all(property, options, & &1.()) do
-        {:ok, _result} ->
-          :ok
-
-        {:error, test_result} ->
-          unquote(__MODULE__).__raise__(test_result)
+        {:ok, _result} -> :ok
+        {:error, test_result} -> unquote(__MODULE__).__raise__(test_result)
       end
     end
   end
@@ -511,11 +508,8 @@ defmodule ExUnitProperties do
 
   defp split_clauses_and_options(clauses_and_options) do
     case Enum.split_while(clauses_and_options, &(not Keyword.keyword?(&1))) do
-      {_clauses, []} = result ->
-        result
-
-      {clauses, [options]} ->
-        {clauses, options}
+      {_clauses, []} = result -> result
+      {clauses, [options]} -> {clauses, options}
     end
   end
 
