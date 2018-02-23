@@ -232,11 +232,23 @@ defmodule ExUnitProperties do
   end
 
   defp compile(clauses, body) do
+    assert_first_clause_is_generator(clauses)
+
     quote do
       var!(generated_values, unquote(__MODULE__)) = []
       {:cont, data} = unquote(compile_clauses(clauses, body, _line = nil))
       data
     end
+  end
+
+  defp assert_first_clause_is_generator([{:<-, _, [_, _]} | _]) do
+    :ok
+  end
+
+  defp assert_first_clause_is_generator([clause | _]) do
+    raise ArgumentError,
+          "\"gen all\" and \"check all\" clauses must start with a generator (<-) clause, " <>
+            "got: #{Macro.to_string(clause)}"
   end
 
   defp compile_clauses([], body, _line) do

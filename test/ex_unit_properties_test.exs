@@ -49,6 +49,32 @@ defmodule ExUnitPropertiesTest do
         assert is_list(list)
       end
     end
+
+    test "errors out if the first clause is not a generator" do
+      message =
+        "\"gen all\" and \"check all\" clauses must start with a generator (<-) clause, " <>
+          "got: a = 1"
+
+      assert_raise ArgumentError, message, fn ->
+        Code.compile_quoted(
+          quote do
+            gen(all a = 1, _ <- integer, do: :ok)
+          end
+        )
+      end
+
+      message =
+        "\"gen all\" and \"check all\" clauses must start with a generator (<-) clause, " <>
+          "got: true"
+
+      assert_raise ArgumentError, message, fn ->
+        Code.compile_quoted(
+          quote do
+            gen(all true, _ <- integer, do: :ok)
+          end
+        )
+      end
+    end
   end
 
   describe "property" do
@@ -163,6 +189,32 @@ defmodule ExUnitPropertiesTest do
                 int2 <- integer(),
                 sum = abs(int1) + abs(int2),
                 do: assert(sum >= int1)
+    end
+
+    test "errors out if the first clause is not a generator" do
+      message =
+        "\"gen all\" and \"check all\" clauses must start with a generator (<-) clause, " <>
+          "got: a = 1"
+
+      assert_raise ArgumentError, message, fn ->
+        Code.compile_quoted(
+          quote do
+            gen(all a = 1, _ <- integer, do: :ok)
+          end
+        )
+      end
+
+      message =
+        "\"gen all\" and \"check all\" clauses must start with a generator (<-) clause, " <>
+          "got: true"
+
+      assert_raise ArgumentError, message, fn ->
+        Code.compile_quoted(
+          quote do
+            gen(all true, _ <- integer, do: :ok)
+          end
+        )
+      end
     end
   end
 
