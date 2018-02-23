@@ -275,13 +275,7 @@ defmodule ExUnitProperties do
   end
 
   defp compile_clauses([clause | rest], body, parent_line) do
-    line =
-      with {_, meta, _} when is_list(meta) <- clause,
-           line when is_integer(line) <- Keyword.get(meta, :line) do
-        line
-      else
-        _ -> parent_line
-      end
+    line = get_clause_line(clause, parent_line)
 
     quote line: line do
       cond do
@@ -294,6 +288,15 @@ defmodule ExUnitProperties do
         true ->
           :skip
       end
+    end
+  end
+
+  defp get_clause_line(clause, parent_line) do
+    with {_, meta, _} when is_list(meta) <- clause,
+         {:ok, line} when is_integer(line) <- Keyword.fetch(meta, :line) do
+      line
+    else
+      _ -> parent_line
     end
   end
 
