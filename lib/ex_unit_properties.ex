@@ -388,6 +388,25 @@ defmodule ExUnitProperties do
         assert member in list
       end
 
+  ### Using `check all` in doctests
+
+  `check all` can be used in doctests. Make sure that the module where you call
+  `doctest(MyModule)` calls `use ExUnitProperties`. Then, you can call `check all`
+  in your doctests:
+
+      @doc \"\"\"
+      Tells if a term is an integer.
+
+          iex> check all i <- integer() do
+          ...>   assert int?(i)
+          ...> end
+          :ok
+
+      \"\"\"
+      def int?(i), do: is_integer(i)
+
+  `check all` always returns `:ok`, so you can use that as the return value of
+  the whole expression.
   """
   defmacro check({:all, _meta, clauses_with_body}) when is_list(clauses_with_body) do
     {clauses_and_options, [[do: body]]} = Enum.split(clauses_with_body, -1)
