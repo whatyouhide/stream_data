@@ -222,7 +222,7 @@ defmodule ExUnitProperties do
     * value generation clauses affect shrinking similarly to `bind/2`
 
   """
-  defmacro gen({:all, _meta, clauses_with_body}) do
+  defmacro gen({:all, _meta, clauses_with_body} = _clauses_and_body) do
     {clauses, [[do: body]]} = Enum.split(clauses_with_body, -1)
     compile(clauses, body)
   end
@@ -411,7 +411,8 @@ defmodule ExUnitProperties do
   `check all` always returns `:ok`, so you can use that as the return value of
   the whole expression.
   """
-  defmacro check({:all, _meta, clauses_with_body}) when is_list(clauses_with_body) do
+  defmacro check({:all, _meta, clauses_with_body} = _clauses_and_body)
+           when is_list(clauses_with_body) do
     {clauses_and_options, [[do: body]]} = Enum.split(clauses_with_body, -1)
     compile_check_all(clauses_and_options, body)
   end
