@@ -227,6 +227,9 @@ defmodule ExUnitProperties do
     compile(clauses, body)
   end
 
+  # We don't need docs for `check/2`, the docs for `check/1` are enough since
+  # using `do:` should just work from the perspective of the end user.
+  @doc false
   defmacro gen({:all, _meta, clauses}, do: body) do
     compile(clauses, body)
   end
@@ -413,6 +416,9 @@ defmodule ExUnitProperties do
     compile_check_all(clauses_and_options, body)
   end
 
+  # We don't need docs for `check/2`, the docs for `check/1` are enough since
+  # using `do:` should just work from the perspective of the end user.
+  @doc false
   defmacro check({:all, _meta, clauses_and_options}, do: body)
            when is_list(clauses_and_options) do
     compile_check_all(clauses_and_options, body)
