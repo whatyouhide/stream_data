@@ -1400,7 +1400,7 @@ defmodule StreamData do
   def boolean() do
     new(fn seed, _size ->
       case uniform_in_range(0, 1, seed) do
-        {1, _} -> lazy_tree(true, [false])
+        {1, _} -> lazy_tree(true, [lazy_tree_constant(false)])
         {0, _} -> lazy_tree_constant(false)
       end
     end)
