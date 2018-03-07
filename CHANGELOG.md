@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.4.2
+
+  * Fix a bug when shrinking boolean values generated with `StreamData.boolean/0`
+
 ## v0.4.1
 
   * Import all functions/macros from `ExUnitProperties` when `use`d
