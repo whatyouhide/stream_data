@@ -333,7 +333,7 @@ defmodule ExUnitProperties do
   are used to specify the values to generate in order to test the properties.
   The actual tests that the properties hold live in the `do` block.
 
-  Clauses work exactly like they work in the `StreamData.gen/2` macro.
+  Clauses work exactly like they work in the `ExUnitProperties.gen/1` macro.
 
   The body passed in the `do` block is where you test that the property holds
   for the generated values. The body is just like the body of a test: use
