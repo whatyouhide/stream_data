@@ -431,6 +431,7 @@ defmodule ExUnitProperties do
     quote do
       options = unquote(options)
 
+      # TODO: Use ExUnit configuration when made part of ExUnit
       options = [
         # TODO: Use :rand.export_seed in Elixir master.
         # The value may be :undefined in a new process
