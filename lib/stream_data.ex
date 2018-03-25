@@ -1868,7 +1868,18 @@ defmodule StreamData do
     simple_term = one_of([boolean(), integer(), binary(), float(), atom(:alphanumeric), ref])
 
     tree(simple_term, fn leaf ->
-      one_of([list_of(leaf), map_of(leaf, leaf), {}, {leaf}, {leaf, leaf}, {leaf, leaf, leaf}])
+      one_of([list_of(leaf), map_of(leaf, leaf), one_to_four_element_tuple(leaf)])
+    end)
+  end
+
+  defp one_to_four_element_tuple(leaf) do
+    bind(integer(), fn integer ->
+      case rem(integer, 10) do
+        rem when rem >= 6 -> {leaf, leaf, leaf}
+        rem when rem >= 3 -> {leaf, leaf}
+        rem when rem >= 1 -> {leaf}
+        _ -> {}
+      end
     end)
   end
 
