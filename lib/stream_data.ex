@@ -1864,7 +1864,6 @@ defmodule StreamData do
         when simple: boolean() | integer() | binary() | float() | atom() | reference()
   def term() do
     ref = new(fn _seed, _size -> lazy_tree_constant(make_ref()) end)
-
     simple_term = one_of([boolean(), integer(), binary(), float(), atom(:alphanumeric), ref])
 
     tree(simple_term, fn leaf ->
@@ -1873,13 +1872,11 @@ defmodule StreamData do
   end
 
   defp one_to_four_element_tuple(leaf) do
-    bind(integer(0..9), fn integer ->
-      case rem(integer, 10) do
-        rem when rem >= 6 -> {leaf, leaf, leaf}
-        rem when rem >= 3 -> {leaf, leaf}
-        rem when rem >= 1 -> {leaf}
-        _ -> {}
-      end
+    bind(integer(0..9), fn
+      int when int >= 6 -> {leaf, leaf, leaf}
+      int when int >= 3 -> {leaf, leaf}
+      int when int >= 1 -> {leaf}
+      _ -> {}
     end)
   end
 
