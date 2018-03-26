@@ -1873,7 +1873,7 @@ defmodule StreamData do
   end
 
   defp one_to_four_element_tuple(leaf) do
-    bind(integer(), fn integer ->
+    bind(integer(0..9), fn integer ->
       case rem(integer, 10) do
         rem when rem >= 6 -> {leaf, leaf, leaf}
         rem when rem >= 3 -> {leaf, leaf}
