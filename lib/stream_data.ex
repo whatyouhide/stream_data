@@ -6,7 +6,7 @@ defmodule StreamData do
   functions exposed in this module, like `constant/1`, and by combining other
   generators through functions like `bind/2`.
 
-  Similar to the `Stream` module, the functions in this module returns a lazy
+  Similar to the `Stream` module, the functions in this module return a lazy
   construct. We can get values out of a generator by enumerating the generator.
   Generators always generate an infinite stream of values (which are randomized
   most of the time).
@@ -19,7 +19,7 @@ defmodule StreamData do
 
   As you can see above, values emitted by a generator are not unique.
 
-  In many applications of generators, the longer the generators runs the larger
+  In many applications of generators, the longer the generator runs the larger
   the generated values will be. For integers, a larger integer means a bigger number.
   For lists, it may mean a list with more elements. This is controlled by a parameter
   that we call the **generation size** (see the "Generation size" section below).
