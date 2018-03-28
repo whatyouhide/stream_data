@@ -1852,8 +1852,8 @@ defmodule StreamData do
 
   ## Examples
 
-    Enum.take(StreamData.term(), 3)
-    #=> [0.5119003572251588, {{true, ""}}, :WJg]
+      Enum.take(StreamData.term(), 3)
+      #=> [0.5119003572251588, {{true, ""}}, :WJg]
 
   ## Shrinking
 
