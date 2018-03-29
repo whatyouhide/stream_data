@@ -359,6 +359,59 @@ defmodule StreamDataTest do
     end
   end
 
+  describe "unfold/2" do
+
+    property "automaton (duck)*(goose)" do
+      dg_fun = fn
+        :duck -> {constant(:duck), :duck}
+        :goose -> {constant(:goose), :duck}
+      end
+      check all l <- unfold(:goose, dg_fun, min_length: 1) do
+        # IO.puts "l = #{inspect l}"
+        goose = Enum.drop_while(l, & &1 == :duck)
+        assert goose == [:goose]
+      end
+    end
+
+    property "automaton prefix a+b+" do
+      # NOTE: first/pick(...) may not work, since reduce introduces
+      #       a new seed.
+      # This property requires that we take a look into the generated values
+      # Perhaps we require a bind here.
+      first = fn l -> l |> Enum.take(1) |> hd() end
+      pre_fun = fn
+        :a -> {constant(:a), :a}
+        :b -> {constant(:b), first.(one_of([:a, :b]))}
+      end
+      check all l <- unfold(:b, pre_fun, min_length: 1) do
+        #IO.puts "l = #{inspect l}"
+        bs = Enum.drop_while(l, & &1 == :a)
+        assert Enum.all?(bs, & &1 == :b)
+      end
+    end
+
+    test "shrinking automaton prefix a+b+" do
+      # NOTE: first/pick(...) may not work, since reduce introduces
+      #       a new seed.
+      # This property requires that we take a look into the generated values
+      # Perhaps we require a bind here.
+      first = fn l -> l |> Enum.take(1) |> hd() end
+      pre_fun = fn
+        :a -> {constant(:a), first.(frequency([{90, :a}, {1, :c}]))}
+        :b -> {constant(:b), first.(one_of([:a, :b]))}
+        :c -> {constant(:c), :a}
+      end
+      assert_raise ExUnit.AssertionError, ~r/#=> \[:c\]/, fn ->
+        check all l <- unfold(:b, pre_fun, min_length: 1) do
+          # IO.puts "l = #{inspect l}"
+          bs = Enum.drop_while(l, & &1 == :a)
+          assert Enum.all?(bs, & &1 == :b)
+        end
+      end
+    end
+
+  end
+
   describe "uniq_list_of/1" do
     property "without options" do
       check all list <- uniq_list_of(integer(1..10000)) do
