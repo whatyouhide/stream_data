@@ -43,8 +43,8 @@ defmodule StreamData do
       |> Enum.take(10)
       #=> [4, 6, 4, 10, 14, 16, 4, 16, 36, 16]
 
-  As we will see later on, generators that are manipulated via the `Stream` and
-  `Enum` modules are no longer **shrinkable**.
+  Generators that are manipulated via the `Stream` and `Enum` modules are no
+  longer **shrinkable** (see the section about shrinking below).
 
   ## Generation size
 
