@@ -2032,7 +2032,7 @@ defmodule StreamData do
 
       {:error, reason} ->
         shrinking_result =
-          shrink_failure(shrink_initial_cont(children), nil, reason, fun, 1, config)
+          shrink_failure(shrink_initial_cont(children), [], reason, fun, 1, config)
           |> Map.put(:original_failure, reason)
           |> Map.put(:successful_runs, runs)
 
@@ -2059,10 +2059,11 @@ defmodule StreamData do
   # node but only if it has children, otherwise we move to the siblings. If it
   # doesn't fail, we move to the siblings.
 
-  defp shrink_failure(cont, parent_cont, smallest, fun, nodes_visited, config) do
+  defp shrink_failure(cont, parent_conts, smallest, fun, nodes_visited, config) do
     case cont.({:cont, []}) do
-      {state, _} when state in [:halted, :done] and is_function(parent_cont) ->
-        shrink_failure(parent_cont, nil, smallest, fun, nodes_visited, config)
+      {state, _} when state in [:halted, :done] and length(parent_conts) > 0 ->
+        [parent_cont | parent_conts] = parent_conts
+        shrink_failure(parent_cont, parent_conts, smallest, fun, nodes_visited, config)
 
       {state, _} when state in [:halted, :done] ->
         %{shrunk_failure: smallest, nodes_visited: nodes_visited}
@@ -2070,12 +2071,12 @@ defmodule StreamData do
       {:suspended, [child], cont} ->
         case fun.(child.root) do
           {:ok, _term} ->
-            shrink_failure(cont, nil, smallest, fun, nodes_visited + 1, config)
+            shrink_failure(cont, [], smallest, fun, nodes_visited + 1, config)
 
           {:error, reason} ->
             shrink_failure(
               shrink_initial_cont(child.children),
-              cont,
+              [cont | parent_conts],
               reason,
               fun,
               nodes_visited + 1,
