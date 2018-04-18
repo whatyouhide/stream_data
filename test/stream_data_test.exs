@@ -230,9 +230,9 @@ defmodule StreamDataTest do
       end
     end
 
-    property "resized to 0" do
-      check all int <- resize(positive_integer(), 0) do
-        assert 1 = int
+    property "works when resized to 0" do
+      check all int <- resize(positive_integer(), 0), max_runs: 3 do
+        assert int == 1
       end
     end
   end
