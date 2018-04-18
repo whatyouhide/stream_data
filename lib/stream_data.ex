@@ -1441,6 +1441,7 @@ defmodule StreamData do
   @spec positive_integer() :: t(pos_integer())
   def positive_integer() do
     new(fn seed, size ->
+      size = max(size, 1)
       {init, _next_seed} = uniform_in_range(1, size, seed)
       integer_lazy_tree(init, 1, size)
     end)

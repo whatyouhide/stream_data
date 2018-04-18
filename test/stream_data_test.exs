@@ -222,10 +222,18 @@ defmodule StreamDataTest do
     end
   end
 
-  property "positive_integer/0" do
-    check all int <- positive_integer() do
-      assert is_integer(int)
-      assert int in 1..1000
+  describe "positive_integer/0" do
+    property "without bounds" do
+      check all int <- positive_integer() do
+        assert is_integer(int)
+        assert int in 1..1000
+      end
+    end
+
+    property "works when resized to 0" do
+      check all int <- resize(positive_integer(), 0), max_runs: 3 do
+        assert int == 1
+      end
     end
   end
 
