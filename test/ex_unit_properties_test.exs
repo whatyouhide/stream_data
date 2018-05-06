@@ -197,7 +197,7 @@ defmodule ExUnitPropertiesTest do
 
       check all int <- integer(),
                 max_runs: 25,
-                do: Agent.update(counter, &(&1 + 1)) && assert is_integer(int)
+                do: Agent.update(counter, &(&1 + 1)) && assert(is_integer(int))
 
       assert Agent.get(counter, & &1) == 25
     end
