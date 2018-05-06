@@ -413,8 +413,9 @@ defmodule ExUnitProperties do
   """
   defmacro check({:all, _meta, clauses_with_body} = _clauses_and_body)
            when is_list(clauses_with_body) do
-    {clauses_and_options, [[do: body]]} = Enum.split(clauses_with_body, -1)
-    compile_check_all(clauses_and_options, body)
+    {clauses, [body_with_options]} = Enum.split(clauses_with_body, -1)
+    {options, [do: body]} = Enum.split(body_with_options, -1)
+    compile_check_all(clauses ++ [options], body)
   end
 
   # We don't need docs for `check/2`, the docs for `check/1` are enough since
