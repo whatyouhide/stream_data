@@ -25,8 +25,10 @@ defmodule StreamData.LazyTree do
 
   ## Examples
 
-      tree = StreamData.LazyTree.new(1, [])
-      StreamData.LazyTree.map(tree, & -&1)
+      iex> tree = %StreamData.LazyTree{root: 1, children: []}
+      iex> mapped_tree = StreamData.LazyTree.map(tree, & -&1)
+      iex> mapped_tree.root
+      -1
 
   """
   @spec map(t(a), (a -> b)) :: t(b) when a: term(), b: term()
@@ -45,14 +47,17 @@ defmodule StreamData.LazyTree do
 
   ## Examples
 
-      tree = StreamData.LazyTree.new(1, [])
-      StreamData.LazyTree.filter_map(tree, fn integer ->
-        if rem(integer, 2) == 0 do
-          {:cont, -integer}
-        else
-          :skip
-        end
-      end)
+      iex> tree = %StreamData.LazyTree{root: 2, children: []}
+      iex> {:ok, mapped_tree} =
+      ...>   StreamData.LazyTree.filter_map(tree, fn integer ->
+      ...>     if rem(integer, 2) == 0 do
+      ...>       {:cont, -integer}
+      ...>     else
+      ...>       :skip
+      ...>     end
+      ...>   end)
+      iex> mapped_tree.root
+      -2
 
   """
   @spec filter_map(t(a), (a -> {:cont, b} | :skip)) :: {:ok, t(b)} | :error
@@ -80,13 +85,16 @@ defmodule StreamData.LazyTree do
   Takes a tree of trees and flattens it to a tree of elements in those trees.
 
   The tree is flattened so that the root and its children always come "before"
-  (as in higher or more towards the left in the tree) the children of `tree.`
+  (as in higher or more towards the left in the tree) the children of `tree`.
 
   ## Examples
 
-      StreamData.LazyTree.new(1, [])
-      |> StreamData.LazyTree.map(&StreamData.LazyTree.constant/1)
-      |> StreamData.LazyTree.flatten()
+      iex> tree =
+      ...>   %StreamData.LazyTree{root: 1, children: []}
+      ...>   |> StreamData.LazyTree.map(&%StreamData.LazyTree{root: &1, children: []})
+      ...>   |> StreamData.LazyTree.flatten()
+      iex> tree.root
+      1
 
   """
   @spec flatten(t(t(a))) :: t(a) when a: term()
@@ -112,8 +120,13 @@ defmodule StreamData.LazyTree do
 
   ## Examples
 
-      tree = StreamData.LazyTree.new(1, [])
-      StreamData.LazyTree.filter(tree, & rem(&1, 2) == 0)
+      iex> children = [%StreamData.LazyTree{root: 3, children: []}]
+      iex> tree = %StreamData.LazyTree{root: 2, children: children}
+      iex> filtered_tree = StreamData.LazyTree.filter(tree, &(rem(&1, 2) == 0))
+      iex> filtered_tree.root
+      2
+      iex> Enum.to_list(filtered_tree.children)
+      []
 
   """
   @spec filter(t(a), (a -> as_boolean(term()))) :: t(a) when a: term()
@@ -140,9 +153,9 @@ defmodule StreamData.LazyTree do
 
   ## Examples
 
-      trees = [StreamData.LazyTree.new(1, []), StreamData.LazyTree.new(2, [])]
-      StreamData.LazyTree.zip(trees).root
-      #=> [1, 2]
+      iex> trees = [%StreamData.LazyTree{root: 1, children: []}, %StreamData.LazyTree{root: 2, children: []}]
+      iex> StreamData.LazyTree.zip(trees).root
+      [1, 2]
 
   """
   @spec zip([t(a)]) :: t([a]) when a: term()

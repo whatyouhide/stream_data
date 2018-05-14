@@ -3,6 +3,8 @@ defmodule StreamData.LazyTreeTest do
 
   alias StreamData.LazyTree
 
+  doctest LazyTree
+
   test "map/2" do
     tree = new(1, [constant(2), constant(3)])
     mapped_tree = LazyTree.map(tree, &Integer.to_string/1)

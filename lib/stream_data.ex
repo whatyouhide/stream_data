@@ -698,7 +698,8 @@ defmodule StreamData do
   #         frequencies
   #         |> Stream.take(index)
   #         |> Stream.map(&call(elem(&1, 1), seed2, size))
-  #       LazyTree.new(tree.root, Stream.concat(earlier_children, tree.children))
+  #
+  #       %Lazytree{root: tree.root, children: Stream.concat(earlier_children, tree.children)}
   #     end)
   #
   @spec frequency([{pos_integer(), t(a)}]) :: t(a) when a: term()
