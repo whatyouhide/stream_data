@@ -188,7 +188,18 @@ defmodule ExUnitPropertiesTest do
       check all int1 <- integer(),
                 int2 <- integer(),
                 sum = abs(int1) + abs(int2),
+                max_runs: 25,
                 do: assert(sum >= int1)
+    end
+
+    test "do keyword syntax passes in options" do
+      {:ok, counter} = Agent.start_link(fn -> 0 end)
+
+      check all int <- integer(),
+                max_runs: 25,
+                do: Agent.update(counter, &(&1 + 1)) && assert(is_integer(int))
+
+      assert Agent.get(counter, & &1) == 25
     end
 
     test "errors out if the first clause is not a generator" do
