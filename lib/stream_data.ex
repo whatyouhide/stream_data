@@ -251,6 +251,23 @@ defmodule StreamData do
     new(fn _seed, _size -> lazy_tree_constant(term) end)
   end
 
+  @doc """
+  A generator that always generates a value by calling `fun`.
+
+  ## Examples
+
+      iex> Enum.take(StreamData.repeatedly(fn -> :rand.uniform() end), 2)
+      [0.9933462977419845, 0.0951497908766279]
+
+  ## Shrinking
+
+  This generator doesn't shrink.
+  """
+  @spec repeatedly((() -> a)) :: t(a) when a: var
+  def repeatedly(fun) when is_function(fun, 0) do
+    new(fn _seed, _size -> lazy_tree_constant(fun.()) end)
+  end
+
   ## Combinators
 
   @compile {:inline, map: 2}

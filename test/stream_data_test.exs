@@ -621,6 +621,17 @@ defmodule StreamDataTest do
     assert check_all(list_of(boolean()), options, property) == {:ok, %{}}
   end
 
+  test "repeatedly generates based on provided function" do
+    assert StreamData.repeatedly(fn -> "a" end) |> Enum.take(3) == ["a", "a", "a"]
+    assert StreamData.repeatedly(fn -> 48 end) |> Enum.take(2) == [48, 48]
+  end
+
+  test "repeatedly works with other constructs" do
+    assert StreamData.repeatedly(fn -> 2 end)
+           |> StreamData.bind(fn i -> StreamData.constant(i * 2) end)
+           |> Enum.take(2) == [4, 4]
+  end
+
   defp each_improper_list([], _head_fun, _tail_fun) do
     :ok
   end
