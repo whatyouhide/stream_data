@@ -1200,7 +1200,7 @@ defmodule StreamData do
         binary: StreamData.binary(),
       })
       Enum.take(data, 3)
-      #=> [%{binary: "", int: 1}, %{binary: "", int: -2}, %{binary: "R1^", int: -3}]
+      #=> [%{binary: "", integer: 1}, %{binary: "", integer: -2}, %{binary: "R1^", integer: -3}]
 
   ## Shrinking
 
