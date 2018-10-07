@@ -1991,6 +1991,7 @@ defmodule StreamData do
     seed = new_seed(Keyword.fetch!(options, :initial_seed))
     size = Keyword.get(options, :initial_size, 1)
     max_shrinking_steps = Keyword.get(options, :max_shrinking_steps, 100)
+    parallel? = Keyword.get(options, :parallel, false)
     start_time = System.system_time(:millisecond)
     config = %{max_shrinking_steps: max_shrinking_steps}
 
@@ -2014,35 +2015,49 @@ defmodule StreamData do
           Map.merge(config, %{max_end_time: start_time + max_run_time, max_runs: max_runs})
       end
 
-    check_all(data, seed, size, fun, _runs = 0, start_time, config)
-  end
+    seed
+    |> Stream.unfold(&split_seed/1)
+    |> maybe_take_max_runs(config)
+    |> maybe_take_while_before_end_time(config)
+    |> Stream.with_index(size)
+    |> map_maybe_in_parallel(parallel?, fn {seed, size} ->
+      next = call(data, seed, size)
+      {next.children, fun.(next.root)}
+    end)
+    |> Enum.find_value(_default = {:ok, %{}}, fn
+      {_children, {:ok, _}} ->
+        nil
 
-  defp check_all(_data, _seed, _size, _fun, _runs, current_time, %{max_end_time: end_time})
-       when current_time >= end_time do
-    {:ok, %{}}
-  end
-
-  defp check_all(_data, _seed, _size, _fun, runs, _current_time, %{max_runs: runs}) do
-    {:ok, %{}}
-  end
-
-  defp check_all(data, seed, size, fun, runs, _current_time, config) do
-    {seed1, seed2} = split_seed(seed)
-    %LazyTree{root: root, children: children} = call(data, seed1, size)
-
-    case fun.(root) do
-      {:ok, _term} ->
-        check_all(data, seed2, size + 1, fun, runs + 1, System.system_time(:millisecond), config)
-
-      {:error, reason} ->
+      {children, {:error, reason}} ->
         shrinking_result =
           shrink_failure(shrink_initial_cont(children), nil, reason, fun, 1, config)
           |> Map.put(:original_failure, reason)
-          |> Map.put(:successful_runs, runs)
+          |> Map.put(:successful_runs, 0)
 
         {:error, shrinking_result}
-    end
+    end)
   end
+
+  defp map_maybe_in_parallel(stream, _parallel? = false, fun) do
+    Stream.map(stream, fun)
+  end
+
+  defp map_maybe_in_parallel(stream, _parallel? = true, fun) do
+    stream
+    |> Task.async_stream(fun, ordered: false)
+    |> Stream.map(fn {:ok, value} -> value end)
+  end
+
+  defp maybe_take_while_before_end_time(stream, %{max_end_time: end_time}) do
+    Stream.take_while(stream, fn _seed -> System.system_time(:millisecond) < end_time end)
+  end
+
+  defp maybe_take_while_before_end_time(stream, _config) do
+    stream
+  end
+
+  defp maybe_take_max_runs(stream, %{max_runs: max_runs}), do: Stream.take(stream, max_runs)
+  defp maybe_take_max_runs(stream, _config), do: stream
 
   defp shrink_initial_cont(nodes) do
     &Enumerable.reduce(nodes, &1, fn elem, acc -> {:suspend, [elem | acc]} end)

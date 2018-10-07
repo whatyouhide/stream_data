@@ -445,7 +445,8 @@ defmodule ExUnitProperties do
           options[:max_run_time] || Application.fetch_env!(:stream_data, :max_run_time),
         max_shrinking_steps:
           options[:max_shrinking_steps] ||
-            Application.fetch_env!(:stream_data, :max_shrinking_steps)
+            Application.fetch_env!(:stream_data, :max_shrinking_steps),
+        parallel: options[:parallel] || false
       ]
 
       property =
