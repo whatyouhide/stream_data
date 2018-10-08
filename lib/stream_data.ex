@@ -2020,22 +2020,24 @@ defmodule StreamData do
     |> maybe_take_max_runs(config)
     |> maybe_take_while_before_end_time(config)
     |> Stream.with_index(size)
-    |> map_maybe_in_parallel(parallel?, fn {seed, size} ->
-      next = call(data, seed, size)
-      {next.children, fun.(next.root)}
-    end)
-    |> Enum.find_value(_default = {:ok, %{}}, fn
-      {_children, {:ok, _}} ->
-        nil
+    |> Stream.map(fn {seed, size} -> call(data, seed, size) end)
+    |> map_maybe_in_parallel(parallel?, fn tree -> {tree.children, fun.(tree.root)} end)
+    |> Enum.reduce_while(_successful_runs = 0, fn
+      {_children, {:ok, _}}, successful_runs ->
+        {:cont, successful_runs + 1}
 
-      {children, {:error, reason}} ->
+      {children, {:error, reason}}, successful_runs ->
         shrinking_result =
           shrink_failure(shrink_initial_cont(children), nil, reason, fun, 1, config)
           |> Map.put(:original_failure, reason)
-          |> Map.put(:successful_runs, 0)
+          |> Map.put(:successful_runs, successful_runs)
 
-        {:error, shrinking_result}
+        {:halt, {:error, shrinking_result}}
     end)
+    |> case do
+      successful_runs when is_integer(successful_runs) -> {:ok, %{}}
+      {:error, _} = error -> error
+    end
   end
 
   defp map_maybe_in_parallel(stream, _parallel? = false, fun) do
