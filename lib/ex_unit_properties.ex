@@ -432,12 +432,17 @@ defmodule ExUnitProperties do
     quote do
       options = unquote(options)
 
-      # TODO: Use ExUnit configuration when made part of ExUnit
+      # TODO: Use :rand.export_seed in Elixir master.
+      # The value may be :undefined in a new process
+      # though, which means we may need to generate one.
+      initial_seed = case options[:initial_seed] do
+        {a, b, c} -> {a, b, c}  # if the user chooses to pass :os.timestamp()
+        val when is_integer(val) -> {0, 0, val}
+        nil -> {0, 0, ExUnit.configuration()[:seed]}
+      end
+
       options = [
-        # TODO: Use :rand.export_seed in Elixir master.
-        # The value may be :undefined in a new process
-        # though, which means we may need to generate one.
-        initial_seed: {0, 0, ExUnit.configuration()[:seed]},
+        initial_seed: initial_seed,
         initial_size:
           options[:initial_size] || Application.fetch_env!(:stream_data, :initial_size),
         max_runs: options[:max_runs] || Application.fetch_env!(:stream_data, :max_runs),
