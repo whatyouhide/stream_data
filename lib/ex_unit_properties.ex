@@ -341,6 +341,13 @@ defmodule ExUnitProperties do
 
   ## Options
 
+    * `:initial_seed` - (non-negative integer, or a triple of integers) a value
+      for random seed generation.  This is useful if ExUnitProperties is causing
+      unusable collisions with itself in something global (E.g. module names).
+      Although any integer will do consider passing a deterministically random
+      integer, e.g. `ExUnit.configuration()[:seed] + 1`.  You may also pass
+      `:os.timestamp`.  Defaults to ExUnit's seed.
+
     * `:initial_size` - (non-negative integer) the initial generation size used
       to start generating values. The generation size is then incremented by `1`
       on each iteration. See the "Generation size" section of the `StreamData`
