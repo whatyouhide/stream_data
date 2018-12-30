@@ -227,6 +227,40 @@ defmodule ExUnitPropertiesTest do
         )
       end
     end
+
+    test "seeds are settable and cause same or different results" do
+      {:ok, storer} = Agent.start_link(fn -> 0 end)
+
+      # do it without setting the setting at all.
+      check all word <- binary(),
+                max_runs: 5,
+                do: Agent.update(storer, fn _ -> :crypto.hash(:md5, word) end)
+      word_0 = Agent.get(storer, &(&1))
+
+      # do it by setting it, but manually to what would normally be the default.
+      check all word <- binary(),
+                initial_seed: ExUnit.configuration()[:seed],
+                max_runs: 5,
+                do: Agent.update(storer, fn _ -> :crypto.hash(:md5, word) end)
+      word_1 = Agent.get(storer, &(&1))
+      assert word_0 == word_1
+
+      # set it to something deterministically random, but not the default.
+      check all word <- binary(),
+                initial_seed: ExUnit.configuration()[:seed] + 1,
+                max_runs: 5,
+                do: Agent.update(storer, fn _ -> :crypto.hash(:md5, word) end)
+      word_2 = Agent.get(storer, &(&1))
+      refute word_0 == word_2
+
+      # set it to something non deterministically random.
+      check all word <- binary(),
+            initial_seed: :os.timestamp(),
+            max_runs: 5,
+            do: Agent.update(storer, fn _ -> :crypto.hash(:md5, word) end)
+      word_3 = Agent.get(storer, &(&1))
+      refute word_0 == word_3
+    end
   end
 
   if Version.compare(System.version(), "1.6.0-dev") in [:eq, :gt] do
