@@ -152,6 +152,21 @@ defmodule ExUnitPropertiesTest do
       assert Agent.get(counter, & &1) in 3..5
     end
 
+    test "supports an :initial_seed option" do
+      {:ok, agent1} = Agent.start_link(fn -> nil end)
+      {:ok, agent2} = Agent.start_link(fn -> nil end)
+
+      check all list <- list_of(integer()), initial_seed: 1, max_runs: 1, initial_size: 10 do
+        Agent.update(agent1, fn _ -> list end)
+      end
+
+      check all list <- list_of(integer()), initial_seed: 1, max_runs: 1, initial_size: 10 do
+        Agent.update(agent2, fn _ -> list end)
+      end
+
+      assert Agent.get(agent1, & &1) == Agent.get(agent2, & &1)
+    end
+
     test "raises an error instead of running an infinite loop" do
       message = ~r/both the :max_runs and :max_run_time options are set to :infinity/
 
