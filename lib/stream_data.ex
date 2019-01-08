@@ -1735,6 +1735,12 @@ defmodule StreamData do
 
     * `:alias` - generates Elixir aliases like `Foo` or `Foo.Bar.Baz`.
 
+  These are the most common kinds of atoms usually used in Elixir applications. If you
+  need completely arbitrary atoms, you can use a combination of `map/2`, `String.to_atom/1`,
+  and string-focused generators to transform arbitrary strings into atoms:
+
+      printable_atom = StreamData.map(StreamData.string(:printable), &String.to_atom/1)
+
   ## Examples
 
       Enum.take(StreamData.atom(:alphanumeric), 3)
