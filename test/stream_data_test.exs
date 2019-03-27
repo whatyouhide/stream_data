@@ -166,6 +166,11 @@ defmodule StreamDataTest do
     end
   end
 
+  test "seeded/2" do
+    data = seeded(integer(), _seed = 1)
+    assert Enum.take(data, 100) == Enum.take(data, 100)
+  end
+
   property "scale/2" do
     size_data = sized(&constant(&1))
     data = scale(size_data, fn size -> size + 1000 end)

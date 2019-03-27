@@ -44,7 +44,8 @@ defmodule StreamData do
       #=> [4, 6, 4, 10, 14, 16, 4, 16, 36, 16]
 
   Generators that are manipulated via the `Stream` and `Enum` modules are no
-  longer **shrinkable** (see the section about shrinking below).
+  longer **shrinkable** (see the section about shrinking below). If you want
+  generation through the `Enumerable` protocol to be reproducible, see `seeded/2`.
 
   ## Generation size
 
@@ -656,6 +657,35 @@ defmodule StreamData do
   def unshrinkable(data) do
     new(fn seed, size ->
       %LazyTree{call(data, seed, size) | children: []}
+    end)
+  end
+
+  @doc """
+  Makes the given generator `data` always used the same given `seed` when generating.
+
+  This function is useful when you want a generator to have a predictable generating
+  behaviour. It's especially useful when using a generator with the `Enumerable` protocol
+  since you can't set the seed specifically in that case (while you can with `check_all/3`
+  for example).
+
+  `seed` must be an integer.
+
+  ## Examples
+
+      int = StreamData.seeded(StreamData.integer(), 10)
+
+      Enum.take(int, 3)
+      #=> [-1, -2, 1]
+      Enum.take(int, 4)
+      #=> [-1, -2, 1, 2]
+
+  """
+  @spec seeded(t(a), integer()) :: t(a) when a: term()
+  def seeded(data, seed) when is_integer(seed) do
+    seed = new_seed({0, 0, seed})
+
+    new(fn _seed, size ->
+      call(data, seed, size)
     end)
   end
 
