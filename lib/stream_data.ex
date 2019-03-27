@@ -1730,12 +1730,15 @@ defmodule StreamData do
 
   `kind` can be:
 
-    * `:alphanumeric` - this generates atoms that don't need to be quoted when written as literals.
-      For example, it will generate `:foo` but not `:"foo bar"`.
+    * `:alphanumeric` - this generates alphanumeric atoms that don't need to be quoted when
+      written as literals. For example, it will generate `:foo` but not `:"foo bar"`.
+
+    * `:operator` - this generates Elixir operators (such as `:<>` or `:+`). These don't
+      need to be quoted when written as literals.
 
     * `:alias` - generates Elixir aliases like `Foo` or `Foo.Bar.Baz`.
 
-  These are the most common kinds of atoms usually used in Elixir applications. If you
+  These are some of the most common kinds of atoms usually used in Elixir applications. If you
   need completely arbitrary atoms, you can use a combination of `map/2`, `String.to_atom/1`,
   and string-focused generators to transform arbitrary strings into atoms:
 
