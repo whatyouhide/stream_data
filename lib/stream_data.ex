@@ -102,7 +102,7 @@ defmodule StreamData do
   ## Options
 
   There are four options set in the applications's env:
-  
+
     * `:initial_size` - (non-negative integer) the initial generation size used
       to start generating values. The generation size is then incremented by `1`
       on each iteration. See the "Generation size" section of the module
@@ -119,11 +119,9 @@ defmodule StreamData do
       doesn't satisfy `fun`. Defaults to `100`.
 
   These can be changed on a per-test basis by handing them as options to the `check_all/3`
-  function, but can also be changed in your projects config files.  This is especially
+  function, but can also be changed in your project's config files.  This is especially
   helpful in combination with `:max_runs` when you want to run more iterations on
-  your continuous integration platform.
-
-  Example:
+  your continuous integration platform, but keep your local tests fast:
 
       # config/test.exs
       use Mix.Config
