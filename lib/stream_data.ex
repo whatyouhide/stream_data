@@ -98,35 +98,6 @@ defmodule StreamData do
   cannot be enumerated directly as they don't implement the `Enumerable` protocol.
   However, `StreamData.constant(:foo)` is enumerable as it has been wrapped in
   a `StreamData` function.
-
-  ## Options
-
-  There are four options set in the applications's env:
-
-    * `:initial_size` - (non-negative integer) the initial generation size used
-      to start generating values. The generation size is then incremented by `1`
-      on each iteration. See the "Generation size" section of the module
-      documentation for more information on generation size. Defaults to `1`.
-    * `:max_runs` - (non-negative integer) the total number of elements to
-      generate out of `data` and check through `fun`. Defaults to `100`.
-    * `:max_run_time` - (non-negative integer) the total number of time (in milliseconds)
-      to run a given check for. This is not used by default, so unless a value
-      is given, then the length of the check will be determined by `:max_runs`.
-      If both `:max_runs` and `:max_run_time` are given, then the check will finish at
-      whichever comes first, `:max_runs` or `:max_run_time`.
-    * `:max_shrinking_steps` - (non-negative integer) the maximum numbers of
-      shrinking steps to perform in case `check_all/3` finds an element that
-      doesn't satisfy `fun`. Defaults to `100`.
-
-  These can be changed on a per-test basis by handing them as options to the `check_all/3`
-  function, but can also be changed in your project's config files.  This is especially
-  helpful in combination with `:max_runs` when you want to run more iterations on
-  your continuous integration platform, but keep your local tests fast:
-
-      # config/test.exs
-      use Mix.Config
-      config :stream_data,
-        max_runs: if System.get_env("CI"), do: 250_000, else: 1_000
   """
 
   alias StreamData.LazyTree
