@@ -44,7 +44,7 @@ defmodule StreamData.Mixfile do
 
   defp deps() do
     [
-      {:ex_doc, "~> 0.15", only: :dev}
+      {:ex_doc, "~> 0.19", only: :dev}
     ]
   end
 end
