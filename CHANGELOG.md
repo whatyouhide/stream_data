@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.4.3
+
+  * Improve the frequency of terms in `StreamData.term/0`
+  * Fix a bug in `StreamData.positive_integer/0` that would crash with a genration size of `0`.
+  * Support inline `, do:` in `gen all` and `check all`.
+  * Support `:initial_seed` in `check all`.
+  * Export formatter configuration for `check all` and `gen all`.
+  * Add `StreamData.seeded/2`.
+
 ## v0.4.2
 
   * Fix a bug when shrinking boolean values generated with `StreamData.boolean/0`
