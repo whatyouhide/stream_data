@@ -2104,17 +2104,28 @@ defmodule StreamData do
 
   defp shrink_failure(cont, parent_cont, smallest, fun, nodes_visited, config) do
     case cont.({:cont, []}) do
-      {state, _} when state in [:halted, :done] and is_function(parent_cont) ->
+      # If this list of nodes is over, we backtrack to the parent nodes and
+      # keep shrinking.
+      {state, _acc} when state in [:halted, :done] and not is_nil(parent_cont) ->
         shrink_failure(parent_cont, nil, smallest, fun, nodes_visited, config)
 
-      {state, _} when state in [:halted, :done] ->
+      # If this list of nodes is over and we don't have parent nodes, we
+      # return what we have now.
+      {state, _acc} when state in [:halted, :done] ->
         %{shrunk_failure: smallest, nodes_visited: nodes_visited}
 
       {:suspended, [child], cont} ->
         case fun.(child.root) do
+          # If this child passes the property, we don't go down anymore on this node
+          # anymore and move to the siblings (`cont` is the enumerable representing
+          # the rest of the children).
           {:ok, _term} ->
-            shrink_failure(cont, nil, smallest, fun, nodes_visited + 1, config)
+            shrink_failure(cont, parent_cont, smallest, fun, nodes_visited + 1, config)
 
+          # If this child still fails, we update the smallest failure to this failure.
+          # Then, we go down to the children of this node and update the parent continuations
+          # so that if we encounter a success in the children then we can resume from the
+          # siblings of this child.
           {:error, reason} ->
             shrink_failure(
               shrink_initial_cont(child.children),
