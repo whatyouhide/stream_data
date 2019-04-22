@@ -1763,9 +1763,6 @@ defmodule StreamData do
     * `:alphanumeric` - this generates alphanumeric atoms that don't need to be quoted when
       written as literals. For example, it will generate `:foo` but not `:"foo bar"`.
 
-    * `:operator` - this generates Elixir operators (such as `:<>` or `:+`). These don't
-      need to be quoted when written as literals.
-
     * `:alias` - generates Elixir aliases like `Foo` or `Foo.Bar.Baz`.
 
   These are some of the most common kinds of atoms usually used in Elixir applications. If you
