@@ -5,7 +5,7 @@
 
 > StreamData is an Elixir library for **data generation** and **property-based testing**.
 
-*Note*: StreamData is in beta. It's a candidate to be included in Elixir itself at some point (but it's not guaranteed to).
+Read [the announcement on the Elixir website](https://elixir-lang.org/blog/2017/10/31/stream-data-property-based-testing-and-data-generation-for-elixir/).
 
 ## Installation
 
