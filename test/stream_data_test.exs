@@ -493,6 +493,27 @@ defmodule StreamDataTest do
     end
   end
 
+  describe "mapset_of/1" do
+    property "without options" do
+      check all set <- mapset_of(integer(1..10000)) do
+        assert %MapSet{} = set
+
+        if MapSet.size(set) > 0 do
+          assert Enum.all?(set, &is_integer/1)
+        end
+      end
+    end
+
+    test "raises an error when :max_tries are reached" do
+      assert_raise StreamData.TooManyDuplicatesError, fn ->
+        integer()
+        |> mapset_of(max_tries: 0)
+        |> filter(&(MapSet.size(&1) > 0))
+        |> Enum.take(1)
+      end
+    end
+  end
+
   property "nonempty/1" do
     check all list <- nonempty(list_of(:term)) do
       assert length(list) > 0
