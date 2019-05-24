@@ -244,7 +244,7 @@ defmodule ExUnitPropertiesTest do
     end
   end
 
-  if Version.compare(System.version(), "1.6.0-dev") in [:eq, :gt] do
+  if Version.compare(System.version(), "1.6.0") in [:eq, :gt] do
     describe "pick/1" do
       test "when there's a random seed thanks to ExUnit setting it up" do
         integer = ExUnitProperties.pick(integer())
