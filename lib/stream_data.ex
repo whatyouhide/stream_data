@@ -2101,7 +2101,7 @@ defmodule StreamData do
 
       {:error, reason} ->
         shrinking_result =
-          shrink_failure(shrink_initial_cont(children), nil, reason, fun, 1, config)
+          shrink_failure(shrink_initial_cont(children), nil, reason, fun, 0, config)
           |> Map.put(:original_failure, reason)
           |> Map.put(:successful_runs, runs)
 
