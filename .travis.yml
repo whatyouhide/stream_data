@@ -13,16 +13,16 @@ script:
 jobs:
   include:
     - stage: test
-      
+
     - otp_release: '18.3'
       elixir: '1.5'
-      
+
     - otp_release: '19.3'
       elixir: '1.6'
-      
+
     - otp_release: '20.3'
       elixir: '1.7'
-      
+
     - otp_release: '21.3'
       elixir: '1.8'
 
