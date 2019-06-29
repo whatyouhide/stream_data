@@ -6,6 +6,7 @@ elixir: '1.9'
 jobs:
   - check formatted
   - test
+  - check typespecs
 
 script:
   - mix test --include stdlib
@@ -28,3 +29,10 @@ jobs:
 
     - stage: check formatted
       script: mix format --check-formatted
+
+    - stage: check typespecs
+      script: MIX_ENV=dev mix do clean, compile, dialyzer --halt-exit-status
+
+cache:
+  directories:
+  - _build/dev

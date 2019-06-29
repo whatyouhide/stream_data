@@ -11,6 +11,7 @@ defmodule StreamData.Mixfile do
       elixir: "~> 1.5",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+      dialyzer: dialyzer(),
 
       # Docs
       name: "StreamData",
@@ -44,7 +45,24 @@ defmodule StreamData.Mixfile do
 
   defp deps() do
     [
-      {:ex_doc, "~> 0.19", only: :dev}
+      {:ex_doc, "~> 0.19", only: :dev},
+      {:dialyxir, "~> 1.0.0-rc.6", only: [:dev, :test], runtime: false}
+    ]
+  end
+
+  defp dialyzer() do
+    [
+      plt_add_deps: :apps_direct,
+      plt_add_apps: ~w(
+        ex_unit
+        mix
+      )a,
+      flags: ~w(
+        error_handling
+        race_conditions
+        unmatched_returns
+        underspecs
+      )a
     ]
   end
 end
