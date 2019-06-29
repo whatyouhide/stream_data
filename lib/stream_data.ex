@@ -107,10 +107,10 @@ defmodule StreamData do
   @typep generator_fun(a) :: (seed(), size() -> LazyTree.t(a))
 
   @typedoc """
-  An opaque type that represents a `StreamData` generator that generates values
+  A type that represents a `StreamData` generator that generates values
   of type `a`.
   """
-  @opaque t(a) :: %__MODULE__{generator: generator_fun(a)} | atom() | tuple()
+  @type t(a) :: %__MODULE__{generator: generator_fun(a)} | atom() | tuple()
 
   # TODO: remove once we depend on OTP 20+ since :exs64 is deprecated.
   if String.to_integer(System.otp_release()) >= 20 do
