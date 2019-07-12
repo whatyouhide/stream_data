@@ -107,10 +107,15 @@ defmodule StreamData do
   @typep generator_fun(a) :: (seed(), size() -> LazyTree.t(a))
 
   @typedoc """
+  Valid input to create a `StreamData.t()` type
+  """
+  @type input(a) :: t(a) | atom() | tuple()
+
+  @typedoc """
   A type that represents a `StreamData` generator that generates values
   of type `a`.
   """
-  @type t(a) :: %__MODULE__{generator: generator_fun(a)} | atom() | tuple()
+  @type t(a) :: %__MODULE__{generator: generator_fun(a)}
 
   # TODO: remove once we depend on OTP 20+ since :exs64 is deprecated.
   if String.to_integer(System.otp_release()) >= 20 do
@@ -275,7 +280,7 @@ defmodule StreamData do
   This generator shrinks exactly like `data`, but with `fun` mapped over the
   shrunk data.
   """
-  @spec map(t(a), (a -> b)) :: t(b) when a: term(), b: term()
+  @spec map(input(a), (a -> b)) :: t(b) when a: term(), b: term()
   def map(data, fun) when is_function(fun, 1) do
     new(fn seed, size ->
       data
@@ -335,7 +340,7 @@ defmodule StreamData do
   This generator shrinks like `bind/2` but values that are skipped are not used
   for shrinking (similarly to how `filter/3` works).
   """
-  @spec bind_filter(t(a), (a -> {:cont, t(b)} | :skip), non_neg_integer()) :: t(b)
+  @spec bind_filter(input(a), (a -> {:cont, t(b)} | :skip), non_neg_integer()) :: t(b)
         when a: term(),
              b: term()
   def bind_filter(data, fun, max_consecutive_failures \\ 10)
@@ -425,7 +430,7 @@ defmodule StreamData do
   shrunk value value and returns a whole new generator, which will most likely
   emit new items.
   """
-  @spec bind(t(a), (a -> t(b))) :: t(b) when a: term(), b: term()
+  @spec bind(input(a), (a -> t(b))) :: t(b) when a: term(), b: term()
   def bind(data, fun) when is_function(fun, 1) do
     bind_filter(data, fn generated_term -> {:cont, fun.(generated_term)} end)
   end
@@ -475,7 +480,7 @@ defmodule StreamData do
   All the values that each generated value shrinks to satisfy `predicate` as
   well.
   """
-  @spec filter(t(a), (a -> as_boolean(term())), non_neg_integer()) :: t(a) when a: term()
+  @spec filter(input(a), (a -> as_boolean(term())), non_neg_integer()) :: t(a) when a: term()
   def filter(data, predicate, max_consecutive_failures \\ 25)
       when is_function(predicate, 1) and is_integer(max_consecutive_failures) and
              max_consecutive_failures >= 0 do
@@ -559,7 +564,7 @@ defmodule StreamData do
       #=> [4, -5, -9]
 
   """
-  @spec resize(t(a), size()) :: t(a) when a: term()
+  @spec resize(input(a), size()) :: t(a) when a: term()
   def resize(data, new_size) when is_integer(new_size) and new_size >= 0 do
     new(fn seed, _size -> call(data, seed, new_size) end)
   end
@@ -627,7 +632,7 @@ defmodule StreamData do
       end)
 
   """
-  @spec scale(t(a), (size() -> size())) :: t(a) when a: term()
+  @spec scale(input(a), (size() -> size())) :: t(a) when a: term()
   def scale(data, size_changer) when is_function(size_changer, 1) do
     new(fn seed, size ->
       new_size = size_changer.(size)
@@ -653,7 +658,7 @@ defmodule StreamData do
   The generator returned by `unshrinkable/1` generates the same values as `data`,
   but such values will not shrink.
   """
-  @spec unshrinkable(t(a)) :: t(a) when a: term()
+  @spec unshrinkable(input(a)) :: t(a) when a: term()
   def unshrinkable(data) do
     new(fn seed, size ->
       %LazyTree{call(data, seed, size) | children: []}
@@ -680,7 +685,7 @@ defmodule StreamData do
       #=> [-1, -2, 1, 2]
 
   """
-  @spec seeded(t(a), integer()) :: t(a) when a: term()
+  @spec seeded(input(a), integer()) :: t(a) when a: term()
   def seeded(data, seed) when is_integer(seed) do
     seed = new_seed({0, 0, seed})
 
@@ -852,7 +857,7 @@ defmodule StreamData do
   #       |> LazyTree.flatten()
   #     end)
   #
-  @spec list_of(t(a), keyword()) :: t([a]) when a: term()
+  @spec list_of(input(a), keyword()) :: t([a]) when a: term()
   def list_of(data, options) do
     list_length_range_fun = list_length_range_fun(options)
 
@@ -992,7 +997,7 @@ defmodule StreamData do
   This generator shrinks like `list_of/1`, but the shrunk values are unique
   according to the `:uniq_fun` option as well.
   """
-  @spec uniq_list_of(t(a), keyword()) :: t([a]) when a: term()
+  @spec uniq_list_of(input(a), keyword()) :: t([a]) when a: term()
   def uniq_list_of(data, options \\ []) do
     uniq_fun = Keyword.get(options, :uniq_fun, & &1)
     max_tries = Keyword.get(options, :max_tries, 10)
@@ -1091,7 +1096,7 @@ defmodule StreamData do
   ending) and towards shrunk elements of the list and a shrunk improper
   ending.
   """
-  @spec nonempty_improper_list_of(t(a), t(b)) :: t(nonempty_improper_list(a, b))
+  @spec nonempty_improper_list_of(input(a), t(b)) :: t(nonempty_improper_list(a, b))
         when a: term(),
              b: term()
   def nonempty_improper_list_of(first, improper) do
@@ -1122,7 +1127,7 @@ defmodule StreamData do
   Shrinks towards smaller lists and shrunk elements in those lists, and
   ultimately towards proper lists.
   """
-  @spec maybe_improper_list_of(t(a), t(b)) :: t(maybe_improper_list(a, b))
+  @spec maybe_improper_list_of(input(a), t(b)) :: t(maybe_improper_list(a, b))
         when a: term(),
              b: term()
   def maybe_improper_list_of(first, improper) do
@@ -1319,7 +1324,7 @@ defmodule StreamData do
   `list_of/1`, that is, by shrinking the values in each tuple and also reducing
   the size of the generated keyword list.
   """
-  @spec keyword_of(t(a)) :: t(keyword(a)) when a: term()
+  @spec keyword_of(input(a)) :: t(keyword(a)) when a: term()
   def keyword_of(value_data) do
     list_of({atom(:alphanumeric), value_data})
   end
@@ -1344,7 +1349,7 @@ defmodule StreamData do
   This generator shrinks in the same way as `uniq_list_of/2`, by removing
   elements and shrinking elements as well.
   """
-  @spec mapset_of(t(a), keyword()) :: t(MapSet.t(a)) when a: term()
+  @spec mapset_of(input(a), keyword()) :: t(MapSet.t(a)) when a: term()
   def mapset_of(data, options \\ []) do
     options = Keyword.take(options, [:max_tries])
 
@@ -1414,7 +1419,7 @@ defmodule StreamData do
 
   Shrinks values and shrinks towards less deep trees.
   """
-  @spec tree(t(a), (child_data :: t(a | b) -> t(b))) :: t(a | b) when a: term(), b: term()
+  @spec tree(input(a), (child_data :: t(a | b) -> t(b))) :: t(a | b) when a: term(), b: term()
   def tree(leaf_data, subtree_fun) do
     new(fn seed, size ->
       leaf_data = resize(leaf_data, size)
@@ -2052,7 +2057,7 @@ defmodule StreamData do
   22`, and `check_all/3` was able to shrink this value to the smallest failing
   value, which in this case is `11`.
   """
-  @spec check_all(t(a), Keyword.t(), (a -> {:ok, term()} | {:error, b})) ::
+  @spec check_all(input(a), Keyword.t(), (a -> {:ok, term()} | {:error, b})) ::
           {:ok, map()} | {:error, map()}
         when a: term(),
              b: term()
