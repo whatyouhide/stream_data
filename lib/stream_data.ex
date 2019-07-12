@@ -340,9 +340,12 @@ defmodule StreamData do
   This generator shrinks like `bind/2` but values that are skipped are not used
   for shrinking (similarly to how `filter/3` works).
   """
-  @spec bind_filter(input(a), (a -> {:cont, t(b)} | :skip), non_neg_integer()) :: t(b)
-        when a: term(),
-             b: term()
+  @spec bind_filter(
+          input(a),
+          (a -> {:cont, t(b)} | :skip) | (a, non_neg_integer() -> {:cont, t(b)} | :skip),
+          non_neg_integer()
+        ) :: t(b)
+        when a: term(), b: term()
   def bind_filter(data, fun, max_consecutive_failures \\ 10)
 
   def bind_filter(data, fun, max_consecutive_failures) when is_function(fun, 1) do
