@@ -698,8 +698,8 @@ defmodule StreamData do
 
   ## Examples
 
-  Let's build a generator that returns a binary around 25% of times and an
-  integer around 75% of times. We'll use `integer/0` first so that generated values
+  Let's build a generator that returns a binary around 25% of the time and an
+  integer around 75% of the time. We'll use `integer/0` first so that generated values
   will shrink towards integers.
 
       ints_and_some_bins = StreamData.frequency([
