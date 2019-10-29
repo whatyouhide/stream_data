@@ -81,6 +81,22 @@ To know more about property-based testing, read the `ExUnitProperties` documenta
 
 The property-based testing side of this library is heavily inspired by the [original QuickCheck paper](http://www.cs.tufts.edu/~nr/cs257/archive/john-hughes/quick.pdf) (which targeted Haskell) as well as Clojure's take on property-based testing, [test.check](https://github.com/clojure/test.check).
 
+## Differences from other property-based testing frameworks
+
+There are a handful of property-based testing frameworks for the BEAM ecosystem (Erlang, Elixir, and so on). For Elixir, the main alternative to StreamData is [PropCheck](https://github.com/alfert/propcheck). PropCheck is a wrapper around [PropEr](https://github.com/proper-testing/proper), which is a property-based testing framework for Erlang. There are a few fundamental differences between StreamData and PropEr. They are listed below to help you choose between the two.
+
+**PropEr** (via PropCheck):
+
+  * It provides *stateful property-based testing*. If you need to test a system with state by building a model of the system to test against, you'll have to go with PropCheck since StreamData doesn't support this yet.
+
+  * It can store counter-examples: StreamData doesn't support storing counter-examples in a file (you have to reuse the seed that caused the failure in order to reproduce it).
+
+**StreamData**:
+
+  * Provides functionality for generating data as the base for property-based testing. StreamData generators can be used outside of property-based testing as normal Elixir streams that produce random data.
+
+  * It is native to Elixir. It's written entirely in Elixir and has an idiomatic Elixir API (for example, all generators are Elixir enumerables).
+
 ## License
 
 Copyright 2017 Andrea Leopardi and José Valim
