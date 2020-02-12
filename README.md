@@ -1,6 +1,6 @@
 # StreamData
 
-[![Build Status](https://travis-ci.org/whatyouhide/stream_data.svg?branch=master)](https://travis-ci.org/whatyouhide/stream_data)
+![](https://github.com/whatyouhide/stream_data/workflows/CI/badge.svg)
 [![Hex.pm](https://img.shields.io/hexpm/v/stream_data.svg)](https://hex.pm/packages/stream_data)
 
 > StreamData is an Elixir library for **data generation** and **property-based testing**.
