@@ -17,7 +17,8 @@ defp deps() do
 end
 ```
 
-and run `mix deps.get`. StreamData is usually added only to the `:test` environment since it's used in tests and test data generation. To also import StreamData's formatter configuration, add `:stream_data` to your `.formatter.exs`:
+and run `mix deps.get`. StreamData is usually added only to the `:test` environment since it's used in tests and test data generation.
+To also import StreamData's formatter configuration, add the `:dev`  environment as well as `:test` for `stream_data` and add `:stream_data` to your `.formatter.exs`:
 
 ```elixir
 [
