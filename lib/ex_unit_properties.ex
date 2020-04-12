@@ -448,6 +448,14 @@ defmodule ExUnitProperties do
   defp compile_check_all(clauses_and_options, body) do
     {clauses, options} = split_clauses_and_options(clauses_and_options)
 
+    # TODO: remove when we depend on Elixir ~> 1.7.
+    stacktrace_call =
+      if Version.match?(System.version(), "~> 1.7") do
+        quote do: __STACKTRACE__
+      else
+        quote do: System.stacktrace()
+      end
+
     quote do
       options = unquote(options)
 
@@ -485,7 +493,7 @@ defmodule ExUnitProperties do
               exception ->
                 result = %{
                   exception: exception,
-                  stacktrace: System.stacktrace(),
+                  stacktrace: unquote(stacktrace_call),
                   generated_values: var!(generated_values, unquote(__MODULE__))
                 }
 
