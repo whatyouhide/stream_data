@@ -824,7 +824,7 @@ defmodule StreamData do
   ## Examples
 
       Enum.take(StreamData.list_of(StreamData.binary()), 3)
-      #=> [[""], [], ["", "w"]
+      #=> [[""], [], ["", "w"]]
 
       Enum.take(StreamData.list_of(StreamData.integer(), length: 3), 3)
       #=> [[0, 0, -1], [2, -1, 1], [0, 3, -3]]
