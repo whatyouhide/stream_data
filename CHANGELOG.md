@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.5.0
+
+  * Slightly improve the shrinking algorigthm.
+  * Add `StreamData.map_of/2`.
+  * Fix a bug around the `:max_shrinking_steps` option.
+  * Fix a runtime warning with Elixir 1.10.
+
 ## v0.4.3
 
   * Improve the frequency of terms in `StreamData.term/0`
