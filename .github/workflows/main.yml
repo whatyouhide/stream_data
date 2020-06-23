@@ -29,7 +29,7 @@ jobs:
       matrix:
         pair:
           - erlang: 22.2
-            elixir: 1.10.1
+            elixir: 1.10.3
           - erlang: 22.1
             elixir: 1.9.4
           - erlang: 21.3
@@ -50,7 +50,22 @@ jobs:
           elixir-version: ${{matrix.pair.elixir}}
 
       - name: Install dependencies
-        run: mix deps.get
+        run: mix deps.get --only test
+
+      - name: Compile dependencies
+        run: mix deps.compile
+
+      - name: Compile application
+        if: matrix.elixir != '1.10.3'
+        run: mix compile
+        env:
+          MIX_ENV: test
+
+      - name: Compile application treating warnings as errors (only for last Elixir version)
+        if: matrix.elixir == '1.10.3'
+        run: mix compile --warnings-as-errors
+        env:
+          MIX_ENV: test
 
       - name: Run tests
         run: mix test --include stdlib
