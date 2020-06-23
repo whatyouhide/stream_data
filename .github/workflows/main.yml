@@ -80,4 +80,4 @@ jobs:
           MIX_ENV: test
 
       - name: Run tests
-        run: mix test --include stdlib
+        run: mix test --color --include stdlib
