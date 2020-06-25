@@ -50,23 +50,13 @@ jobs:
         include:
           - otp-version: 18.3.4.11
             elixir: 1.5.3
-          - otp-version: 20.3.8.26
-            elixir: 1.5.3
           - otp-version: 19.3.6.13
-            elixir: 1.6.6
-          - otp-version: 21.3.8.16
             elixir: 1.6.6
           - otp-version: 19.3.6.13
             elixir: 1.7.4
-          - otp-version: 22.3.4.2
-            elixir: 1.7.4
           - otp-version: 20.3.8.26
             elixir: 1.8.2
-          - otp-version: 22.3.4.2
-            elixir: 1.8.2
           - otp-version: 20.3.8.26
-            elixir: 1.9.4
-          - otp-version: 22.3.4.2
             elixir: 1.9.4
           - otp-version: 21.3.8.16
             elixir: 1.10.3
@@ -83,14 +73,6 @@ jobs:
 
       - name: Install dependencies
         run: mix deps.get --only test
-
-      - name: Compile dependencies
-        run: mix deps.compile
-
-      - name: Compile application
-        run: mix compile
-        env:
-          MIX_ENV: test
 
       - name: Run tests
         run: mix test --color --include stdlib
