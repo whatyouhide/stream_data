@@ -38,7 +38,6 @@ jobs:
 
       - name: Compile application treating warnings as errors
         run: mix compile --warnings-as-errors
-        env:
 
   test:
     name: Test
