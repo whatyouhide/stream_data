@@ -1802,7 +1802,14 @@ defmodule StreamData do
   need completely arbitrary atoms, you can use a combination of `map/2`, `String.to_atom/1`,
   and string-focused generators to transform arbitrary strings into atoms:
 
-      printable_atom = StreamData.map(StreamData.string(:printable), &String.to_atom/1)
+      printable_atom =
+        StreamData.map(
+          StreamData.string(:printable, max_length: 255),
+          &String.to_atom/1
+        )
+
+  Bear in mind the [system limit](http://erlang.org/doc/efficiency_guide/advanced.html#system-limits)
+  of 255 characters in an atom when doing so.
 
   ## Examples
 
