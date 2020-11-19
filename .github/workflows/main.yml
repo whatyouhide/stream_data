@@ -4,43 +4,28 @@ on: [push, pull_request]
 
 jobs:
   format:
-    name: Format
+    name: Format and compile with warnings as errors
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2.3.1
 
       - name: Install OTP and Elixir
-        uses: actions/setup-elixir@v1.3
+        uses: actions/setup-elixir@v1.5
         with:
           otp-version: 23.0.2
-          elixir-version: 1.10.3
+          elixir-version: 1.11.2
 
       - name: Install dependencies
         run: mix deps.get
 
-      - name: Check mix format
+      - name: Run "mix format"
         run: mix format --check-formatted
 
-  compile_without_warnings:
-    name: Compile without warnings on the latest official Elixir version
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2.3.1
-
-      - name: Install OTP and Elixir
-        uses: actions/setup-elixir@v1.3
-        with:
-          otp-version: 23.0.2
-          elixir-version: 1.10.3
-
-      - name: Install dependencies
-        run: mix deps.get
-
-      - name: Compile application treating warnings as errors
+      - name: Compile with --warnings-as-errors
         run: mix compile --warnings-as-errors
 
   test:
-    name: Test
+    name: Test (Elixir ${{matrix.elixir}} | Erlang/OTP ${{matrix.otp-version}})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -60,11 +45,13 @@ jobs:
             elixir: 1.10.3
           - otp-version: 23.0.2
             elixir: 1.10.3
+          - otp-version: 23.0.2
+            elixir: 1.11.2
     steps:
       - uses: actions/checkout@v2.3.1
 
       - name: Install OTP and Elixir
-        uses: actions/setup-elixir@v1.3
+        uses: actions/setup-elixir@v1.5
         with:
           otp-version: ${{matrix.otp-version}}
           elixir-version: ${{matrix.elixir}}
