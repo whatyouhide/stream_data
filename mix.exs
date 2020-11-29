@@ -12,6 +12,9 @@ defmodule StreamData.Mixfile do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
 
+      # Tests
+      test_coverage: [tool: ExCoveralls],
+
       # Docs
       name: "StreamData",
       docs: [
