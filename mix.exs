@@ -12,6 +12,9 @@ defmodule StreamData.Mixfile do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
 
+      # Tests
+      test_coverage: [tool: ExCoveralls],
+
       # Docs
       name: "StreamData",
       docs: [
@@ -44,7 +47,8 @@ defmodule StreamData.Mixfile do
 
   defp deps() do
     [
-      {:ex_doc, "~> 0.19", only: :dev}
+      {:ex_doc, "~> 0.19", only: :dev},
+      {:excoveralls, "~> 0.13.3", only: :test}
     ]
   end
 end
