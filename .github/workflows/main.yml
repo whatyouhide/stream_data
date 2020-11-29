@@ -46,9 +46,9 @@ jobs:
             elixir: 1.7.4
           - otp: 19.3
             elixir: 1.7.4
-          - otp-version: 19.3
+          - otp: 19.3
             elixir: 1.6.6
-          - otp-version: 18.3
+          - otp: 18.3
             elixir: 1.5.3
     env:
       GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
