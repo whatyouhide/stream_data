@@ -267,3 +267,34 @@ defmodule ExUnitPropertiesTest do
     end
   end
 end
+
+defmodule ExUnitPropertiesTest.Sync do
+  use ExUnit.Case, async: false
+  use ExUnitProperties
+
+  def config_stream_data(config) do
+    before = Application.get_all_env(:stream_data)
+    Application.put_all_env(stream_data: config)
+    on_exit(fn -> Application.put_all_env(stream_data: before) end)
+  end
+
+  if Version.compare(System.version(), "1.6.0") in [:eq, :gt] do
+    describe "pick/1" do
+      test "respects config stream_data, pick_generation_size: 1..5" do
+        config_stream_data(pick_generation_size: 1..5)
+
+        integer = ExUnitProperties.pick(integer())
+        assert is_integer(integer)
+        assert integer in -5..5
+      end
+
+      test "respects config stream_data, pick_generation_size: 2" do
+        config_stream_data(pick_generation_size: 2)
+
+        integer = ExUnitProperties.pick(integer())
+        assert is_integer(integer)
+        assert integer in -2..2
+      end
+    end
+  end
+end
