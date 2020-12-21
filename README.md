@@ -14,7 +14,7 @@ Add `stream_data` to your list of dependencies:
 
 ```elixir
 defp deps() do
-  [{:stream_data, "~> 0.1", only: :test}]
+  [{:stream_data, "~> 0.5", only: :test}]
 end
 ```
 
