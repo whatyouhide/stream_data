@@ -114,6 +114,27 @@ defmodule ExUnitProperties do
   end
 
   @doc """
+  Defines a not implemented property test with a string.
+
+  Provides a convenient macro that allows a property test to be defined with a
+  string, but not yet implemented.  The resulting property test will always
+  fail and print a "Not implemented" error message.  The resulting test case is
+  also tagged with `:not_implemented`.
+
+  ## Examples
+
+      property "this will be a property test in future"
+  """
+  defmacro property(message) do
+    ExUnit.plural_rule("property", "properties")
+
+    quote bind_quoted: binding() do
+      name = ExUnit.Case.register_test(__ENV__, :property, message, [:not_implemented])
+      def unquote(name)(_), do: flunk("Not implemented")
+    end
+  end
+
+  @doc """
   Defines a property and imports property-testing facilities in the body.
 
   This macro is very similar to `ExUnit.Case.test/3`, except that it denotes a

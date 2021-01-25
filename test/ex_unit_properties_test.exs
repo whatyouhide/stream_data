@@ -1,5 +1,5 @@
 defmodule ExUnitPropertiesTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   use ExUnitProperties
 
   describe "gen all" do
@@ -90,6 +90,33 @@ defmodule ExUnitPropertiesTest do
     catch
       :throw, term ->
         assert term == :some_error
+    end
+
+    test "produces error on not implemented tests" do
+      defmodule TestNotImplemented do
+        use ExUnit.Case
+        use ExUnitProperties
+
+        setup context do
+          assert context[:not_implemented]
+          :ok
+        end
+
+        property "this is not implemented yet"
+      end
+
+      ExUnit.Server.modules_loaded()
+      old_opts = ExUnit.configuration()
+      ExUnit.configure(autorun: false, seed: 0, colors: [enabled: false], exclude: [:exclude])
+      on_exit(fn -> ExUnit.configure(old_opts) end)
+
+      output =
+        ExUnit.CaptureIO.capture_io(fn ->
+          assert %{failures: 1, skipped: 0, total: 1} = ExUnit.run()
+        end)
+
+      assert output =~ "Not implemented\n"
+      assert output =~ "\n1 property, 1 failure\n"
     end
   end
 
