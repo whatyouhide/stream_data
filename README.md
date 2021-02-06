@@ -66,7 +66,7 @@ Enum.take(StreamData.resize(email_generator, 20), 2)
 
 ### Property testing
 
-Property testing aims at randomizing test data in order to make tests more robust. Instead of writing a bunch of inputs and expected outputs by hand, with property-based testing we write a *property* of our code that should hold for a set of data, and then we generated data in this set to verify that property. To generate this data, we can use the above-mentioned `StreamData` module.
+Property testing aims at randomizing test data in order to make tests more robust. Instead of writing a bunch of inputs and expected outputs by hand, with property-based testing we write a *property* of our code that should hold for a set of data, and then we generate data in this set, in attempt to falsify that property. To generate this data, we can use the above-mentioned `StreamData` module.
 
 ```elixir
 use ExUnitProperties
