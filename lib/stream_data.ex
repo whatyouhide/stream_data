@@ -2028,6 +2028,8 @@ defmodule StreamData do
       shrinking steps to perform in case `check_all/3` finds an element that
       doesn't satisfy `fun`. Defaults to `100`.
 
+    # `:collect` -
+
   ## Examples
 
   Let's try out a contrived example: we want to verify that the `integer/0`
@@ -2068,6 +2070,13 @@ defmodule StreamData do
     size = Keyword.get(options, :initial_size, 1)
     max_shrinking_steps = Keyword.get(options, :max_shrinking_steps, 100)
     start_time = System.system_time(:millisecond)
+    acc =
+      case Keyword.fetch(options, :collect) do
+        :error -> %{}
+        {:ok, {_key, func}} -> %{collect: {func, %{}}}
+        {:ok, _key} -> %{collect: {& &1, %{}}}
+      end
+
     config = %{max_shrinking_steps: max_shrinking_steps}
 
     config =
@@ -2090,25 +2099,26 @@ defmodule StreamData do
           Map.merge(config, %{max_end_time: start_time + max_run_time, max_runs: max_runs})
       end
 
-    check_all(data, seed, size, fun, _runs = 0, start_time, config)
+    check_all(data, seed, size, fun, _runs = 0, _acc = acc, start_time, config)
   end
 
-  defp check_all(_data, _seed, _size, _fun, _runs, current_time, %{max_end_time: end_time})
+  defp check_all(_data, _seed, _size, _fun, _runs, acc, current_time, %{max_end_time: end_time})
        when current_time >= end_time do
-    {:ok, %{}}
+    {:ok, acc}
   end
 
-  defp check_all(_data, _seed, _size, _fun, runs, _current_time, %{max_runs: runs}) do
-    {:ok, %{}}
+  defp check_all(_data, _seed, _size, _fun, runs, acc, _current_time, %{max_runs: runs}) do
+    {:ok, acc}
   end
 
-  defp check_all(data, seed, size, fun, runs, _current_time, config) do
+  defp check_all(data, seed, size, fun, runs, acc, _current_time, config) do
     {seed1, seed2} = split_seed(seed)
     %LazyTree{root: root, children: children} = call(data, seed1, size)
 
     case fun.(root) do
-      {:ok, _term} ->
-        check_all(data, seed2, size + 1, fun, runs + 1, System.system_time(:millisecond), config)
+      {:ok, results} ->
+        acc = merge_acc(acc, results)
+        check_all(data, seed2, size + 1, fun, runs + 1, acc, System.system_time(:millisecond), config)
 
       {:error, reason} ->
         shrinking_result =
@@ -2118,6 +2128,14 @@ defmodule StreamData do
 
         {:error, shrinking_result}
     end
+  end
+
+  defp merge_acc(%{collect: {func, distribution}} = acc, %{collect: generated_val}) do
+    distribution = Map.update(distribution, func.(generated_val), 1, & &1 + 1)
+    Map.put(acc, :collect, {func, distribution})
+  end
+  defp merge_acc(acc, _) do
+    acc
   end
 
   defp shrink_initial_cont(nodes) do

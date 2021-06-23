@@ -248,7 +248,7 @@ defmodule ExUnitProperties do
     compile(clauses, body)
   end
 
-  # We don't need docs for `check/2`, the docs for `check/1` are enough since
+  # We don't need docs for `gen/2`, the docs for `gen/1` are enough since
   # using `do:` should just work from the perspective of the end user.
   @doc false
   defmacro gen({:all, _meta, clauses}, do: body) do
@@ -494,6 +494,7 @@ defmodule ExUnitProperties do
 
       # TODO: Use ExUnit configuration when made part of ExUnit
       options = [
+        collect: options[:collect],
         initial_seed: initial_seed,
         initial_size:
           options[:initial_size] || Application.fetch_env!(:stream_data, :initial_size),
@@ -521,7 +522,14 @@ defmodule ExUnitProperties do
                 {:error, result}
             else
               _result ->
-                {:ok, nil}
+                with {:ok, collectable_name} <- Keyword.fetch(unquote(options), :collect),
+                     generated_values = var!(generated_values, unquote(__MODULE__)),
+                     {_clause, value} <- Enum.find(generated_values, fn {clause, _value} -> String.starts_with?(clause, "#{collectable_name} <-") end)
+                do
+                  {:ok, %{collect: value}}
+                else
+                  _ -> {:ok, %{}}
+                end
             end
           end
         end
@@ -534,8 +542,11 @@ defmodule ExUnitProperties do
         end
 
       case StreamData.check_all(property, options, & &1.()) do
-        {:ok, _result} -> :ok
-        {:error, test_result} -> unquote(__MODULE__).__raise__(test_result)
+        {:ok, results} ->
+          unquote(__MODULE__).print_collect(results)
+          :ok
+        {:error, test_result} ->
+          unquote(__MODULE__).__raise__(test_result)
       end
     end
   end
@@ -601,6 +612,26 @@ defmodule ExUnitProperties do
       """)
     end)
   end
+
+  def print_collect(%{collect: {_func, distribution}}) when distribution != %{} do
+    total = Enum.reduce(distribution, 0, fn {_val, count}, acc -> count + acc end)
+
+    distribution =
+      distribution
+      |> Enum.sort_by(fn {_val, count} -> count end)
+      |> Enum.map_join("\n", fn {val, count} ->
+        percentage = :erlang.float_to_binary(count / total * 100, decimals: 1)
+        indent(String.trim_trailing("""
+        #{percentage}% #{val}
+        """), "    ")
+      end)
+
+    IO.puts("""
+    Collect:
+    #{distribution}
+    """)
+  end
+  def print_collect(_), do: :ok
 
   defp indent(string, indentation) do
     indentation <> String.replace(string, "\n", "\n" <> indentation)

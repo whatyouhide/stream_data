@@ -1,6 +1,7 @@
 defmodule ExUnitPropertiesTest do
   use ExUnit.Case
   use ExUnitProperties
+  import ExUnit.CaptureIO
 
   describe "gen all" do
     test "supports generation and filtering clauses" do
@@ -268,6 +269,17 @@ defmodule ExUnitPropertiesTest do
           end
         )
       end
+    end
+
+    property "prints distribution data for :collect option" do
+      log =
+        capture_io(fn ->
+          check all b <- boolean(), [collect: :b] do
+            assert is_boolean(b)
+          end
+        end)
+
+      assert log =~ "Collect"
     end
   end
 
