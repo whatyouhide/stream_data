@@ -522,9 +522,16 @@ defmodule ExUnitProperties do
                 {:error, result}
             else
               _result ->
-                with {:ok, collectable_name} <- Keyword.fetch(unquote(options), :collect),
+                collect_name =
+                  case Keyword.fetch(unquote(options), :collect) do
+                    {:ok, {collect_name, _func}} -> {:ok, collect_name}
+                    {:ok, collect_name} -> {:ok, collect_name}
+                    _ -> :error
+                  end
+
+                with {:ok, collect_name} <- collect_name,
                      generated_values = var!(generated_values, unquote(__MODULE__)),
-                     {_clause, value} <- Enum.find(generated_values, fn {clause, _value} -> String.starts_with?(clause, "#{collectable_name} <-") end)
+                     {_clause, value} <- Enum.find(generated_values, fn {clause, _value} -> String.starts_with?(clause, "#{collect_name} <-") end)
                 do
                   {:ok, %{collect: value}}
                 else
@@ -618,11 +625,11 @@ defmodule ExUnitProperties do
 
     distribution =
       distribution
-      |> Enum.sort_by(fn {_val, count} -> count end)
+      |> Enum.sort_by(fn {_val, count} -> count end, :desc)
       |> Enum.map_join("\n", fn {val, count} ->
         percentage = :erlang.float_to_binary(count / total * 100, decimals: 1)
         indent(String.trim_trailing("""
-        #{percentage}% #{val}
+        #{percentage}% #{inspect(val)}
         """), "    ")
       end)
 
