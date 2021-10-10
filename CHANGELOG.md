@@ -10,7 +10,7 @@
 ## v0.4.3
 
   * Improve the frequency of terms in `StreamData.term/0`
-  * Fix a bug in `StreamData.positive_integer/0` that would crash with a genration size of `0`.
+  * Fix a bug in `StreamData.positive_integer/0` that would crash with a generation size of `0`.
   * Support inline `, do:` in `gen all` and `check all`.
   * Support `:initial_seed` in `check all`.
   * Export formatter configuration for `check all` and `gen all`.
