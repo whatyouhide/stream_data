@@ -837,7 +837,7 @@ defmodule StreamData do
   This generator shrinks by taking elements out of the generated list and also
   by shrinking the elements of the generated list. Shrinking still respects any
   possible length-related option: for example, if `:min_length` is provided, all
-  shrinked list will have more than `:min_length` elements.
+  shrunk list will have more than `:min_length` elements.
   """
   # We could have an implementation that relies on fixed_list/1 and List.duplicate/2,
   # it would look like this:
