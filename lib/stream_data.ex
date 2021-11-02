@@ -1514,6 +1514,27 @@ defmodule StreamData do
   end
 
   @doc """
+  Generates non-negative integers bound by the generation size.
+
+  ## Examples
+
+  Enum.take(StreamData.non_negative_integer(), 3)
+  #=> [0, 2, 0]
+
+  ## Shrinking
+
+  Generated values shrink towards `0`.
+  """
+  @spec non_negative_integer() :: t(non_neg_integer())
+  def non_negative_integer() do
+    new(fn seed, size ->
+      size = max(size, 0)
+      {init, _next_seed} = uniform_in_range(0, size, seed)
+      integer_lazy_tree(init, 1, size)
+    end)
+  end
+
+  @doc """
   Generates floats according to the given `options`.
 
   The complexity of the generated floats grows proportionally to the generation size.
