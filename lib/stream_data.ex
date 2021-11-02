@@ -1530,7 +1530,7 @@ defmodule StreamData do
     new(fn seed, size ->
       size = max(size, 0)
       {init, _next_seed} = uniform_in_range(0, size, seed)
-      integer_lazy_tree(init, 1, size)
+      integer_lazy_tree(init, 0, size)
     end)
   end
 
