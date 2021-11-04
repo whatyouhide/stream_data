@@ -242,6 +242,21 @@ defmodule StreamDataTest do
     end
   end
 
+  describe "non_negative_integer/0" do
+    property "without bounds" do
+      check all int <- non_negative_integer() do
+        assert is_integer(int)
+        assert int in 0..1000
+      end
+    end
+
+    property "works when resized to 0" do
+      check all int <- resize(non_negative_integer(), 0), max_runs: 3 do
+        assert int == 0
+      end
+    end
+  end
+
   describe "float/1" do
     property "without bounds" do
       check all float <- float() do
