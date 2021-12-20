@@ -1883,6 +1883,31 @@ defmodule StreamData do
     end)
   end
 
+  def date(options \\ [min: nil, max: nil, origin: Date.utc_today(), calendar: Calendar.ISO]) do
+    case {options[:min], options[:max]} do
+      {nil, nil} ->
+        # TODO any date
+        any_date(options[:origin], options[:calendar])
+      {nil, max = %Date{}} ->
+        # TODO past dates
+        :todo
+      {min = %Date{}, nil} ->
+        # TODO future dates
+        :todo
+      {min = %Date{}, max = %Date{}} ->
+        # TODO between two dates
+        :todo
+    end
+  end
+
+  defp any_date(origin \\ Date.utc_today(), calendar \\ Calendar.ISO) do
+    {iso_days, day_fraction} = calendar.naive_datetime_to_iso_days(origin.year, origin.month, origin.day, 0, 0, 0, {0, 0})
+    StreamData.map(integer(), fn offset ->
+      {year, month, day, _hour, _minute, _second, _second_fraction} = calendar.naive_datetime_from_iso_days({iso_days + offset, day_fraction})
+      Date.new!(year, month, day, calendar)
+    end)
+  end
+
   @doc """
   Generates iolists.
 
