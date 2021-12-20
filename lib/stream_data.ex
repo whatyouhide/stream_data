@@ -1883,20 +1883,66 @@ defmodule StreamData do
     end)
   end
 
-  def date(options \\ [min: nil, max: nil, origin: Date.utc_today(), calendar: Calendar.ISO]) do
-    case {options[:min], options[:max]} do
+  @doc """
+  Generates arbitrary (past and future) dates.
+
+  Generated values shrink towards `Date.utc_today/0`.
+  """
+  def date do
+    date([])
+  end
+
+  @doc """
+  NOTE still under construction
+  Generates dates according to the given `options` or `date_range`.
+
+  When given a `Date.Range`, (c.f. `Date.range/2`), will generate dates in the given range.
+  Values will shrink towards `date_range.first`.
+
+  Alternatively, a keyword list of options can be passed in:
+
+  ## Options
+
+  * `:origin` - (`Date`) if present, generated values will shrink towards this date. Cannot be combined with `:min` or `:max`.
+
+  * `:min` - (`Date`) if present, only dates _after_ this date will be generated. Values will shrink towards this date.
+
+  * `:max` - (`Date`) if present, only dates _before_ this date will be generated. Values will shrink towards this date.
+
+  If both `:min` and `:max` are provided, dates between the two mentioned dates will be generated.
+  They will shrink towards `:min`.
+
+  If no options are provided, will work just like `StreamData.date/0`.
+
+  ## Calendar support
+
+  This generator works with `Calendar.ISO` and any other calendar
+  which implements the `c:naive_datetime_to_iso_days/7`
+  and `c:naive_datetime_from_iso_days/2` callbacks.
+  """
+  @spec date(Date.Range.t() | keyword()) :: t(Date.t())
+  def date(options_or_date_range \\ [])
+  def date(date_range = %Date.Range{}) do
+    # TODO step
+    date_between_bounds(date_range.first, date_range.last, date_range.first.calendar)
+  end
+  def date(options) when is_list(options) do
+    min = Access.get(options, :min, nil)
+    max = Access.get(options, :max, nil)
+    origin = Access.get(options, :origin, Date.utc_today())
+    case {min, max} do
       {nil, nil} ->
         # TODO any date
-        any_date(options[:origin], options[:calendar])
+        any_date(origin, origin.calendar)
       {nil, max = %Date{}} ->
-        # TODO past dates
-        :todo
+        past_date(max, max.calendar)
       {min = %Date{}, nil} ->
-        # TODO future dates
-        :todo
+        future_date(min, min.calendar)
       {min = %Date{}, max = %Date{}} ->
-        # TODO between two dates
-        :todo
+        if min.calendar != max.calendar do
+          raise ArgumentError, "Two dates with incompatible calendars were passed to `StreamData.date/1`"
+        end
+        date_between_bounds(min, max, min.calendar)
     end
   end
 
@@ -1904,6 +1950,32 @@ defmodule StreamData do
     {iso_days, day_fraction} = calendar.naive_datetime_to_iso_days(origin.year, origin.month, origin.day, 0, 0, 0, {0, 0})
     StreamData.map(integer(), fn offset ->
       {year, month, day, _hour, _minute, _second, _second_fraction} = calendar.naive_datetime_from_iso_days({iso_days + offset, day_fraction})
+      Date.new!(year, month, day, calendar)
+    end)
+  end
+
+  defp past_date(origin \\ Date.utc_today(), calendar \\ Calendar.ISO) do
+    {iso_days, day_fraction} = calendar.naive_datetime_to_iso_days(origin.year, origin.month, origin.day, 0, 0, 0, {0, 0})
+    StreamData.map(positive_integer(), fn offset ->
+      {year, month, day, _hour, _minute, _second, _second_fraction} = calendar.naive_datetime_from_iso_days({iso_days - offset, day_fraction})
+      Date.new!(year, month, day, calendar)
+    end)
+  end
+
+  defp future_date(origin \\ Date.utc_today(), calendar \\ Calendar.ISO) do
+    {iso_days, day_fraction} = calendar.naive_datetime_to_iso_days(origin.year, origin.month, origin.day, 0, 0, 0, {0, 0})
+    StreamData.map(positive_integer(), fn offset ->
+      {year, month, day, _hour, _minute, _second, _second_fraction} = calendar.naive_datetime_from_iso_days({iso_days + offset, day_fraction})
+      Date.new!(year, month, day, calendar)
+    end)
+  end
+
+  defp date_between_bounds(min, max, calendar \\ Calendar.ISO) do
+    {min_iso_days, min_day_fraction} = calendar.naive_datetime_to_iso_days(min.year, min.month, min.day, 0, 0, 0, {0, 0})
+    {max_iso_days, _max_day_fraction} = calendar.naive_datetime_to_iso_days(max.year, max.month, max.day, 0, 0, 0, {0, 0})
+
+    StreamData.map(StreamData.integer(min_iso_days..max_iso_days), fn iso_days ->
+      {year, month, day, _hour, _minute, _second, _second_fraction} = calendar.naive_datetime_from_iso_days({iso_days, min_day_fraction})
       Date.new!(year, month, day, calendar)
     end)
   end
