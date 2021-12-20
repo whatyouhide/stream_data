@@ -1922,60 +1922,84 @@ defmodule StreamData do
   """
   @spec date(Date.Range.t() | keyword()) :: t(Date.t())
   def date(options_or_date_range \\ [])
+
   def date(date_range = %Date.Range{}) do
-    # TODO step
-    date_between_bounds(date_range.first, date_range.last, date_range.first.calendar)
+    member_of(date_range)
   end
+
   def date(options) when is_list(options) do
     min = Access.get(options, :min, nil)
     max = Access.get(options, :max, nil)
     origin = Access.get(options, :origin, Date.utc_today())
+
     case {min, max} do
       {nil, nil} ->
         # TODO any date
         any_date(origin, origin.calendar)
+
       {nil, max = %Date{}} ->
         past_date(max, max.calendar)
+
       {min = %Date{}, nil} ->
         future_date(min, min.calendar)
+
       {min = %Date{}, max = %Date{}} ->
         if min.calendar != max.calendar do
-          raise ArgumentError, "Two dates with incompatible calendars were passed to `StreamData.date/1`"
+          raise ArgumentError,
+                "Two dates with incompatible calendars were passed to `StreamData.date/1`"
         end
+
         date_between_bounds(min, max, min.calendar)
     end
   end
 
   defp any_date(origin \\ Date.utc_today(), calendar \\ Calendar.ISO) do
-    {iso_days, day_fraction} = calendar.naive_datetime_to_iso_days(origin.year, origin.month, origin.day, 0, 0, 0, {0, 0})
+    {iso_days, day_fraction} =
+      calendar.naive_datetime_to_iso_days(origin.year, origin.month, origin.day, 0, 0, 0, {0, 0})
+
     StreamData.map(integer(), fn offset ->
-      {year, month, day, _hour, _minute, _second, _second_fraction} = calendar.naive_datetime_from_iso_days({iso_days + offset, day_fraction})
+      {year, month, day, _hour, _minute, _second, _second_fraction} =
+        calendar.naive_datetime_from_iso_days({iso_days + offset, day_fraction})
+
       Date.new!(year, month, day, calendar)
     end)
   end
 
   defp past_date(origin \\ Date.utc_today(), calendar \\ Calendar.ISO) do
-    {iso_days, day_fraction} = calendar.naive_datetime_to_iso_days(origin.year, origin.month, origin.day, 0, 0, 0, {0, 0})
+    {iso_days, day_fraction} =
+      calendar.naive_datetime_to_iso_days(origin.year, origin.month, origin.day, 0, 0, 0, {0, 0})
+
     StreamData.map(positive_integer(), fn offset ->
-      {year, month, day, _hour, _minute, _second, _second_fraction} = calendar.naive_datetime_from_iso_days({iso_days - offset, day_fraction})
+      {year, month, day, _hour, _minute, _second, _second_fraction} =
+        calendar.naive_datetime_from_iso_days({iso_days - offset, day_fraction})
+
       Date.new!(year, month, day, calendar)
     end)
   end
 
   defp future_date(origin \\ Date.utc_today(), calendar \\ Calendar.ISO) do
-    {iso_days, day_fraction} = calendar.naive_datetime_to_iso_days(origin.year, origin.month, origin.day, 0, 0, 0, {0, 0})
+    {iso_days, day_fraction} =
+      calendar.naive_datetime_to_iso_days(origin.year, origin.month, origin.day, 0, 0, 0, {0, 0})
+
     StreamData.map(positive_integer(), fn offset ->
-      {year, month, day, _hour, _minute, _second, _second_fraction} = calendar.naive_datetime_from_iso_days({iso_days + offset, day_fraction})
+      {year, month, day, _hour, _minute, _second, _second_fraction} =
+        calendar.naive_datetime_from_iso_days({iso_days + offset, day_fraction})
+
       Date.new!(year, month, day, calendar)
     end)
   end
 
   defp date_between_bounds(min, max, calendar \\ Calendar.ISO) do
-    {min_iso_days, min_day_fraction} = calendar.naive_datetime_to_iso_days(min.year, min.month, min.day, 0, 0, 0, {0, 0})
-    {max_iso_days, _max_day_fraction} = calendar.naive_datetime_to_iso_days(max.year, max.month, max.day, 0, 0, 0, {0, 0})
+    {min_iso_days, min_day_fraction} =
+      calendar.naive_datetime_to_iso_days(min.year, min.month, min.day, 0, 0, 0, {0, 0})
+
+    {max_iso_days, _max_day_fraction} =
+      calendar.naive_datetime_to_iso_days(max.year, max.month, max.day, 0, 0, 0, {0, 0})
 
     StreamData.map(StreamData.integer(min_iso_days..max_iso_days), fn iso_days ->
-      {year, month, day, _hour, _minute, _second, _second_fraction} = calendar.naive_datetime_from_iso_days({iso_days, min_day_fraction})
+      {year, month, day, _hour, _minute, _second, _second_fraction} =
+        calendar.naive_datetime_from_iso_days({iso_days, min_day_fraction})
+
       Date.new!(year, month, day, calendar)
     end)
   end
