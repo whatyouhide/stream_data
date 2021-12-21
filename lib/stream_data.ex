@@ -519,19 +519,23 @@ defmodule StreamData do
     # Keep the original, somewhat more efficient implementation
     # for ranges with a step of 1
     def integer(%Range{first: left, last: right, step: 1} = _range) do
-      {lower, upper} = order(left, right)
+      if left >= right do
+        raise "cannot generate elements from an empty range"
+      end
 
       new(fn seed, _size ->
-        {init, _next_seed} = uniform_in_range(lower, upper, seed)
-        integer_lazy_tree(init, lower, upper)
+        {init, _next_seed} = uniform_in_range(left, right, seed)
+        integer_lazy_tree(init, left, right)
       end)
     end
 
     def integer(%Range{first: left, last: right, step: step} = _range) do
-      # NOTE: No re-ordering to address negative steps correctly
       require Integer
       lower_stepless = Integer.floor_div(left, step)
       upper_stepless = Integer.floor_div(right, step)
+      if lower_stepless >= upper_stepless do
+        raise "cannot generate elements from an empty range"
+      end
 
       fn seed, _size ->
         {init, _next_seed} = uniform_in_range(lower_stepless, upper_stepless, seed)

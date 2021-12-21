@@ -152,6 +152,16 @@ defmodule StreamDataTest do
         assert rem(int, 10) == 0
       end
     end
+
+    property "integer/1 raises on empty ranges" do
+      check all lower <- positive_integer(),
+                higher <- positive_integer(),
+                step <- positive_integer() do
+        assert_raise(RuntimeError, fn ->
+          StreamData.integer(%Range{first: higher + lower, last: lower, step: step})
+        end)
+      end
+    end
   end
 
   property "resize/2" do
