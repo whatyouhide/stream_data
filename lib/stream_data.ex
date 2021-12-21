@@ -527,7 +527,7 @@ defmodule StreamData do
       end)
     end
 
-    def integer(%Range{first: left, last: right, step: step} = range) do
+    def integer(%Range{first: left, last: right, step: step} = _range) do
       # NOTE: No re-ordering to address negative steps correctly
       require Integer
       lower_stepless = Integer.floor_div(left, step)
