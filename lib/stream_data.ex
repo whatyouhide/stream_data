@@ -542,7 +542,6 @@ defmodule StreamData do
     end
   end
 
-
   defp integer_lazy_tree(int, lower, upper) do
     lazy_tree(int, &integer_lazy_tree(int, lower, upper, _current = int, &1, &2))
   end
