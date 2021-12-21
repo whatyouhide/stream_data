@@ -505,14 +505,43 @@ defmodule StreamData do
   Shrinks towards the smallest absolute value that still lie in `range`.
   """
   @spec integer(Range.t()) :: t(integer())
-  def integer(left..right = _range) do
-    {lower, upper} = order(left, right)
+  # Range step syntax was introduced in Elixir v1.12.0
+  if Version.compare(System.version(), "1.12.0") == :lt do
+    def integer(left..right = _range) do
+      {lower, upper} = order(left, right)
 
-    new(fn seed, _size ->
-      {init, _next_seed} = uniform_in_range(lower, upper, seed)
-      integer_lazy_tree(init, lower, upper)
-    end)
+      new(fn seed, _size ->
+        {init, _next_seed} = uniform_in_range(lower, upper, seed)
+        integer_lazy_tree(init, lower, upper)
+      end)
+    end
+  else
+    # Keep the original, somewhat more efficient implementation
+    # for ranges with a step of 1
+    def integer(left..right//1 = _range) do
+      {lower, upper} = order(left, right)
+
+      new(fn seed, _size ->
+        {init, _next_seed} = uniform_in_range(lower, upper, seed)
+        integer_lazy_tree(init, lower, upper)
+      end)
+    end
+
+    def integer(left..right//step = range) do
+      # NOTE: No re-ordering to address negative steps correctly
+      require Integer
+      lower_stepless = Integer.floor_div(left, step)
+      upper_stepless = Integer.floor_div(right, step)
+
+      fn seed, _size ->
+        {init, _next_seed} = uniform_in_range(lower_stepless, upper_stepless, seed)
+        integer_lazy_tree(init, lower_stepless, upper_stepless)
+      end
+      |> new()
+      |> map(fn result -> result * step end)
+    end
   end
+
 
   defp integer_lazy_tree(int, lower, upper) do
     lazy_tree(int, &integer_lazy_tree(int, lower, upper, _current = int, &1, &2))
