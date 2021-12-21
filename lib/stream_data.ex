@@ -518,7 +518,7 @@ defmodule StreamData do
   else
     # Keep the original, somewhat more efficient implementation
     # for ranges with a step of 1
-    def integer(left..right//1 = _range) do
+    def integer(%Range{first: left, last: right, step: 1} = _range) do
       {lower, upper} = order(left, right)
 
       new(fn seed, _size ->
@@ -527,7 +527,7 @@ defmodule StreamData do
       end)
     end
 
-    def integer(left..right//step = range) do
+    def integer(%Range{first: left, last: right, step: step} = range) do
       # NOTE: No re-ordering to address negative steps correctly
       require Integer
       lower_stepless = Integer.floor_div(left, step)

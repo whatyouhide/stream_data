@@ -139,14 +139,14 @@ defmodule StreamDataTest do
   # Range step syntax was introduced in Elixir v1.12.0
   unless Version.compare(System.version(), "1.12.0") == :lt do
     property "integer/1 for a range with an even step only produces even numbers" do
-      check all int <- integer(0..100//2) do
+      check all int <- integer(%Range{first: 0, last: 100, step: 2}) do
         require Integer
         assert Integer.is_even(int)
       end
     end
 
     property "integer/1 for descending ranges with negative steps" do
-      check all int <- integer(100..5//-10) do
+      check all int <- integer(%Range{first: 100, last: 5, step: -10}) do
         require Integer
         assert int in 10..100
         assert rem(int, 10) == 0
