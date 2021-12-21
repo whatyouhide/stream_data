@@ -519,7 +519,7 @@ defmodule StreamData do
     # Keep the original, somewhat more efficient implementation
     # for ranges with a step of 1
     def integer(%Range{first: left, last: right, step: 1} = _range) do
-      if left >= right do
+      if left > right do
         raise "cannot generate elements from an empty range"
       end
 
@@ -533,7 +533,7 @@ defmodule StreamData do
       require Integer
       lower_stepless = Integer.floor_div(left, step)
       upper_stepless = Integer.floor_div(right, step)
-      if lower_stepless >= upper_stepless do
+      if lower_stepless > upper_stepless do
         raise "cannot generate elements from an empty range"
       end
 
