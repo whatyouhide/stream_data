@@ -533,7 +533,6 @@ defmodule StreamData do
       require Integer
       lower_stepless = Integer.floor_div(left, step)
       upper_stepless = Integer.floor_div(right, step)
-
       if lower_stepless > upper_stepless do
         raise "cannot generate elements from an empty range"
       end
