@@ -533,6 +533,7 @@ defmodule StreamData do
       require Integer
       lower_stepless = Integer.floor_div(left, step)
       upper_stepless = Integer.floor_div(right, step)
+
       if lower_stepless > upper_stepless do
         raise "cannot generate elements from an empty range"
       end
@@ -1942,7 +1943,9 @@ defmodule StreamData do
 
   ## Date.Range
 
-  Alternatively, when given a `Date.Range`, (c.f. `Date.range/2`), will generate dates in the given range.
+  Alternatively a `Date.Range` can be given. This will generate dates in the given range,
+  and with the supplied `date_range.step`.
+
   Values will shrink towards `date_range.first`.
 
   ## Calendar support
@@ -1965,7 +1968,6 @@ defmodule StreamData do
 
     case {min, max} do
       {nil, nil} ->
-        # TODO any date
         any_date(origin, origin.calendar)
 
       {nil, max = %Date{}} ->
@@ -1985,54 +1987,49 @@ defmodule StreamData do
   end
 
   defp any_date(origin, calendar) do
-    {iso_days, day_fraction} =
-      calendar.naive_datetime_to_iso_days(origin.year, origin.month, origin.day, 0, 0, 0, {0, 0})
+    {iso_days, day_fraction} = extract_date(origin, calendar)
 
-    StreamData.map(integer(), fn offset ->
-      {year, month, day, _hour, _minute, _second, _second_fraction} =
-        calendar.naive_datetime_from_iso_days({iso_days + offset, day_fraction})
-
-      Date.new!(year, month, day, calendar)
+    map(integer(), fn offset ->
+      construct_date!(iso_days + offset, day_fraction, calendar)
     end)
   end
 
   defp past_date(origin, calendar) do
-    {iso_days, day_fraction} =
-      calendar.naive_datetime_to_iso_days(origin.year, origin.month, origin.day, 0, 0, 0, {0, 0})
+    {iso_days, day_fraction} = extract_date(origin, calendar)
 
-    StreamData.map(positive_integer(), fn offset ->
-      {year, month, day, _hour, _minute, _second, _second_fraction} =
-        calendar.naive_datetime_from_iso_days({iso_days - offset, day_fraction})
-
-      Date.new!(year, month, day, calendar)
+    map(positive_integer(), fn offset ->
+      construct_date!(iso_days - offset, day_fraction, calendar)
     end)
   end
 
   defp future_date(origin, calendar) do
-    {iso_days, day_fraction} =
-      calendar.naive_datetime_to_iso_days(origin.year, origin.month, origin.day, 0, 0, 0, {0, 0})
+    {iso_days, day_fraction} = extract_date(origin, calendar)
 
-    StreamData.map(positive_integer(), fn offset ->
-      {year, month, day, _hour, _minute, _second, _second_fraction} =
-        calendar.naive_datetime_from_iso_days({iso_days + offset, day_fraction})
-
-      Date.new!(year, month, day, calendar)
+    map(positive_integer(), fn offset ->
+      construct_date!(iso_days + offset, day_fraction, calendar)
     end)
   end
 
   defp date_between_bounds(min, max, calendar) do
-    {min_iso_days, min_day_fraction} =
-      calendar.naive_datetime_to_iso_days(min.year, min.month, min.day, 0, 0, 0, {0, 0})
+    {min_iso_days, min_day_fraction} = extract_date(min, calendar)
+    {max_iso_days, _max_day_fraction} = extract_date(max, calendar)
 
-    {max_iso_days, _max_day_fraction} =
-      calendar.naive_datetime_to_iso_days(max.year, max.month, max.day, 0, 0, 0, {0, 0})
-
-    StreamData.map(StreamData.integer(min_iso_days..max_iso_days), fn iso_days ->
-      {year, month, day, _hour, _minute, _second, _second_fraction} =
-        calendar.naive_datetime_from_iso_days({iso_days, min_day_fraction})
-
-      Date.new!(year, month, day, calendar)
+    map(integer(min_iso_days..max_iso_days), fn iso_days ->
+      construct_date!(iso_days, min_day_fraction, calendar)
     end)
+  end
+
+  @compile {:inline, extract_date: 2}
+  defp extract_date(date, calendar) do
+    calendar.naive_datetime_to_iso_days(date.year, date.month, date.day, 0, 0, 0, {0, 0})
+  end
+
+  @compile {:inline, construct_date!: 3}
+  defp construct_date!(iso_days, day_fraction, calendar) do
+    {year, month, day, _hour, _minute, _second, _second_fraction} =
+      calendar.naive_datetime_from_iso_days({iso_days, day_fraction})
+
+    Date.new!(year, month, day, calendar)
   end
 
   @doc """
