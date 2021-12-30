@@ -1925,13 +1925,7 @@ defmodule StreamData do
   end
 
   @doc """
-  NOTE still under construction
   Generates dates according to the given `options` or `date_range`.
-
-  When given a `Date.Range`, (c.f. `Date.range/2`), will generate dates in the given range.
-  Values will shrink towards `date_range.first`.
-
-  Alternatively, a keyword list of options can be passed in:
 
   ## Options
 
@@ -1946,14 +1940,19 @@ defmodule StreamData do
 
   If no options are provided, will work just like `StreamData.date/0`.
 
+  ## Date.Range
+
+  Alternatively, when given a `Date.Range`, (c.f. `Date.range/2`), will generate dates in the given range.
+  Values will shrink towards `date_range.first`.
+
   ## Calendar support
 
   This generator works with `Calendar.ISO` and any other calendar
-  which implements the `c:naive_datetime_to_iso_days/7`
-  and `c:naive_datetime_from_iso_days/2` callbacks.
+  which implements the callbacks
+  `c:naive_datetime_to_iso_days/7` and `c:naive_datetime_from_iso_days/2`.
   """
   @spec date(Date.Range.t() | keyword()) :: t(Date.t())
-  def date(options_or_date_range \\ [])
+  def date(options_or_date_range)
 
   def date(date_range = %Date.Range{}) do
     member_of(date_range)
@@ -1985,7 +1984,7 @@ defmodule StreamData do
     end
   end
 
-  defp any_date(origin \\ Date.utc_today(), calendar \\ Calendar.ISO) do
+  defp any_date(origin, calendar) do
     {iso_days, day_fraction} =
       calendar.naive_datetime_to_iso_days(origin.year, origin.month, origin.day, 0, 0, 0, {0, 0})
 
@@ -1997,7 +1996,7 @@ defmodule StreamData do
     end)
   end
 
-  defp past_date(origin \\ Date.utc_today(), calendar \\ Calendar.ISO) do
+  defp past_date(origin, calendar) do
     {iso_days, day_fraction} =
       calendar.naive_datetime_to_iso_days(origin.year, origin.month, origin.day, 0, 0, 0, {0, 0})
 
@@ -2009,7 +2008,7 @@ defmodule StreamData do
     end)
   end
 
-  defp future_date(origin \\ Date.utc_today(), calendar \\ Calendar.ISO) do
+  defp future_date(origin, calendar) do
     {iso_days, day_fraction} =
       calendar.naive_datetime_to_iso_days(origin.year, origin.month, origin.day, 0, 0, 0, {0, 0})
 
@@ -2021,7 +2020,7 @@ defmodule StreamData do
     end)
   end
 
-  defp date_between_bounds(min, max, calendar \\ Calendar.ISO) do
+  defp date_between_bounds(min, max, calendar) do
     {min_iso_days, min_day_fraction} =
       calendar.naive_datetime_to_iso_days(min.year, min.month, min.day, 0, 0, 0, {0, 0})
 
