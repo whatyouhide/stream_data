@@ -323,6 +323,53 @@ defmodule StreamDataTest do
     end
   end
 
+  describe "date/0" do
+    property "generates any dates" do
+      check all date <- date() do
+        assert %Date{} = date
+      end
+    end
+  end
+
+  describe "date/1" do
+    property "without options, generates any dates" do
+      check all date <- date([]) do
+        assert %Date{} = date
+      end
+    end
+
+    property "with a :min option, generates dates after it" do
+      check all minimum <- date(),
+                date <- date(min: minimum) do
+        assert Date.compare(date, minimum) in [:eq, :gt]
+      end
+    end
+
+    property "with a :max option, generates dates before it" do
+      check all maximum <- date(),
+                date <- date(max: maximum) do
+        assert Date.compare(date, maximum) in [:lt, :eq]
+      end
+    end
+
+    property "with both a :min and a :max option, generates dates in-between the bounds" do
+      check all minimum <- date(),
+                maximum <- date(min: minimum),
+                date <- date(min: minimum, max: maximum) do
+        assert Enum.member?(Date.range(minimum, maximum), date)
+      end
+    end
+
+    property "with a Date.Range, generates dates in-between the bounds" do
+      check all minimum <- date(),
+                maximum <- date(min: minimum),
+                range = Date.range(minimum, maximum),
+                date <- date(range) do
+        assert Enum.member?(range, date)
+      end
+    end
+  end
+
   property "byte/0" do
     check all value <- byte() do
       assert value in 0..255

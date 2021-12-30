@@ -1937,7 +1937,7 @@ defmodule StreamData do
   * `:max` - (`Date`) if present, only dates _before_ this date will be generated. Values will shrink towards this date.
 
   If both `:min` and `:max` are provided, dates between the two mentioned dates will be generated.
-  They will shrink towards `:min`.
+  Values will shrink towards `:min`.
 
   If no options are provided, will work just like `StreamData.date/0`.
 
@@ -1962,9 +1962,9 @@ defmodule StreamData do
   end
 
   def date(options) when is_list(options) do
-    min = Access.get(options, :min, nil)
-    max = Access.get(options, :max, nil)
-    origin = Access.get(options, :origin, Date.utc_today())
+    min = Keyword.get(options, :min, nil)
+    max = Keyword.get(options, :max, nil)
+    origin = Keyword.get(options, :origin, Date.utc_today())
 
     case {min, max} do
       {nil, nil} ->
@@ -1979,7 +1979,7 @@ defmodule StreamData do
       {min = %Date{}, max = %Date{}} ->
         if min.calendar != max.calendar do
           raise ArgumentError,
-                "Two dates with incompatible calendars were passed to `StreamData.date/1`"
+                "Two dates with different calendars were passed to `StreamData.date/1`"
         end
 
         date_between_bounds(min, max, min.calendar)
