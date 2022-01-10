@@ -27,7 +27,7 @@ defmodule StreamData.Mixfile do
       description: "Data generation and property-based testing for Elixir",
       package: [
         maintainers: ["Andrea Leopardi"],
-        licenses: ["Apache 2.0"],
+        licenses: ["Apache-2.0"],
         links: %{"GitHub" => @repo_url}
       ]
     ]
