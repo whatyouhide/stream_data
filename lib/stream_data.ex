@@ -1921,6 +1921,7 @@ defmodule StreamData do
 
   Generated values shrink towards `Date.utc_today/0`.
   """
+  @spec date() :: t(Date.t())
   def date do
     date([])
   end
@@ -1939,9 +1940,9 @@ defmodule StreamData do
   If both `:min` and `:max` are provided, dates between the two mentioned dates will be generated.
   Values will shrink towards `:min`.
 
-  If no options are provided, will work just like `StreamData.date/0`.
+  If no options are provided, will work just like `date/0`.
 
-  ## Date.Range
+  ## `Date.Range`
 
   Alternatively a `Date.Range` can be given. This will generate dates in the given range,
   and with the supplied `date_range.step`.
@@ -1952,7 +1953,7 @@ defmodule StreamData do
 
   This generator works with `Calendar.ISO` and any other calendar
   which implements the callbacks
-  `c:naive_datetime_to_iso_days/7` and `c:naive_datetime_from_iso_days/2`.
+  `c:Calendar.naive_datetime_to_iso_days/7` and `c:Calendar.naive_datetime_from_iso_days/2`.
   """
   @spec date(Date.Range.t() | keyword()) :: t(Date.t())
   def date(options_or_date_range)
@@ -1979,7 +1980,7 @@ defmodule StreamData do
       {min = %Date{}, max = %Date{}} ->
         if min.calendar != max.calendar do
           raise ArgumentError,
-                "Two dates with different calendars were passed to `StreamData.date/1`"
+                "dates with different calendars were passed to StreamData.date/1"
         end
 
         date_between_bounds(min, max, min.calendar)
