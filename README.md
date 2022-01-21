@@ -1,8 +1,8 @@
 # StreamData
 
-![](https://github.com/whatyouhide/stream_data/workflows/CI/badge.svg)
+[![hex.pm badge](https://img.shields.io/badge/Package%20on%20hex.pm-informational)](https://hex.pm/packages/stream_data)
+[![CI](https://github.com/whatyouhide/stream_data/workflows/CI/badge.svg)](https://github.com/whatyouhide/stream_data/actions/workflows/main.yml)
 [![Coverage Status](https://coveralls.io/repos/github/whatyouhide/stream_data/badge.svg?branch=master)](https://coveralls.io/github/whatyouhide/stream_data?branch=master)
-[![Hex.pm](https://img.shields.io/hexpm/v/stream_data.svg)](https://hex.pm/packages/stream_data)
 
 > StreamData is an Elixir library for **data generation** and **property-based testing**.
 
