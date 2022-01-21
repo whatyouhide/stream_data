@@ -1,0 +1,71 @@
+name: Elixir stdlib tests
+
+on:
+  # This is needed to trigger the workflow manually from the "Actions" tab in the repo.
+  workflow_dispatch:
+    inputs: {}
+  # Every day at 9am.
+  schedule:
+    - cron: '0 9 * * *'
+  # Every time a change makes it to the main branch of this library, so we maaaaybe
+  # catch regressions in the library itself.
+  push:
+    branches:
+      - main
+
+jobs:
+  stdlib-test:
+    name: Elixir standard library tests (OTP ${{ matrix.otp }}, Elixir ${{ matrix.elixir }})
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - otp: 24.1
+
+    env:
+      MIX_ENV: test
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v1
+
+      - name: Install Erlang/OTP
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+
+      - name: Get SHA of Elixir's main branch
+        id: get-elixir-sha
+        run: |
+          echo ::set-output name=sha::$( curl -u "u:${{ github.token }}" https://api.github.com/repos/elixir-lang/elixir/git/ref/heads/main | jq .object.sha | tr -d '"' )
+
+      - name: Check out latest Elixir
+        uses: actions/checkout@v2
+        with:
+          repository: elixir-lang/elixir
+          ref: ${{ steps.get-elixir-sha.outputs.sha }}
+          path: elixir
+
+      - name: Cache compiled Elixir
+        id: cache-compiled-elixir
+        uses: actions/cache@v2
+        with:
+          path: elixir_src
+          key: ${{ runner.os }}-elixir-${{ steps.get-elixir-sha.outputs.sha }}
+
+      - name: Compile Elixir
+        if: steps.cache-compiled-elixir.outputs.cache-hit != 'true'
+        working-directory: elixir_src
+        run: make
+
+      # Needs to happen even on cache hits.
+      - name: Add Elixir binaries to the path
+        run: echo "$PWD/elixir_src/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: mix do deps.get, deps.compile
+
+      - name: Run stdlib tests
+        run: mix test --trace --only stdlib
