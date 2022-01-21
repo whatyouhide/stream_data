@@ -46,7 +46,7 @@ jobs:
         with:
           repository: elixir-lang/elixir
           ref: ${{ steps.get-elixir-sha.outputs.sha }}
-          path: elixir
+          path: elixir_src
 
       - name: Cache compiled Elixir
         id: cache-compiled-elixir
