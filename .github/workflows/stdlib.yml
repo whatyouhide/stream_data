@@ -46,7 +46,7 @@ jobs:
         with:
           repository: elixir-lang/elixir
           ref: ${{ steps.get-elixir-sha.outputs.sha }}
-          path: elixir
+          path: elixir_src
 
       - name: Cache compiled Elixir
         id: cache-compiled-elixir
@@ -65,7 +65,9 @@ jobs:
         run: echo "$PWD/elixir_src/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
-        run: mix do deps.get, deps.compile
+        run: |
+          mix do local.hex --force, local.rebar --force
+          mix do deps.get, deps.compile
 
       - name: Run stdlib tests
-        run: mix test --trace --only stdlib
+        run: mix test --only stdlib
