@@ -13,8 +13,9 @@ defmodule ExUnitPropertiesTest do
         end
 
       # Let's make sure that "5" isn't common at all by making the smallest size for this generator
-      # be 10.
-      data = scale(data, &max(&1, 10))
+      # be 10. Let's also increase the size a bit so that it's never 0 and we avoid generating
+      # a ton of empty lists that fail one of the clauses.
+      data = resize(data, 10)
 
       check all {string, list} <- data do
         assert is_binary(string)
