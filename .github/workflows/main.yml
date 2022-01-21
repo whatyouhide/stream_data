@@ -47,7 +47,7 @@ jobs:
 
       - name: Check for unused dependencies
         if: ${{matrix.lint}}
-        run: mix deps.unlock --check-unused
+        run: mix deps.get && mix deps.unlock --check-unused
 
       - name: Check for compilation warnings
         if: ${{matrix.lint}}
