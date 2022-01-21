@@ -4,22 +4,25 @@ defmodule ExUnitPropertiesTest do
 
   describe "gen all" do
     test "supports generation and filtering clauses" do
+      filtered_value = 10
+
       data =
         gen all [_ | _] = list <- list_of(integer()),
                 elem <- member_of(list),
-                elem != 5,
-                elem_not_five = elem do
-          {Integer.to_string(elem_not_five), list}
+                elem != filtered_value,
+                elem_not_filtered = elem do
+          {Integer.to_string(elem_not_filtered), list}
         end
 
-      # Let's make sure that "5" isn't common at all by making the smallest size for this generator
-      # be 10.
-      data = scale(data, &max(&1, 10))
+      # Let's make sure that the minimum size is high enough that our filtered element
+      # is not common at all.
+      data = scale(data, &max(&1, 20))
 
       check all {string, list} <- data do
         assert is_binary(string)
         assert is_list(list)
-        assert String.to_integer(string) != 5
+        assert String.to_integer(string) in list
+        assert String.to_integer(string) != filtered_value
       end
     end
 
@@ -90,33 +93,6 @@ defmodule ExUnitPropertiesTest do
     catch
       :throw, term ->
         assert term == :some_error
-    end
-
-    test "produces error on not implemented tests" do
-      defmodule TestNotImplemented do
-        use ExUnit.Case
-        use ExUnitProperties
-
-        setup context do
-          assert context[:not_implemented]
-          :ok
-        end
-
-        property "this is not implemented yet"
-      end
-
-      ExUnit.Server.modules_loaded()
-      old_opts = ExUnit.configuration()
-      ExUnit.configure(autorun: false, seed: 0, colors: [enabled: false], exclude: [:exclude])
-      on_exit(fn -> ExUnit.configure(old_opts) end)
-
-      output =
-        ExUnit.CaptureIO.capture_io(fn ->
-          assert %{failures: 1, skipped: 0, total: 1} = ExUnit.run()
-        end)
-
-      assert output =~ "Not implemented\n"
-      assert output =~ "\n1 property, 1 failure\n"
     end
   end
 
