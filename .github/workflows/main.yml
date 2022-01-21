@@ -54,9 +54,9 @@ jobs:
         run: mix compile --warnings-as-errors
 
       - name: Run tests
-        run: mix test --trace
+        run: mix test --trace --include stdlib
         if: ${{!matrix.coverage}}
 
       - name: Run tests with coverage
-        run: mix coveralls.github
+        run: mix coveralls.github --include stdlib
         if: ${{matrix.coverage}}
