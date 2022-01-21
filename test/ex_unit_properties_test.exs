@@ -4,23 +4,25 @@ defmodule ExUnitPropertiesTest do
 
   describe "gen all" do
     test "supports generation and filtering clauses" do
+      filtered_value = 10
+
       data =
         gen all [_ | _] = list <- list_of(integer()),
                 elem <- member_of(list),
-                elem != 5,
-                elem_not_five = elem do
-          {Integer.to_string(elem_not_five), list}
+                elem != filtered_value,
+                elem_not_filtered = elem do
+          {Integer.to_string(elem_not_filtered), list}
         end
 
-      # Let's make sure that "5" isn't common at all by making the smallest size for this generator
-      # be 10. Let's also increase the size a bit so that it's never 0 and we avoid generating
-      # a ton of empty lists that fail one of the clauses.
-      data = resize(data, 10)
+      # Let's make sure that the minimum size is high enough that our filtered element
+      # is not common at all.
+      data = scale(data, &max(&1, 20))
 
       check all {string, list} <- data do
         assert is_binary(string)
         assert is_list(list)
-        assert String.to_integer(string) != 5
+        assert String.to_integer(string) in list
+        assert String.to_integer(string) != filtered_value
       end
     end
 
