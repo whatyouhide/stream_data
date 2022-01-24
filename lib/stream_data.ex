@@ -1496,7 +1496,7 @@ defmodule StreamData do
   Shrinks towards `false`.
   """
   @spec boolean() :: t(boolean())
-  def boolean() do
+  def boolean do
     new(fn seed, _size ->
       case uniform_in_range(0, 1, seed) do
         {1, _} -> lazy_tree(true, [lazy_tree_constant(false)])
@@ -1518,7 +1518,7 @@ defmodule StreamData do
   Generated values shrink towards `0`.
   """
   @spec integer() :: t(integer())
-  def integer() do
+  def integer do
     new(fn seed, size ->
       {init, _next_seed} = uniform_in_range(-size, size, seed)
       integer_lazy_tree(init, -size, size)
@@ -1538,7 +1538,7 @@ defmodule StreamData do
   Generated values shrink towards `1`.
   """
   @spec positive_integer() :: t(pos_integer())
-  def positive_integer() do
+  def positive_integer do
     new(fn seed, size ->
       size = max(size, 1)
       {init, _next_seed} = uniform_in_range(1, size, seed)
@@ -1559,7 +1559,7 @@ defmodule StreamData do
   Generated values shrink towards `0`.
   """
   @spec non_negative_integer() :: t(non_neg_integer())
-  def non_negative_integer() do
+  def non_negative_integer do
     new(fn seed, size ->
       size = max(size, 0)
       {init, _next_seed} = uniform_in_range(0, size, seed)
@@ -1606,7 +1606,7 @@ defmodule StreamData do
     end
   end
 
-  defp positive_float_without_bounds() do
+  defp positive_float_without_bounds do
     sized(fn size ->
       abs_exp = min(size, 1023)
       decimal_part = float_in_0_to_1(abs_exp)
@@ -1664,7 +1664,7 @@ defmodule StreamData do
   closer to `0`.
   """
   @spec byte() :: t(byte())
-  def byte() do
+  def byte do
     integer(0..255)
   end
 
@@ -1932,7 +1932,7 @@ defmodule StreamData do
   binaries.
   """
   @spec iolist() :: t(iolist())
-  def iolist() do
+  def iolist do
     # We try to use binaries that scale slower otherwise we end up with iodata with
     # big binaries at many levels deep.
     scaled_binary = scale_with_exponent(binary(), 0.6)
@@ -1957,7 +1957,7 @@ defmodule StreamData do
   Shrinks towards less nested iodata and ultimately towards smaller binaries.
   """
   @spec iodata() :: t(iodata())
-  def iodata() do
+  def iodata do
     frequency([
       {3, binary()},
       {2, iolist()}
@@ -1996,7 +1996,7 @@ defmodule StreamData do
   """
   @spec term() :: t(simple | [simple] | %{optional(simple) => simple} | tuple())
         when simple: boolean() | integer() | binary() | float() | atom() | reference()
-  def term() do
+  def term do
     ref = new(fn _seed, _size -> lazy_tree_constant(make_ref()) end)
     simple_term = one_of([boolean(), integer(), binary(), float(), atom(:alphanumeric), ref])
 

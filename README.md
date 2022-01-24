@@ -10,11 +10,13 @@ Read [the announcement on the Elixir website](https://elixir-lang.org/blog/2017/
 
 ## Installation
 
-Add `stream_data` to your list of dependencies:
+Add `:stream_data` to your list of dependencies:
 
 ```elixir
-defp deps() do
-  [{:stream_data, "~> 0.5", only: :test}]
+defp deps do
+  [
+    {:stream_data, "~> 0.5", only: :test}
+  ]
 end
 ```
 

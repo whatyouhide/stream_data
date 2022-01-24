@@ -55,8 +55,7 @@ defmodule ExUnitPropertiesTest do
 
     test "errors out if the first clause is not a generator" do
       message =
-        "\"gen all\" and \"check all\" clauses must start with a generator (<-) clause, " <>
-          "got: a = 1"
+        ~S/"gen all" and "check all" clauses must start with a generator (<-) clause, got: a = 1/
 
       assert_raise ArgumentError, message, fn ->
         Code.compile_quoted(
@@ -67,8 +66,7 @@ defmodule ExUnitPropertiesTest do
       end
 
       message =
-        "\"gen all\" and \"check all\" clauses must start with a generator (<-) clause, " <>
-          "got: true"
+        ~S/"gen all" and "check all" clauses must start with a generator (<-) clause, got: true/
 
       assert_raise ArgumentError, message, fn ->
         Code.compile_quoted(
@@ -222,8 +220,7 @@ defmodule ExUnitPropertiesTest do
 
     test "errors out if the first clause is not a generator" do
       message =
-        "\"gen all\" and \"check all\" clauses must start with a generator (<-) clause, " <>
-          "got: a = 1"
+        ~S/"gen all" and "check all" clauses must start with a generator (<-) clause, got: a = 1/
 
       assert_raise ArgumentError, message, fn ->
         Code.compile_quoted(
@@ -234,8 +231,7 @@ defmodule ExUnitPropertiesTest do
       end
 
       message =
-        "\"gen all\" and \"check all\" clauses must start with a generator (<-) clause, " <>
-          "got: true"
+        ~S/"gen all" and "check all" clauses must start with a generator (<-) clause, got: true/
 
       assert_raise ArgumentError, message, fn ->
         Code.compile_quoted(

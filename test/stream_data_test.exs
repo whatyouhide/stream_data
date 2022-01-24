@@ -104,14 +104,14 @@ defmodule StreamDataTest do
   describe "filter/2,3" do
     test "filters out terms that fail the predicate" do
       values =
-        integer(0..10000)
+        integer(0..10_000)
         |> filter(&(&1 > 0))
         |> Enum.take(1000)
 
       assert length(values) <= 1000
 
       Enum.each(values, fn value ->
-        assert value in 0..10000
+        assert value in 0..10_000
       end)
     end
 
@@ -416,13 +416,13 @@ defmodule StreamDataTest do
 
   describe "uniq_list_of/1" do
     property "without options" do
-      check all list <- uniq_list_of(integer(1..10000)) do
+      check all list <- uniq_list_of(integer(1..10_000)) do
         assert Enum.uniq(list) == list
       end
     end
 
     property "with the :uniq_fun option" do
-      check all list <- uniq_list_of(integer(-10000..10000), uniq_fun: &abs/1) do
+      check all list <- uniq_list_of(integer(-10_000..10_000), uniq_fun: &abs/1) do
         assert Enum.uniq_by(list, &abs/1) == list
       end
     end
@@ -537,7 +537,7 @@ defmodule StreamDataTest do
 
   describe "mapset_of/1" do
     property "without options" do
-      check all set <- mapset_of(integer(1..10000)) do
+      check all set <- mapset_of(integer(1..10_000)) do
         assert %MapSet{} = set
 
         if MapSet.size(set) > 0 do

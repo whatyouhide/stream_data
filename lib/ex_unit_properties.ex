@@ -271,8 +271,7 @@ defmodule ExUnitProperties do
 
   defp assert_first_clause_is_generator([clause | _]) do
     raise ArgumentError,
-          "\"gen all\" and \"check all\" clauses must start with a generator (<-) clause, " <>
-            "got: #{Macro.to_string(clause)}"
+          ~s/"gen all" and "check all" clauses must start with a generator (<-) clause, got: #{Macro.to_string(clause)}/
   end
 
   defp compile_clauses([], body, _line) do
