@@ -13,7 +13,14 @@ defmodule StreamData.EnumTest do
                 {range, insertion_idx} <- slide_spec(list)
               ) do
           length = length(list)
-          negative_range = (range.first - length)..(range.last - length)//1
+
+          # TODO: When we depend on 1.12+, rewrite as:
+          # negative_range = (range.first - length)..(range.last - length)//1
+          negative_range = %Range{
+            first: range.first - length,
+            last: range.last - length,
+            step: 1
+          }
 
           assert Enum.slide(list, negative_range, insertion_idx) ==
                    Enum.slide(list, range, insertion_idx)
