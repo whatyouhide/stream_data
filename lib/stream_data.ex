@@ -1443,6 +1443,29 @@ defmodule StreamData do
       Enum.at(StreamData.resize(data, 10), 0)
       #=> [[], '\t', '\a', [1, 2], -3, [-7, [10]]]
 
+  A more complex example is generating data that could represent the Elixir
+  equivalent of a JSON document. The code below is slightly simplified
+  compared to the JSON spec.
+
+      scalar_generator =
+        StreamData.one_of([
+          StreamData.integer(),
+          StreamData.boolean(),
+          StreamData.string(:ascii),
+          nil
+        ])
+
+      json_generator =
+        StreamData.tree(scalar_generator, fn nested_generator ->
+          StreamData.one_of([
+            StreamData.list_of(nested_generator),
+            StreamData.map_of(StreamData.string(:ascii, min_length: 1), nested_generator)
+          ])
+        end)
+
+      Enum.at(StreamData.resize(json_generator, 10), 0)
+      #=> [%{"#" => "5"}, true, %{"4|B" => nil, "7" => true, "yt(3y" => 4}, [[false]]]
+
   ## Shrinking
 
   Shrinks values and shrinks towards less deep trees.
