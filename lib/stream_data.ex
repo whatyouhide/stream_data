@@ -1128,12 +1128,9 @@ defmodule StreamData do
         when a: term(),
              b: term()
   def nonempty_improper_list_of(first, improper) do
-    map({list_of(first), improper}, fn
-      {[], ending} ->
-        [ending]
-
+    map({list_of(first, min_length: 1), improper}, fn
       {list, ending} ->
-        List.foldr(list, ending, &[&1 | &2])
+        list ++ ending
     end)
   end
 
