@@ -453,6 +453,7 @@ defmodule StreamDataTest do
 
   property "maybe_improper_list_of/2" do
     check all list <- maybe_improper_list_of(integer(), constant("")) do
+      assert list != [""]
       each_improper_list(list, &assert(is_integer(&1)), &assert(&1 == "" or is_integer(&1)))
     end
   end
