@@ -1116,7 +1116,7 @@ defmodule StreamData do
 
       data = StreamData.nonempty_improper_list_of(StreamData.byte(), StreamData.binary())
       Enum.take(data, 3)
-      #=> [["\f"], [56 | <<140, 137>>], [226 | "j"]]
+      #=> [[42], [56 | <<140, 137>>], [226 | "j"]]
 
   ## Shrinking
 
@@ -1128,12 +1128,9 @@ defmodule StreamData do
         when a: term(),
              b: term()
   def nonempty_improper_list_of(first, improper) do
-    map({list_of(first), improper}, fn
-      {[], ending} ->
-        [ending]
-
+    map({list_of(first, min_length: 1), improper}, fn
       {list, ending} ->
-        List.foldr(list, ending, &[&1 | &2])
+        list ++ ending
     end)
   end
 
