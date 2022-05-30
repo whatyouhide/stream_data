@@ -446,7 +446,7 @@ defmodule StreamDataTest do
   property "nonempty_improper_list_of/2" do
     check all list <- nonempty_improper_list_of(integer(), constant("")) do
       assert list != []
-      assert list != [""]
+      refute match?([_], list)
       each_improper_list(list, &assert(is_integer(&1)), &assert(&1 == ""))
     end
   end
