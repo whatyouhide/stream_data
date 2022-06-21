@@ -1300,16 +1300,19 @@ defmodule StreamData do
 
   This generator shrinks by first shrinking the map by taking out keys until the map is empty, and
   then by shrinking the generated values.
-  """
-  @spec optional_map(map() | keyword()) :: t(map())
-  def optional_map(data)
 
-  def optional_map(data) when is_list(data) do
-    optional_map(Map.new(data))
+  A list of exactly which keys are optional can be provided, allowing for a map of mixed optional
+  and required keys.
+  """
+  @spec optional_map(map() | keyword(), list(any)) :: t(map())
+  def optional_map(data, keys \\ nil)
+
+  def optional_map(data, keys) when is_list(data) do
+    optional_map(Map.new(data), keys)
   end
 
-  def optional_map(data_map) when is_map(data_map) do
-    subkeys_data = sublist(Map.keys(data_map))
+  def optional_map(data_map, keys) when is_map(data_map) do
+    subkeys_data = sublist(keys || Map.keys(data_map))
 
     new(fn seed, size ->
       {seed1, seed2} = split_seed(seed)
