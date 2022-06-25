@@ -241,6 +241,15 @@ defmodule StreamDataTest do
     end
   end
 
+  property "repeatedly/1" do
+    check all value <- repeatedly(&System.unique_integer/0) do
+      assert is_integer(value)
+    end
+
+    values = Enum.take(repeatedly(&System.unique_integer/0), 20)
+    assert Enum.uniq(values) == values
+  end
+
   property "boolean/0" do
     check all bool <- boolean() do
       assert is_boolean(bool)

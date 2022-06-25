@@ -694,6 +694,34 @@ defmodule StreamData do
   end
 
   @doc """
+  Calls the provided zero argument function to generate values.
+
+  ## Examples
+
+  Generating a UUID
+
+      uuid = StreamData.repeatedly(&Ecto.UUID.generate/0)
+      Enum.take(uuid, 3)
+      #=> ["2712ec5b-bc50-4b4a-8a8a-ca85d37a457b", "2092570d-8fb0-4e67-acbe-92db4c8a2bae", "1bef1fb1-8f86-46ac-a49e-3bffaa51e40b"]
+
+  Generating a unique integer
+
+      integer = StreamData.repeatedly(&System.unique_integer([:positive, :monotonic]))
+      Enum.take(integer, 3)
+      #=> [1, 2, 3]
+
+  ## Shrinking
+
+  By nature, this generator is not shrinkable.
+  """
+  @spec repeatedly((arg :: any -> returns)) :: t(returns) when returns: term()
+  def repeatedly(fun) when is_function(fun, 0) do
+    new(fn _seed, _size ->
+      %LazyTree{root: fun.()}
+    end)
+  end
+
+  @doc """
   Makes the given generator `data` always use the same given `seed` when generating.
 
   This function is useful when you want a generator to have a predictable generating
