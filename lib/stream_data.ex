@@ -1311,7 +1311,7 @@ defmodule StreamData do
   This generator shrinks by first shrinking the map by taking out keys until the map is empty, and
   then by shrinking the generated values.
   """
-  @spec optional_map(map() | keyword(), list(any)) :: t(map())
+  @spec optional_map(map() | keyword(), list(any) | nil) :: t(map())
   def optional_map(data, optional_keys \\ nil)
 
   def optional_map(data, optional_keys) when is_list(data) do
