@@ -547,6 +547,10 @@ defmodule StreamDataTest do
         assert(is_binary(Map.fetch!(map, :binary)))
       end
     end)
+
+    assert Enum.any?(Stream.take(data_with_map, 100), fn data ->
+             Map.has_key?(data, :integer) && is_integer(data.integer)
+           end)
   end
 
   property "keyword_of/1" do
