@@ -536,6 +536,32 @@ defmodule StreamDataTest do
     end)
   end
 
+  property "optional_map/2" do
+    data_with_map = optional_map(%{integer: integer(), binary: binary()}, [:integer])
+    data_with_keyword = optional_map([integer: integer(), binary: binary()], [:integer])
+
+    Enum.each([data_with_map, data_with_keyword], fn data ->
+      check all map <- data do
+        assert map_size(map) in [1, 2]
+
+        assert map
+               |> Map.keys()
+               |> MapSet.new()
+               |> MapSet.subset?(MapSet.new([:integer, :binary]))
+
+        if Map.has_key?(map, :integer) do
+          assert is_integer(Map.fetch!(map, :integer))
+        end
+
+        assert(is_binary(Map.fetch!(map, :binary)))
+      end
+    end)
+
+    assert Enum.any?(Stream.take(data_with_map, 100), fn data ->
+             Map.has_key?(data, :integer) && is_integer(data.integer)
+           end)
+  end
+
   property "keyword_of/1" do
     check all keyword <- keyword_of(boolean()), max_runs: 50 do
       assert Keyword.keyword?(keyword)
