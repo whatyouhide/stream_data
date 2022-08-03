@@ -84,4 +84,68 @@ defmodule StreamData.EnumTest do
       end
     end
   end
+
+  if Version.match?(System.version(), "~> 1.14") do
+    # From https://github.com/elixir-lang/elixir/pull/12043.
+    property "Enum.slice/2 is consistent for list, range and stream inputs" do
+      check all count <- enum_count(),
+                first <- integer(),
+                last <- integer(),
+                step <- positive_integer() do
+        # TODO: When we depend on 1.12+, rewrite as:
+        # first..last//step
+        range = %Range{first: first, last: last, step: step}
+
+        enum_consistency_spec(count, fn enumerable ->
+          Enum.slice(enumerable, range)
+        end)
+      end
+    end
+  end
+
+  if Version.match?(System.version(), "~> 1.12") do
+    property "Enum.take/2 is consistent for list, range and stream inputs" do
+      check all count <- enum_count(),
+                amount <- integer() do
+        enum_consistency_spec(count, fn enumerable ->
+          Enum.take(enumerable, amount)
+        end)
+      end
+    end
+
+    # From https://github.com/elixir-lang/elixir/pull/12040.
+    property "Enum.drop/2 is consistent for list, range and stream inputs" do
+      check all count <- enum_count(),
+                amount <- integer() do
+        enum_consistency_spec(count, fn enumerable ->
+          Enum.drop(enumerable, amount)
+        end)
+      end
+    end
+
+    # From https://github.com/elixir-lang/elixir/pull/10886.
+    property "Enum.dedup/1 is consistent for list, range and stream inputs" do
+      check all count <- enum_count() do
+        enum_consistency_spec(count, &Enum.dedup/1)
+      end
+    end
+
+    defp enum_consistency_spec(count, fun) do
+      # TODO: When we depend on 1.12+, rewrite as:
+      # 1..count//1
+      range = %Range{first: 1, last: count, step: 1}
+      list = Enum.to_list(range)
+      stream = Stream.map(range, & &1)
+
+      result = fun.(range)
+      assert fun.(list) == result
+      assert fun.(stream) == result
+    end
+
+    defp enum_count do
+      # Creating arbitrary big enums will make tests needlessly slow.
+      # Finding edge cases doesn't require big sizes.
+      integer() |> filter(&(&1 >= 0)) |> resize(100)
+    end
+  end
 end
