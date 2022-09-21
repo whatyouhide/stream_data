@@ -540,6 +540,7 @@ defmodule ExUnitProperties do
     end
   end
 
+  @spec __raise__(term()) :: no_return()
   def __raise__(test_result) do
     %{
       original_failure: original_failure,
