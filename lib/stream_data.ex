@@ -305,6 +305,10 @@ defmodule StreamData do
   raised. See the documentation for `filter/3` for suggestions on how to avoid
   such errors.
 
+  The function can accept one or two arguments. If a two-argument function is
+  passed, the second argument will be the number of tries left before raising
+  `StreamData.FilterTooNarrowError`.
+
   ## Examples
 
   Say we wanted to create a generator that generates two-element tuples where
@@ -336,7 +340,11 @@ defmodule StreamData do
   This generator shrinks like `bind/2` but values that are skipped are not used
   for shrinking (similarly to how `filter/3` works).
   """
-  @spec bind_filter(t(a), (a -> {:cont, t(b)} | :skip), non_neg_integer()) :: t(b)
+  @spec bind_filter(
+          t(a),
+          (a -> {:cont, t(b)} | :skip) | (a, non_neg_integer() -> {:cont, t(b)} | :skip),
+          non_neg_integer()
+        ) :: t(b)
         when a: term(),
              b: term()
   def bind_filter(data, fun, max_consecutive_failures \\ 10)
