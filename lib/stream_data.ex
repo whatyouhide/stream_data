@@ -192,6 +192,7 @@ defmodule StreamData do
   # poor implementation of a protocol (which we don't want to add just for
   # this).
   @doc false
+  @spec __call__(StreamData.t(a), seed(), size()) :: a when a: term()
   def __call__(data, seed, size) do
     call(data, seed, size)
   end
@@ -304,6 +305,10 @@ defmodule StreamData do
   raised. See the documentation for `filter/3` for suggestions on how to avoid
   such errors.
 
+  The function can accept one or two arguments. If a two-argument function is
+  passed, the second argument will be the number of tries left before raising
+  `StreamData.FilterTooNarrowError`.
+
   ## Examples
 
   Say we wanted to create a generator that generates two-element tuples where
@@ -335,7 +340,11 @@ defmodule StreamData do
   This generator shrinks like `bind/2` but values that are skipped are not used
   for shrinking (similarly to how `filter/3` works).
   """
-  @spec bind_filter(t(a), (a -> {:cont, t(b)} | :skip), non_neg_integer()) :: t(b)
+  @spec bind_filter(
+          t(a),
+          (a -> {:cont, t(b)} | :skip) | (a, non_neg_integer() -> {:cont, t(b)} | :skip),
+          non_neg_integer()
+        ) :: t(b)
         when a: term(),
              b: term()
   def bind_filter(data, fun, max_consecutive_failures \\ 10)
@@ -714,7 +723,7 @@ defmodule StreamData do
 
   By nature, this generator is not shrinkable.
   """
-  @spec repeatedly((arg :: any -> returns)) :: t(returns) when returns: term()
+  @spec repeatedly((() -> returns)) :: t(returns) when returns: term()
   def repeatedly(fun) when is_function(fun, 0) do
     new(fn _seed, _size ->
       %LazyTree{root: fun.()}
@@ -934,6 +943,7 @@ defmodule StreamData do
 
   The same as calling `list_of/2` with `[]` as options.
   """
+  @spec list_of(t(a)) :: t([a]) when a: term()
   def list_of(data) do
     new(fn seed, size ->
       {length, next_seed} = uniform_in_range(0, size, seed)
@@ -1943,7 +1953,7 @@ defmodule StreamData do
   Shrinks towards smaller atoms and towards "simpler" letters (like towards only alphabet
   letters).
   """
-
+  @spec atom(:alphanumeric | :alias) :: t(atom())
   def atom(kind)
 
   @unquoted_atom_characters [?a..?z, ?A..?Z, ?0..?9, ?_, ?@]
