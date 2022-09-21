@@ -943,6 +943,7 @@ defmodule StreamData do
 
   The same as calling `list_of/2` with `[]` as options.
   """
+  @spec list_of(t(a)) :: t([a]) when a: term()
   def list_of(data) do
     new(fn seed, size ->
       {length, next_seed} = uniform_in_range(0, size, seed)
@@ -1952,7 +1953,7 @@ defmodule StreamData do
   Shrinks towards smaller atoms and towards "simpler" letters (like towards only alphabet
   letters).
   """
-
+  @spec atom(:alphanumeric | :alias) :: t(atom())
   def atom(kind)
 
   @unquoted_atom_characters [?a..?z, ?A..?Z, ?0..?9, ?_, ?@]
