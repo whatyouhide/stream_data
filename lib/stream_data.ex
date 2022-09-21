@@ -192,6 +192,7 @@ defmodule StreamData do
   # poor implementation of a protocol (which we don't want to add just for
   # this).
   @doc false
+  @spec __call__(StreamData.t(a), seed(), size()) :: a when a: term()
   def __call__(data, seed, size) do
     call(data, seed, size)
   end
