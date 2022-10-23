@@ -28,7 +28,7 @@ defmodule StreamData.Mixfile do
       package: [
         maintainers: ["Andrea Leopardi"],
         licenses: ["Apache-2.0"],
-        links: %{"GitHub" => @repo_url}
+        links: %{"GitHub" => @repo_url, "Sponsor" => "https://github.com/sponsors/whatyouhide"}
       ]
     ]
   end
