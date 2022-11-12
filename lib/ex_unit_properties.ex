@@ -196,10 +196,11 @@ defmodule ExUnitProperties do
   We can create a generator of users like this:
 
       email_generator = map({binary(), binary()}, fn {left, right} -> left <> "@" <> right end)
-      gen all name <- binary(),
-              email <- email_generator do
-        %User{name: name, email: email}
-      end
+      user_generator = 
+        gen all name <- binary(),
+                email <- email_generator do
+          %User{name: name, email: email}
+        end
 
   Everything between `gen all` and `do` is referred to as **clauses**. Clauses
   are used to specify the values to generate to be used in the body. The newly
