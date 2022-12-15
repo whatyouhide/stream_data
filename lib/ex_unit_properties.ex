@@ -82,6 +82,48 @@ defmodule ExUnitProperties do
   For detailed information on shrinking, see also the "Shrinking" section in the
   documentation for `StreamData`.
 
+  ## Building structs
+  
+  We can use the built-in generators to generate other kinds of structs. For
+  example, we could create `%Time{}` structs for testing as follows.
+  
+      describe "noon?/1" do
+        test "returns true for noon" do
+          assert noon?(~T[12:00:00]) == true
+        end
+
+        property "returns false for other times" do
+          check all(time <- non_noon()) do
+            assert noon?(time) == false
+          end
+        end
+      end
+
+      def noon?(~T[12:00:00]), do: true
+      def noon?(_), do: false
+
+      defp non_noon do
+        gen all(
+              time <- valid_time,
+              time != ~T[12:00:00]
+            ) do
+          time
+        end
+      end
+
+      defp valid_time do
+        gen all(
+              hour <- StreamData.integer(0..23),
+              minute <- StreamData.integer(0..59),
+              second <- StreamData.integer(0..59)
+            ) do
+          Time.new!(hour, minute, second)
+        end
+      end
+
+  The `valid_time/0` function could also be called as part of building a
+  `%DateTime{}`.
+
   ## Resources on property-based testing
 
   There are many resources available online on property-based testing. An interesting
