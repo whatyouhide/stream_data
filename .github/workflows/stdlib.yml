@@ -6,7 +6,7 @@ on:
     inputs: {}
   # Every day at 9am.
   schedule:
-    - cron: '0 9 * * *'
+    - cron: "0 9 * * *"
   # Every time a change makes it to the main branch of this library, so we maaaaybe
   # catch regressions in the library itself.
   push:
@@ -16,12 +16,12 @@ on:
 jobs:
   stdlib-test:
     name: Elixir standard library tests (OTP ${{ matrix.otp }}, Elixir ${{ matrix.elixir }})
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         include:
-          - otp: 24.1
+          - otp: 25.3
 
     env:
       MIX_ENV: test
@@ -67,7 +67,7 @@ jobs:
       - name: Install dependencies
         run: |
           mix do local.hex --force, local.rebar --force
-          mix do deps.get, deps.compile
+          mix do deps.get --only test, deps.compile
 
       - name: Run stdlib tests
         run: mix test --only stdlib
