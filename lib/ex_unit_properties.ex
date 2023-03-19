@@ -83,46 +83,42 @@ defmodule ExUnitProperties do
   documentation for `StreamData`.
 
   ## Building structs
-  
+
   We can use the built-in generators to generate other kinds of structs. For
-  example, we could create `%Time{}` structs for testing as follows.
-  
+  example, imagine we wanted to test the following function.
+
+      def noon?(~T[12:00:00]), do: true
+      def noon?(_), do: false
+
+  We could generate `%Time{}` structs as follows:
+
+      defp non_noon_generator do
+        gen all time <- valid_time_generator(), time != ~T[12:00:00] do
+          time
+        end
+      end
+
+      defp valid_time_generator do
+        gen all hour <- StreamData.integer(0..23),
+                minute <- StreamData.integer(0..59),
+                second <- StreamData.integer(0..59) do
+          Time.new!(hour, minute, second)
+        end
+      end
+
+  and use them in properties:
+
       describe "noon?/1" do
         test "returns true for noon" do
           assert noon?(~T[12:00:00]) == true
         end
 
         property "returns false for other times" do
-          check all(time <- non_noon()) do
+          check all time <- non_noon_generator() do
             assert noon?(time) == false
           end
         end
       end
-
-      def noon?(~T[12:00:00]), do: true
-      def noon?(_), do: false
-
-      defp non_noon do
-        gen all(
-              time <- valid_time,
-              time != ~T[12:00:00]
-            ) do
-          time
-        end
-      end
-
-      defp valid_time do
-        gen all(
-              hour <- StreamData.integer(0..23),
-              minute <- StreamData.integer(0..59),
-              second <- StreamData.integer(0..59)
-            ) do
-          Time.new!(hour, minute, second)
-        end
-      end
-
-  The `valid_time/0` function could also be called as part of building a
-  `%DateTime{}`.
 
   ## Resources on property-based testing
 
@@ -238,7 +234,7 @@ defmodule ExUnitProperties do
   We can create a generator of users like this:
 
       email_generator = map({binary(), binary()}, fn {left, right} -> left <> "@" <> right end)
-      user_generator = 
+      user_generator =
         gen all name <- binary(),
                 email <- email_generator do
           %User{name: name, email: email}
