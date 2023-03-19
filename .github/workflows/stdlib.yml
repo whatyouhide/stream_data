@@ -67,7 +67,7 @@ jobs:
       - name: Install dependencies
         run: |
           mix do local.hex --force, local.rebar --force
-          mix do deps.get, deps.compile
+          mix do deps.get --only test, deps.compile
 
       - name: Run stdlib tests
         run: mix test --only stdlib
