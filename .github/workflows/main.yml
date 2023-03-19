@@ -19,7 +19,7 @@ jobs:
             os: ubuntu-22.04
             lint: true
             coverage: true
-          - otp: "24.4"
+          - otp: "24.3"
             elixir: "1.13"
             os: ubuntu-22.04
           - otp: "23.3"
