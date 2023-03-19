@@ -8,24 +8,26 @@ on:
 
 jobs:
   test:
-    name: Test (Elixir ${{matrix.elixir}} | Erlang/OTP ${{matrix.otp}})
-    runs-on: ubuntu-latest
+    name: Test (Elixir ${{ matrix.elixir }} | Erlang/OTP ${{ matrix.otp }})
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         include:
-          - otp: 24.1
-            elixir: 1.13
+          - otp: "25.3"
+            elixir: "1.14"
+          - otp: "24.1"
+            elixir: "1.13"
             lint: true
             coverage: true
-          - otp: 23.3
-            elixir: 1.12.2
-          - otp: 23.3
-            elixir: 1.11.4
-          - otp: 20.3
-            elixir: 1.5.3
+          - otp: "23.3"
+            elixir: "1.12.2"
+          - otp: "23.3"
+            elixir: "1.11.4"
+          - otp: "20.3"
+            elixir: "1.5.3"
     env:
-      GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       MIX_ENV: test
 
     steps:
@@ -35,28 +37,28 @@ jobs:
       - name: Install OTP and Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: ${{matrix.otp}}
-          elixir-version: ${{matrix.elixir}}
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
 
       - name: Install dependencies
-        run: mix deps.get --only test && mix deps.compile
+        run: mix do deps.get --only test, deps.compile
 
       - name: Check for formatted code
-        if: ${{matrix.lint}}
+        if: ${{ matrix.lint }}
         run: mix format --check-formatted
 
       - name: Check for unused dependencies
-        if: ${{matrix.lint}}
-        run: mix deps.get && mix deps.unlock --check-unused
+        if: ${{ matrix.lint }}
+        run: mix do deps.get, deps.unlock --check-unused
 
       - name: Check for compilation warnings
-        if: ${{matrix.lint}}
+        if: ${{ matrix.lint }}
         run: mix compile --warnings-as-errors
 
       - name: Run tests
         run: mix test --trace
-        if: ${{!matrix.coverage}}
+        if: ${{ !matrix.coverage }}
 
       - name: Run tests with coverage
         run: mix coveralls.github
-        if: ${{matrix.coverage}}
+        if: ${{ matrix.coverage }}
