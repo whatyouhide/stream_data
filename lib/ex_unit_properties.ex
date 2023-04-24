@@ -153,16 +153,19 @@ defmodule ExUnitProperties do
   end
 
   @doc """
-  Defines a not implemented property test with a string.
+  Defines a not-implemented property test with a string.
 
   Provides a convenient macro that allows a property test to be defined with a
-  string, but not yet implemented.  The resulting property test will always
-  fail and print a "Not implemented" error message.  The resulting test case is
+  string, but not yet implemented. The resulting property test will always
+  fail and print a "Not implemented" error message. The resulting test case is
   also tagged with `:not_implemented`.
+
+  This behavior is similar to `ExUnit.Case.test/1`.
 
   ## Examples
 
-      property "this will be a property test in future"
+      property "this will be a property test in the future"
+
   """
   defmacro property(message) do
     ExUnit.plural_rule("property", "properties")
@@ -176,9 +179,9 @@ defmodule ExUnitProperties do
   @doc """
   Defines a property and imports property-testing facilities in the body.
 
-  This macro is very similar to `ExUnit.Case.test/3`, except that it denotes a
-  "property". In the given body, all the functions exposed by `StreamData` are
-  imported as well as `check/2`.
+  This macro is similar to `ExUnit.Case.test/3`, except that it denotes a
+  **property**. In the given body, all the functions exposed by `StreamData` are
+  imported, as well as `check/2`.
 
   When defining a test whose body only consists of one or more `check/2` calls,
   it's advised to use `property/3` so as to clearly denote and scope properties.
@@ -225,7 +228,7 @@ defmodule ExUnitProperties do
   @doc """
   Syntactic sugar to create generators.
 
-  This macro provides ad hoc syntax to write complex generators. Let's see a
+  This macro provides ad-hoc syntax to write complex generators. Let's see a
   quick example to get a feel of how it works. Say we have a `User` struct:
 
       defmodule User do
@@ -235,28 +238,29 @@ defmodule ExUnitProperties do
   We can create a generator of users like this:
 
       email_generator = map({binary(), binary()}, fn {left, right} -> left <> "@" <> right end)
+
       user_generator =
         gen all name <- binary(),
                 email <- email_generator do
           %User{name: name, email: email}
         end
 
-  Everything between `gen all` and `do` is referred to as **clauses**. Clauses
-  are used to specify the values to generate to be used in the body. The newly
-  created generator will generate values that are the return value of the
+  Everything between `gen all` and `do` is referred to as **clauses**. You can write
+  clauses to specify the values to generate. You can then use those values in the `do` body.
+  The newly-created generator will generate values that are the return value of the
   `do` body using the generated values in the clauses.
 
   ### Clauses
 
   As seen in the example above, clauses can be of the following types:
 
-    * value generation - they have the form `pattern <- generator` where `generator` must be a
+    * **value generation** - they have the form `pattern <- generator` where `generator` must be a
       generator. These clauses take a value out of `generator` on each run and match it against
       `pattern`. Variables bound in `pattern` can be then used throughout subsequent clauses and
       in the `do` body. If `pattern` doesn't match a generated value, it's treated like a filter
       (see the "filtering" clauses described below).
 
-    * filtering and binding - they have the form `expression`. If a filtering clause returns
+    * **filtering and binding** - they have the form `expression`. If a filtering clause returns
       a truthy value, then the set of generated values that appear before the
       filtering clause is considered valid and generation continues. If the
       filtering clause returns a falsey value, then the current value is
@@ -279,8 +283,8 @@ defmodule ExUnitProperties do
   See the module documentation for more information on shrinking. Clauses affect
   shrinking in the following way:
 
-    * filtering clauses affect shrinking like `filter/3`
-    * value generation clauses affect shrinking similarly to `bind/2`
+    * filtering clauses affect shrinking like `StreamData.filter/3`
+    * value generation clauses affect shrinking similarly to `StreamData.bind/2`
 
   """
   defmacro gen({:all, _meta, clauses_with_body} = _clauses_and_body) do
@@ -394,7 +398,7 @@ defmodule ExUnitProperties do
   are used to specify the values to generate in order to test the properties.
   The actual tests that the properties hold live in the `do` block.
 
-  Clauses work exactly like they work in the `ExUnitProperties.gen/1` macro.
+  Clauses work exactly like they work in the `gen/1` macro.
 
   The body passed in the `do` block is where you test that the property holds
   for the generated values. The body is just like the body of a test: use
@@ -432,16 +436,16 @@ defmodule ExUnitProperties do
       way, the random generation will follow options like `--seed` used in ExUnit to
       deterministically reproduce tests.
 
-    It is also possible to set the values for `:initial_size`, `:max_runs`, `:max_run_time`, and
-    `:max_shrinking_steps` through your project's config files.  This is especially helpful
-    in combination with `:max_runs` when you want to run more iterations on your continuous
-    integration platform, but keep your local tests fast:
+  It is also possible to set the values for `:initial_size`, `:max_runs`, `:max_run_time`, and
+  `:max_shrinking_steps` through your project's config files. This is especially helpful
+  in combination with `:max_runs` when you want to run more iterations on your continuous
+  integration platform, but keep your local tests fast:
 
-          # config/test.exs
-          use Mix.Config
+      # config/test.exs
+      import Config
 
-          config :stream_data,
-            max_runs: if System.get_env("CI"), do: 1_000, else: 50
+      config :stream_data,
+        max_runs: if System.get_env("CI"), do: 1_000, else: 50
 
   ## Examples
 
@@ -661,10 +665,9 @@ defmodule ExUnitProperties do
   Picks a random element generated by the `StreamData` generator `data`.
 
   This function uses the current ExUnit seed to generate a random term from `data`. The generation
-  size (see the "Generation size" section in the documentation for `StreamData`) is chosen at
-  random between in `1..100`. If you want finer control over the generation size, you can use
-  functions like `StreamData.resize/2` to resize `data` or `StreamData.scale/2` to scale the
-  generation size.
+  size (see [*Generation size*](StreamData.html#module-generation-size)) is chosen at random between in `1..100`. If you want finer
+  control over the generation size, you can use functions like `StreamData.resize/2` to resize
+  `data` or `StreamData.scale/2` to scale the generation size.
 
   ## Examples
 
