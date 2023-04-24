@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - otp: 25.3
+          - otp: "25.3"
 
     env:
       MIX_ENV: test
@@ -35,6 +35,8 @@ jobs:
         uses: erlef/setup-beam@v1
         with:
           otp-version: ${{ matrix.otp }}
+          # TODO: remove this once we'll compile Elixir from source again.
+          elixir-version: 1.14.4-otp-25
 
       - name: Get SHA of Elixir's main branch
         id: get-elixir-sha
@@ -55,14 +57,17 @@ jobs:
           path: elixir_src
           key: ${{ runner.os }}-elixir-${{ steps.get-elixir-sha.outputs.sha }}
 
-      - name: Compile Elixir
-        if: steps.cache-compiled-elixir.outputs.cache-hit != 'true'
-        working-directory: elixir_src
-        run: make
+      # TODO: for now, Elixir main doesn't compile some deps. We need to
+      # go back and do these steps once Elixir works again against Erlang.
 
-      # Needs to happen even on cache hits.
-      - name: Add Elixir binaries to the path
-        run: echo "$PWD/elixir_src/bin" >> $GITHUB_PATH
+      # - name: Compile Elixir
+      #   if: steps.cache-compiled-elixir.outputs.cache-hit != 'true'
+      #   working-directory: elixir_src
+      #   run: make
+
+      # # Needs to happen even on cache hits.
+      # - name: Add Elixir binaries to the path
+      #   run: echo "$PWD/elixir_src/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
         run: |
