@@ -138,6 +138,7 @@ defmodule ExUnitProperties do
   alias ExUnit.AssertionError
 
   defmodule Error do
+    @moduledoc false
     defexception [:message]
   end
 
