@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - otp: "26.0-rc1"
+          - otp: "26.0-rc3"
 
     env:
       MIX_ENV: test
