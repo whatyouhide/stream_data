@@ -4,7 +4,7 @@ defmodule ExUnitPropertiesTest do
 
   describe "gen all" do
     test "supports generation and filtering clauses" do
-      filtered_value = 10
+      filtered_value = 34
 
       data =
         gen all [_ | _] = list <- list_of(integer()),
