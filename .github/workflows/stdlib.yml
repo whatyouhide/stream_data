@@ -29,7 +29,7 @@ jobs:
 
     steps:
       - name: Clone repository
-        uses: actions/checkout@v1
+        uses: actions/checkout@v3
 
       - name: Install Erlang/OTP
         uses: erlef/setup-beam@v1
@@ -44,7 +44,7 @@ jobs:
           echo ::set-output name=sha::$( curl -u "u:${{ github.token }}" https://api.github.com/repos/elixir-lang/elixir/git/ref/heads/main | jq .object.sha | tr -d '"' )
 
       - name: Check out latest Elixir
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: elixir-lang/elixir
           ref: ${{ steps.get-elixir-sha.outputs.sha }}
@@ -52,7 +52,7 @@ jobs:
 
       - name: Cache compiled Elixir
         id: cache-compiled-elixir
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: elixir_src
           key: ${{ runner.os }}-elixir-${{ steps.get-elixir-sha.outputs.sha }}

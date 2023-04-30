@@ -145,7 +145,7 @@ defmodule StreamData.EnumTest do
     defp enum_count do
       # Creating arbitrary big enums will make tests needlessly slow.
       # Finding edge cases doesn't require big sizes.
-      integer() |> filter(&(&1 >= 0)) |> resize(100)
+      non_negative_integer() |> resize(100)
     end
   end
 end
