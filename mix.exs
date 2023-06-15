@@ -33,6 +33,7 @@ defmodule StreamData.Mixfile do
 
       # Dialyxir
       dialyzer: [
+        plt_add_deps: :apps_direct,
         plt_file: {:no_warn, "priv/plts/project.plt"},
         plt_add_apps: [:ex_unit]
       ]
