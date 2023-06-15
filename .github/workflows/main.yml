@@ -46,6 +46,16 @@ jobs:
         if: ${{ matrix.lint }}
         run: mix format --check-formatted
 
+      - name: Cache/uncache PLTs
+        uses: actions/cache@v3
+        with:
+          path: |
+            priv/plts
+          key: "${{ runner.os }}-\
+                erlang-${{ matrix.otp }}-\
+                elixir-${{ matrix.elixir }}-\
+                ${{ hashFiles('mix.lock') }}"
+
       - name: Run Dialyzer
         run: mix dialyzer
 
