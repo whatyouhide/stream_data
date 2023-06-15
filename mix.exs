@@ -55,7 +55,7 @@ defmodule StreamData.Mixfile do
       {:ex_doc, "~> 0.29", only: :dev},
       {:excoveralls, "~> 0.16.0", only: :test},
       {:ssl_verify_fun, "~> 1.1", only: :test, manager: :rebar3, override: true},
-      {:dialyxir, "~> 1.3", only: [:dev], runtime: false}
+      {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false}
     ]
   end
 end
