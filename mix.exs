@@ -48,7 +48,8 @@ defmodule StreamData.Mixfile do
   defp deps() do
     [
       {:ex_doc, "~> 0.19", only: :dev},
-      {:excoveralls, "~> 0.16.0", only: :test}
+      {:excoveralls, "~> 0.16.0", only: :test},
+      {:ssl_verify_fun, "~> 1.1", only: :test, manager: :rebar3, override: true}
     ]
   end
 end
