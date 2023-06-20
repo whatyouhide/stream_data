@@ -723,7 +723,7 @@ defmodule StreamData do
 
   By nature, this generator is not shrinkable.
   """
-  @spec repeatedly((() -> returns)) :: t(returns) when returns: term()
+  @spec repeatedly((-> returns)) :: t(returns) when returns: term()
   def repeatedly(fun) when is_function(fun, 0) do
     new(fn _seed, _size ->
       %LazyTree{root: fun.()}
