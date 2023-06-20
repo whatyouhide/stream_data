@@ -14,20 +14,24 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - otp: "25.3"
-            elixir: "1.14"
+          - otp: "26.0.1"
+            elixir: "1.15.0"
             os: ubuntu-22.04
             lint: true
             coverage: true
+
           - otp: "24.3"
             elixir: "1.13"
             os: ubuntu-22.04
+
           - otp: "23.3"
             elixir: "1.12.2"
             os: ubuntu-20.04
+
           - otp: "23.3"
             elixir: "1.11.4"
             os: ubuntu-20.04
+
           - otp: "20.3"
             elixir: "1.5.3"
             os: ubuntu-20.04
@@ -37,13 +41,14 @@ jobs:
 
     steps:
       - name: Clone repository
-        uses: actions/checkout@v1
+        uses: actions/checkout@v3
 
       - name: Install OTP and Elixir
         uses: erlef/setup-beam@v1
         with:
           otp-version: ${{ matrix.otp }}
           elixir-version: ${{ matrix.elixir }}
+          version-type: strict
 
       - name: Install dependencies
         run: mix do deps.get --only test, deps.compile
