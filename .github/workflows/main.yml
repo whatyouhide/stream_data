@@ -14,27 +14,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - otp: "26.0.1"
-            elixir: "1.15.0"
+          - otp: "26.0.2"
+            elixir: "1.15.1"
             os: ubuntu-22.04
             lint: true
             coverage: true
-
-          - otp: "24.3"
-            elixir: "1.13"
-            os: ubuntu-22.04
-
-          - otp: "23.3"
-            elixir: "1.12.2"
-            os: ubuntu-20.04
 
           - otp: "23.3"
             elixir: "1.11.4"
             os: ubuntu-20.04
 
-          - otp: "20.3"
-            elixir: "1.5.3"
-            os: ubuntu-20.04
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       MIX_ENV: test
