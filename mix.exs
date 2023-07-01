@@ -29,6 +29,13 @@ defmodule StreamData.Mixfile do
         maintainers: ["Andrea Leopardi"],
         licenses: ["Apache-2.0"],
         links: %{"GitHub" => @repo_url, "Sponsor" => "https://github.com/sponsors/whatyouhide"}
+      ],
+
+      # Dialyxir
+      dialyzer: [
+        plt_add_deps: :apps_direct,
+        plt_file: {:no_warn, "priv/plts/project.plt"},
+        plt_add_apps: [:ex_unit]
       ]
     ]
   end
@@ -47,9 +54,10 @@ defmodule StreamData.Mixfile do
 
   defp deps() do
     [
-      {:ex_doc, "~> 0.19", only: :dev},
+      {:ex_doc, "~> 0.29", only: :dev},
       {:excoveralls, "~> 0.16.0", only: :test},
-      {:ssl_verify_fun, "~> 1.1", only: :test, manager: :rebar3, override: true}
+      {:ssl_verify_fun, "~> 1.1", only: :test, manager: :rebar3, override: true},
+      {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false}
     ]
   end
 end
