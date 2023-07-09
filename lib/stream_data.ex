@@ -1818,6 +1818,10 @@ defmodule StreamData do
   end
 
   @ascii_chars ?\s..?~
+
+  # "UTF-8 prohibits encoding character numbers between U+D800 and U+DFFF"
+  @utf8_chars [0..0xD7FF, 0xE000..0x10FFFF]
+
   @alphanumeric_chars [?a..?z, ?A..?Z, ?0..?9]
   @printable_chars [
     ?\n,
@@ -1850,6 +1854,9 @@ defmodule StreamData do
     * `:printable` - printable strings (`String.printable?/1` returns `true`)
       are generated. Such strings shrink towards lower codepoints.
 
+    * `:utf8` - valid strings (`String.valid?/1` returns `true`)
+      are generated. Such strings shrink towards lower codepoints.
+
     * a range - strings with characters from the range are generated. Such
       strings shrink towards characters that appear earlier in the range.
 
@@ -1874,7 +1881,14 @@ defmodule StreamData do
   Shrinks towards smaller strings and as described in the description of the
   possible values of `kind_or_codepoints` above.
   """
-  @spec string(:ascii | :alphanumeric | :printable | Range.t() | [Range.t() | pos_integer()]) ::
+  @spec string(
+          :ascii
+          | :alphanumeric
+          | :printable
+          | :utf8
+          | Range.t()
+          | [Range.t() | pos_integer()]
+        ) ::
           t(String.t())
   def string(kind_or_codepoints, options \\ [])
 
@@ -1888,6 +1902,10 @@ defmodule StreamData do
 
   def string(:printable, options) do
     string(@printable_chars, options)
+  end
+
+  def string(:utf8, options) do
+    string(@utf8_chars, options)
   end
 
   def string(%Range{} = codepoints_range, options) do
@@ -2011,13 +2029,7 @@ defmodule StreamData do
   """
   @spec iolist() :: t(iolist())
   def iolist() do
-    # We try to use binaries that scale slower otherwise we end up with iodata with
-    # big binaries at many levels deep.
-    scaled_binary = scale_with_exponent(binary(), 0.6)
-
-    improper_ending = one_of([scaled_binary, constant([])])
-    tree = tree(one_of([byte(), scaled_binary]), &maybe_improper_list_of(&1, improper_ending))
-    map(tree, &List.wrap/1)
+    iolist_or_chardata_tree(byte(), binary())
   end
 
   @doc """
@@ -2040,6 +2052,40 @@ defmodule StreamData do
       {3, binary()},
       {2, iolist()}
     ])
+  end
+
+  @doc """
+  Generates chardata.
+
+  Chardata are values of the `t:IO.chardata/0` type.
+
+  ## Examples
+
+      Enum.take(StreamData.chardata(), 3)
+      #=> ["", [""], [12174]]
+
+  ## Shrinking
+
+  Shrinks towards less nested chardata and ultimately towards smaller binaries.
+  """
+  @spec chardata() :: t(IO.chardata())
+  def chardata() do
+    codepoint = @utf8_chars |> Enum.map(&{Enum.count(&1), integer(&1)}) |> frequency()
+
+    frequency([
+      {3, string(:utf8)},
+      {2, iolist_or_chardata_tree(codepoint, string(:utf8))}
+    ])
+  end
+
+  defp iolist_or_chardata_tree(int_type, binary_type) do
+    # We try to use binaries that scale slower otherwise we end up with iodata with
+    # big binaries at many levels deep.
+    scaled_binary = scale_with_exponent(binary_type, 0.6)
+
+    improper_ending = one_of([scaled_binary, constant([])])
+    tree = tree(one_of([int_type, scaled_binary]), &maybe_improper_list_of(&1, improper_ending))
+    map(tree, &List.wrap/1)
   end
 
   @doc """

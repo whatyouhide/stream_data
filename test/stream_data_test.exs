@@ -648,6 +648,12 @@ defmodule StreamDataTest do
       end
     end
 
+    property "with :utf8" do
+      check all string <- string(:utf8) do
+        assert String.valid?(string)
+      end
+    end
+
     property "with a fixed length" do
       check all string <- string(:alphanumeric, length: 3) do
         assert String.length(string) == 3
@@ -680,6 +686,12 @@ defmodule StreamDataTest do
   property "iodata/0" do
     check all iodata <- iodata(), max_runs: 50 do
       assert IO.iodata_length(iodata) >= 0
+    end
+  end
+
+  property "chardata/0" do
+    check all chardata <- chardata(), max_runs: 50 do
+      assert IO.chardata_to_string(chardata) |> String.valid?()
     end
   end
 
