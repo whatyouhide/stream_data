@@ -689,6 +689,12 @@ defmodule StreamDataTest do
     end
   end
 
+  property "chardata/0" do
+    check all chardata <- chardata(), max_runs: 50 do
+      assert IO.chardata_to_string(chardata) |> String.valid?()
+    end
+  end
+
   property "term/0" do
     check all term <- term(), max_runs: 25 do
       assert is_boolean(term) or is_integer(term) or is_float(term) or is_binary(term) or

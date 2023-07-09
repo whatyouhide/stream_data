@@ -2029,13 +2029,7 @@ defmodule StreamData do
   """
   @spec iolist() :: t(iolist())
   def iolist() do
-    # We try to use binaries that scale slower otherwise we end up with iodata with
-    # big binaries at many levels deep.
-    scaled_binary = scale_with_exponent(binary(), 0.6)
-
-    improper_ending = one_of([scaled_binary, constant([])])
-    tree = tree(one_of([byte(), scaled_binary]), &maybe_improper_list_of(&1, improper_ending))
-    map(tree, &List.wrap/1)
+    iolist_or_chardata_tree(byte(), binary())
   end
 
   @doc """
@@ -2058,6 +2052,40 @@ defmodule StreamData do
       {3, binary()},
       {2, iolist()}
     ])
+  end
+
+  @doc """
+  Generates chardata.
+
+  Chardata are values of the `t:IO.chardata/0` type.
+
+  ## Examples
+
+      Enum.take(StreamData.chardata(), 3)
+      #=> ["", [""], [12174]]
+
+  ## Shrinking
+
+  Shrinks towards less nested chardata and ultimately towards smaller binaries.
+  """
+  @spec chardata() :: t(IO.chardata())
+  def chardata() do
+    codepoint = @utf8_chars |> Enum.map(&{Enum.count(&1), integer(&1)}) |> frequency()
+
+    frequency([
+      {3, string(:utf8)},
+      {2, iolist_or_chardata_tree(codepoint, string(:utf8))}
+    ])
+  end
+
+  defp iolist_or_chardata_tree(int_type, binary_type) do
+    # We try to use binaries that scale slower otherwise we end up with iodata with
+    # big binaries at many levels deep.
+    scaled_binary = scale_with_exponent(binary_type, 0.6)
+
+    improper_ending = one_of([scaled_binary, constant([])])
+    tree = tree(one_of([int_type, scaled_binary]), &maybe_improper_list_of(&1, improper_ending))
+    map(tree, &List.wrap/1)
   end
 
   @doc """
