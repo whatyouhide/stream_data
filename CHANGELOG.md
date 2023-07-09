@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.6.0
+
+### Bug Fixes
+
+  * Consider max chars when generating atoms.
+  * Fix some small issues in `StreamData.nonempty_improper_list_of/2`.
+
+### Features
+
+  * Add `StreamData.non_negative_integer/0`.
+  * Add `StreamData.repeatedly/1`.
+  * Add `StreamData.chardata/0`.
+  * Add `StreamData.codepoint/1`.
+  * Add support for *not implemented* properties (which are just `property "some name"`, without a `do`/`/end` body). This is on par with ExUnit's `test/1`.
+  * Add support for stepped ranges in `StreamData.integer/1`.
+  * Add support for required keys in `StreamData.optional_map/2`.
+  * Add `:utf8` option in `StreamData.string/1`.
+
 ## v0.5.0
 
   * Slightly improve the shrinking algorigthm.
