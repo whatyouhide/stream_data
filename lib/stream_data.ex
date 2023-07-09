@@ -1959,7 +1959,7 @@ defmodule StreamData do
   def string(other, _options) do
     raise ArgumentError,
           "unsupported string kind, has to be one of :ascii, " <>
-            ":alphanumeric, :printable, a range, or a list of " <>
+            ":alphanumeric, :printable, :utf8, a range, or a list of " <>
             "ranges or single codepoints, got: #{inspect(other)}"
   end
 
