@@ -1840,7 +1840,7 @@ defmodule StreamData do
   ]
 
   @doc """
-  Generates an integer corresponding to a valid UTF8 codepoint of the given kind.
+  Generates an integer corresponding to a valid UTF-8 codepoint of the given kind.
 
   `kind` can be:
 
