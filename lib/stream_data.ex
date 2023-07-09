@@ -1818,6 +1818,10 @@ defmodule StreamData do
   end
 
   @ascii_chars ?\s..?~
+
+  # "UTF-8 prohibits encoding character numbers between U+D800 and U+DFFF"
+  @utf8_chars [0..0xD7FF, 0xE000..0x10FFFF]
+
   @alphanumeric_chars [?a..?z, ?A..?Z, ?0..?9]
   @printable_chars [
     ?\n,
@@ -1850,6 +1854,9 @@ defmodule StreamData do
     * `:printable` - printable strings (`String.printable?/1` returns `true`)
       are generated. Such strings shrink towards lower codepoints.
 
+    * `:utf8` - valid strings (`String.valid?/1` returns `true`)
+      are generated. Such strings shrink towards lower codepoints.
+
     * a range - strings with characters from the range are generated. Such
       strings shrink towards characters that appear earlier in the range.
 
@@ -1874,7 +1881,14 @@ defmodule StreamData do
   Shrinks towards smaller strings and as described in the description of the
   possible values of `kind_or_codepoints` above.
   """
-  @spec string(:ascii | :alphanumeric | :printable | Range.t() | [Range.t() | pos_integer()]) ::
+  @spec string(
+          :ascii
+          | :alphanumeric
+          | :printable
+          | :utf8
+          | Range.t()
+          | [Range.t() | pos_integer()]
+        ) ::
           t(String.t())
   def string(kind_or_codepoints, options \\ [])
 
@@ -1888,6 +1902,10 @@ defmodule StreamData do
 
   def string(:printable, options) do
     string(@printable_chars, options)
+  end
+
+  def string(:utf8, options) do
+    string(@utf8_chars, options)
   end
 
   def string(%Range{} = codepoints_range, options) do

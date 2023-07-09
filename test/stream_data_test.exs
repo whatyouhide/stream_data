@@ -648,6 +648,12 @@ defmodule StreamDataTest do
       end
     end
 
+    property "with :utf8" do
+      check all string <- string(:utf8) do
+        assert String.valid?(string)
+      end
+    end
+
     property "with a fixed length" do
       check all string <- string(:alphanumeric, length: 3) do
         assert String.length(string) == 3
