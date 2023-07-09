@@ -609,6 +609,32 @@ defmodule StreamDataTest do
     end
   end
 
+  describe "codepoint/1" do
+    property "with :ascii" do
+      check all codepoint <- codepoint(:ascii) do
+        assert codepoint in ?\s..?~
+      end
+    end
+
+    property "with :alphanumeric" do
+      check all codepoint <- codepoint(:alphanumeric) do
+        assert <<codepoint::utf8>> =~ ~r/^[a-zA-Z0-9]$/
+      end
+    end
+
+    property "with :printable" do
+      check all codepoint <- codepoint(:printable) do
+        assert String.printable?(<<codepoint::utf8>>)
+      end
+    end
+
+    property "with :utf8" do
+      check all codepoint <- codepoint(:utf8) do
+        assert String.valid?(<<codepoint::utf8>>)
+      end
+    end
+  end
+
   describe "string/1" do
     property "with a list of ranges and codepoints" do
       check all string <- string([?a..?z, ?A..?K, ?_]) do

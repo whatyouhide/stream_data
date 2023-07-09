@@ -1840,6 +1840,54 @@ defmodule StreamData do
   ]
 
   @doc """
+  Generates an integer corresponding to a valid UTF8 codepoint of the given kind.
+
+  `kind` can be:
+
+    * `:ascii` - only ASCII characters are generated. Shrinks towards lower codepoints.
+
+    * `:alphanumeric` - only alphanumeric characters (`?a..?z`, `?A..?Z`, `?0..?9`)
+    are generated. Shrinks towards `?a` following the order shown previously.
+
+    * `:printable` - only printable codepoints
+    (`String.printable?(<<codepoint::utf8>>)` returns `true`)
+      are generated. Shrinks towards lower codepoints.
+
+    * `:utf8` - all valid codepoints (`<<codepoint::utf8>>)` does not raise)
+      are generated. Shrinks towards lower codepoints.
+
+  Defaults to `:utf8`.
+
+  ## Examples
+
+      Enum.take(StreamData.codepoint(), 3)
+      #=> [889941, 349615, 1060099]
+
+      Enum.take(StreamData.codepoint(:ascii), 3)
+      #=> ~c"Kk:"
+
+  """
+  @spec codepoint(:ascii | :alphanumeric | :printable | :utf8) :: t(char())
+  def codepoint(kind \\ :utf8)
+
+  def codepoint(:ascii), do: integer(@ascii_chars)
+  def codepoint(:alphanumeric), do: codepoint_with_frequency(@alphanumeric_chars)
+  def codepoint(:printable), do: codepoint_with_frequency(@printable_chars)
+  def codepoint(:utf8), do: codepoint_with_frequency(@utf8_chars)
+
+  defp codepoint_with_frequency(chars_or_ranges) do
+    chars_or_ranges
+    |> Enum.map(fn
+      %Range{} = range ->
+        {Enum.count(range), integer(range)}
+
+      codepoint when is_integer(codepoint) ->
+        {1, constant(codepoint)}
+    end)
+    |> frequency()
+  end
+
+  @doc """
   Generates a string of the given kind or from the given characters.
 
   `kind_or_codepoints` can be:
@@ -1892,20 +1940,10 @@ defmodule StreamData do
           t(String.t())
   def string(kind_or_codepoints, options \\ [])
 
-  def string(:ascii, options) do
-    string(@ascii_chars, options)
-  end
-
-  def string(:alphanumeric, options) do
-    string(@alphanumeric_chars, options)
-  end
-
-  def string(:printable, options) do
-    string(@printable_chars, options)
-  end
-
-  def string(:utf8, options) do
-    string(@utf8_chars, options)
+  def string(atom, options) when atom in [:ascii, :alphanumeric, :printable, :utf8] do
+    atom
+    |> codepoint()
+    |> string_from_codepoint_data(options)
   end
 
   def string(%Range{} = codepoints_range, options) do
@@ -1913,16 +1951,9 @@ defmodule StreamData do
   end
 
   def string(codepoints, options) when is_list(codepoints) and is_list(options) do
-    codepoints_with_frequency =
-      Enum.map(codepoints, fn
-        %Range{} = range ->
-          {Enum.count(range), integer(range)}
-
-        codepoint when is_integer(codepoint) ->
-          {1, constant(codepoint)}
-      end)
-
-    string_from_codepoint_data(frequency(codepoints_with_frequency), options)
+    codepoints
+    |> codepoint_with_frequency()
+    |> string_from_codepoint_data(options)
   end
 
   def string(other, _options) do
@@ -2070,11 +2101,9 @@ defmodule StreamData do
   """
   @spec chardata() :: t(IO.chardata())
   def chardata() do
-    codepoint = @utf8_chars |> Enum.map(&{Enum.count(&1), integer(&1)}) |> frequency()
-
     frequency([
       {3, string(:utf8)},
-      {2, iolist_or_chardata_tree(codepoint, string(:utf8))}
+      {2, iolist_or_chardata_tree(codepoint(:utf8), string(:utf8))}
     ])
   end
 
