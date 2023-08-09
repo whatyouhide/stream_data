@@ -54,10 +54,10 @@ defmodule StreamData.Mixfile do
 
   defp deps() do
     [
+      # Dev/test dependencies.
+      {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.29", only: :dev},
-      {:excoveralls, "~> 0.16.0", only: :test},
-      {:ssl_verify_fun, "~> 1.1", only: :test, manager: :rebar3, override: true},
-      {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false}
+      {:excoveralls, "~> 0.17.0", only: :test}
     ]
   end
 end
