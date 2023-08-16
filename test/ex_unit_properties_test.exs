@@ -16,7 +16,7 @@ defmodule ExUnitPropertiesTest do
 
       # Let's make sure that the minimum size is high enough that our filtered element
       # is not common at all.
-      data = scale(data, &max(&1, 20))
+      data = scale(data, &max(&1, 70))
 
       check all {string, list} <- data do
         assert is_binary(string)
