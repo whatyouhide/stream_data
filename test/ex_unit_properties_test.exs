@@ -7,7 +7,7 @@ defmodule ExUnitPropertiesTest do
       filtered_value = 34
 
       data =
-        gen all [_ | _] = list <- list_of(integer()),
+        gen all [_ | _] = list <- list_of(integer(), min_length: 5),
                 elem <- member_of(list),
                 elem != filtered_value,
                 elem_not_filtered = elem do
