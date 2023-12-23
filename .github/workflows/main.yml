@@ -14,8 +14,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - otp: "26.0.2"
-            elixir: "1.15.1"
+          - otp: "26.2"
+            elixir: "1.16"
             os: ubuntu-22.04
             lint: true
             coverage: true
