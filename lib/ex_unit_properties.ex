@@ -220,7 +220,8 @@ defmodule ExUnitProperties do
     contents = Macro.escape(contents, unquote: true)
 
     quote bind_quoted: [context: context, contents: contents, message: message] do
-      name = ExUnit.Case.register_test(__ENV__, :property, message, [:property])
+      %{module: mod, file: file, line: line} = __ENV__
+      name = ExUnit.Case.register_test(mod, file, line, :property, message, [:property])
       def unquote(name)(unquote(context)), do: unquote(contents)
     end
   end
