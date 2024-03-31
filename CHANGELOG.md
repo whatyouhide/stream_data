@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.0
+
+No changes. This is just the 1.0 release. Happy fuzzying!
+
 ## v0.6.0
 
 ### Bug Fixes
