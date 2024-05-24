@@ -963,7 +963,7 @@ defmodule StreamData do
         {:ok, length} when is_integer(length) and length >= 0 ->
           {length, length}
 
-        {:ok, min..max} when min >= 0 and max >= 0 ->
+        {:ok, min..max//_} when min >= 0 and max >= 0 ->
           order(min, max)
 
         {:ok, other} ->
