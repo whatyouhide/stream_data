@@ -1,14 +1,14 @@
 defmodule StreamData.Mixfile do
   use Mix.Project
 
-  @version "1.0.0"
+  @version "1.1.0"
   @repo_url "https://github.com/whatyouhide/stream_data"
 
   def project() do
     [
       app: :stream_data,
       version: @version,
-      elixir: "~> 1.11",
+      elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
 

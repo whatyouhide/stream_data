@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.0
+
+  * Drop support for Elixir 1.11 and lower, require Elixir 1.12+ now.
+
 ## v1.0.0
 
 No changes. This is just the 1.0 release. Happy fuzzying!
