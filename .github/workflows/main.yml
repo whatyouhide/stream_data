@@ -21,7 +21,7 @@ jobs:
             coverage: true
 
           - otp: "23.3"
-            elixir: "1.11.4"
+            elixir: "1.12"
             os: ubuntu-20.04
 
     env:
