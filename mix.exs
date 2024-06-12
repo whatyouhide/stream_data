@@ -1,7 +1,7 @@
 defmodule StreamData.Mixfile do
   use Mix.Project
 
-  @version "1.1.0"
+  @version "1.1.1"
   @repo_url "https://github.com/whatyouhide/stream_data"
 
   def project() do

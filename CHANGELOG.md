@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.1
+
+  * Add warnings-free support for Elixir 1.17.
+
 ## v1.1.0
 
   * Drop support for Elixir 1.11 and lower, require Elixir 1.12+ now.
