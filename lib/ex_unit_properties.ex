@@ -170,8 +170,10 @@ defmodule ExUnitProperties do
   defmacro property(message) do
     ExUnit.plural_rule("property", "properties")
 
+    %{module: mod, file: file, line: line} = __CALLER__
+
     quote bind_quoted: binding() do
-      name = ExUnit.Case.register_test(__ENV__, :property, message, [:not_implemented])
+      name = ExUnit.Case.register_test(mod, file, line, :property, message, [:not_implemented])
       def unquote(name)(_), do: flunk("Not implemented")
     end
   end
