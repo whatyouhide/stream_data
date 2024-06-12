@@ -58,7 +58,7 @@ defmodule StreamDataTest do
     data = map(integer(1..5), &(-&1))
 
     check all int <- data do
-      assert int in -1..-5
+      assert int in -1..-5//-1
     end
   end
 
@@ -97,7 +97,7 @@ defmodule StreamDataTest do
     data = bind(integer(1..5), &constant(-&1))
 
     check all int <- data do
-      assert int in -1..-5
+      assert int in -1..-5//-1
     end
   end
 
@@ -222,8 +222,8 @@ defmodule StreamDataTest do
   end
 
   property "one_of/1" do
-    check all int <- one_of([integer(1..5), integer(-1..-5)]) do
-      assert int in 1..5 or int in -1..-5
+    check all int <- one_of([integer(1..5), integer(-1..-5//-1)]) do
+      assert int in 1..5 or int in -1..-5//-1
     end
   end
 
@@ -468,9 +468,9 @@ defmodule StreamDataTest do
   end
 
   property "tuple/1" do
-    check all value <- tuple({integer(-1..-10), integer(1..10)}) do
+    check all value <- tuple({integer(-1..-10//-1), integer(1..10)}) do
       assert {int1, int2} = value
-      assert int1 in -1..-10
+      assert int1 in -1..-10//-1
       assert int2 in 1..10
     end
   end
