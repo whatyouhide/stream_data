@@ -1720,7 +1720,7 @@ defmodule StreamData do
   defp power_of_two_with_zero(abs_exp) do
     new(fn seed, _size ->
       {integer, _} = uniform_in_range(0, power_of_two(abs_exp), seed)
-      powers = Stream.map(abs_exp..0, &lazy_tree_constant(power_of_two(&1)))
+      powers = Stream.map(abs_exp..0//-1, &lazy_tree_constant(power_of_two(&1)))
       lazy_tree(integer, Enum.concat(powers, [lazy_tree_constant(0)]))
     end)
   end
