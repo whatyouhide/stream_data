@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.2
+
+  * Fix one more Elixir 1.17 warning.
+
 ## v1.1.1
 
   * Add warnings-free support for Elixir 1.17.
