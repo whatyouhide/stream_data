@@ -14,13 +14,7 @@ defmodule StreamData.EnumTest do
               ) do
           length = length(list)
 
-          # TODO: When we depend on 1.12+, rewrite as:
-          # negative_range = (range.first - length)..(range.last - length)//1
-          negative_range = %Range{
-            first: range.first - length,
-            last: range.last - length,
-            step: 1
-          }
+          negative_range = (range.first - length)..(range.last - length)//1
 
           assert Enum.slide(list, negative_range, insertion_idx) ==
                    Enum.slide(list, range, insertion_idx)
@@ -92,9 +86,7 @@ defmodule StreamData.EnumTest do
                 first <- integer(),
                 last <- integer(),
                 step <- positive_integer() do
-        # TODO: When we depend on 1.12+, rewrite as:
-        # first..last//step
-        range = %Range{first: first, last: last, step: step}
+        range = first..last//step
 
         enum_consistency_spec(count, fn enumerable ->
           Enum.slice(enumerable, range)
@@ -131,9 +123,7 @@ defmodule StreamData.EnumTest do
     end
 
     defp enum_consistency_spec(count, fun) do
-      # TODO: When we depend on 1.12+, rewrite as:
-      # 1..count//1
-      range = %Range{first: 1, last: count, step: 1}
+      range = 1..count//1
       list = Enum.to_list(range)
       stream = Stream.map(range, & &1)
 
