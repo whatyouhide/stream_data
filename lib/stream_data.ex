@@ -1625,8 +1625,8 @@ defmodule StreamData do
 
   ## Examples
 
-  Enum.take(StreamData.non_negative_integer(), 3)
-  #=> [0, 2, 0]
+      Enum.take(StreamData.non_negative_integer(), 3)
+      #=> [0, 2, 0]
 
   ## Shrinking
 
