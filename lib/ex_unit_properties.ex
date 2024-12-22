@@ -360,7 +360,7 @@ defmodule ExUnitProperties do
   defp compile_clauses([clause | rest], body, parent_line) do
     line = get_clause_line(clause, parent_line)
 
-    quote line: line do
+    quote generated: true, line: line do
       cond do
         unquote(clause) ->
           unquote(compile_clauses(rest, body, line))
