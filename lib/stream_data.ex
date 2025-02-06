@@ -693,7 +693,8 @@ defmodule StreamData do
   @spec unshrinkable(t(a)) :: t(a) when a: term()
   def unshrinkable(data) do
     new(fn seed, size ->
-      %LazyTree{call(data, seed, size) | children: []}
+      %LazyTree{} = tree = call(data, seed, size)
+      %{tree | children: []}
     end)
   end
 

@@ -764,6 +764,17 @@ defmodule StreamDataTest do
     assert check_all(list_of(boolean()), options, property) == {:ok, %{}}
   end
 
+  describe "check all" do
+    @tag :regression
+    test "doesn't emit compilation warnings (issue #207)" do
+      check all course_length <- integer(),
+                course_lock_days <- integer(),
+                course_lock_seconds = (course_length + course_lock_days) * 60 * 60 do
+        assert is_integer(course_lock_seconds)
+      end
+    end
+  end
+
   defp each_improper_list([], _head_fun, _tail_fun) do
     :ok
   end

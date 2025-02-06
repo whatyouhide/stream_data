@@ -140,7 +140,7 @@ defmodule StreamData.LazyTree do
         end
       end)
 
-    %__MODULE__{tree | children: children}
+    %{tree | children: children}
   end
 
   @doc """
