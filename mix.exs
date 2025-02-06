@@ -57,7 +57,7 @@ defmodule StreamData.Mixfile do
       # Dev/test dependencies.
       {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.29", only: :dev},
-      {:excoveralls, "~> 0.17.0", only: :test}
+      {:excoveralls, "~> 0.18.0", only: :test}
     ]
   end
 end
