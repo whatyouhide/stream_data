@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.3
+
+  * Fix compilation warnings with current Elixir version (1.18) and upcoming Elixir version.
+
 ## v1.1.2
 
   * Fix one more Elixir 1.17 warning.
