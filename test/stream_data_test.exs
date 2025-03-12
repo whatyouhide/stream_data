@@ -452,6 +452,16 @@ defmodule StreamDataTest do
     end
   end
 
+  describe "shuffle/1" do
+    property "shuffling retains same elements" do
+      input = [1, 2, 3, 4, 5]
+
+      check all list <- shuffle(input) do
+        assert Enum.sort(list) == input
+      end
+    end
+  end
+
   property "nonempty_improper_list_of/2" do
     check all list <- nonempty_improper_list_of(integer(), constant("")) do
       assert list != []

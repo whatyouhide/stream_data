@@ -1142,6 +1142,29 @@ defmodule StreamData do
     end
   end
 
+  @doc """
+  Generates lists with the same elements as the provided `list` but in a random order.
+
+  ## Examples
+
+      StreamData.shuffle([1, 2, 3, 4, 5])
+      |> Enum.take(3)
+      #=> [[4, 2, 5, 3, 1], [1, 3, 4, 5, 2], [3, 2, 5, 4, 1]]
+
+  ## Shrinking
+
+  Shrinks towards not changed lists.
+  """
+  def shuffle(list) do
+    list_of(float(), length: length(list))
+    |> map(fn sort ->
+      Enum.zip(list, sort)
+      |> Enum.sort_by(&elem(&1, 1))
+      |> Enum.unzip()
+      |> elem(0)
+    end)
+  end
+
   @doc ~S"""
   Generates non-empty improper lists where elements of the list are generated
   out of `first` and the improper ending out of `improper`.
