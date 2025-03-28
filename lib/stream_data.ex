@@ -1143,7 +1143,7 @@ defmodule StreamData do
   end
 
   @doc """
-  Generates lists with the same elements as the provided `list` but in a random order.
+  Generates *lists* with the same elements as the provided `enum` but in a random order.
 
   ## Examples
 
@@ -1153,24 +1153,38 @@ defmodule StreamData do
 
   ## Shrinking
 
-  Shrinks towards not changed lists.
+  Shrinks towards a list with elements in the same order as the original `enum`.
   """
-  def shuffle([]), do: constant([])
+  @doc since: "1.2.0"
+  @spec shuffle(Enumerable.t()) :: t(Enumerable.t())
+  def shuffle(enum)
 
-  def shuffle(list) do
-    # convert to array for faster swapping
+  # We need this clause because the logic in the non-empty-list clause
+  # reliase on the list having one or more elements.
+  def shuffle([]) do
+    constant([])
+  end
+
+  def shuffle(list) when is_list(list) do
+    # Convert to array for faster swapping
     array = :array.from_list(list)
-    l = :array.size(array)
+    len = :array.size(array)
+
+    index_generator = integer(0..(len - 1))
 
     # Inspired by this clojure implementation:
     # https://github.com/clojure/test.check/blob/0ee576eb73d4864c199305c4a0c1e8101d8d1b39/src/main/clojure/clojure/test/check/generators.cljc#L636
-    list_of({integer(0..(l - 1)), integer(0..(l - 1))}, length: 0..(2 * l))
+    {index_generator, index_generator}
+    |> list_of(length: 0..(len * 2))
     |> map(fn swap_instructions ->
-      Enum.reduce(swap_instructions, array, fn {i, j}, array ->
-        array_swap(array, i, j)
-      end)
+      swap_instructions
+      |> Enum.reduce(array, fn {i, j}, array -> array_swap(array, i, j) end)
       |> :array.to_list()
     end)
+  end
+
+  def shuffle(enum) do
+    enum |> Enum.to_list() |> shuffle()
   end
 
   defp array_swap(array, i, j) do
