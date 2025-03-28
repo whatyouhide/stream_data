@@ -1142,6 +1142,44 @@ defmodule StreamData do
     end
   end
 
+  @doc """
+  Generates lists with the same elements as the provided `list` but in a random order.
+
+  ## Examples
+
+      StreamData.shuffle([1, 2, 3, 4, 5])
+      |> Enum.take(3)
+      #=> [[4, 2, 5, 3, 1], [1, 3, 4, 5, 2], [3, 2, 5, 4, 1]]
+
+  ## Shrinking
+
+  Shrinks towards not changed lists.
+  """
+  def shuffle([]), do: constant([])
+
+  def shuffle(list) do
+    # convert to array for faster swapping
+    array = :array.from_list(list)
+    l = :array.size(array)
+
+    # Inspired by this clojure implementation:
+    # https://github.com/clojure/test.check/blob/0ee576eb73d4864c199305c4a0c1e8101d8d1b39/src/main/clojure/clojure/test/check/generators.cljc#L636
+    list_of({integer(0..(l - 1)), integer(0..(l - 1))}, length: 0..(2 * l))
+    |> map(fn swap_instructions ->
+      Enum.reduce(swap_instructions, array, fn {i, j}, array ->
+        array_swap(array, i, j)
+      end)
+      |> :array.to_list()
+    end)
+  end
+
+  defp array_swap(array, i, j) do
+    v_i = :array.get(i, array)
+    v_j = :array.get(j, array)
+    array = :array.set(i, v_j, array)
+    :array.set(j, v_i, array)
+  end
+
   @doc ~S"""
   Generates non-empty improper lists where elements of the list are generated
   out of `first` and the improper ending out of `improper`.

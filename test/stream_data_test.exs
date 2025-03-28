@@ -452,6 +452,22 @@ defmodule StreamDataTest do
     end
   end
 
+  describe "shuffle/1" do
+    property "shuffling retains same elements" do
+      input = [1, 2, 3, 4, 5]
+
+      check all list <- shuffle(input) do
+        assert Enum.sort(list) == input
+      end
+    end
+
+    property "shrinks towards not shuffled" do
+      check all input <- list_of(integer()) do
+        assert shrink(shuffle(input)) == input
+      end
+    end
+  end
+
   property "nonempty_improper_list_of/2" do
     check all list <- nonempty_improper_list_of(integer(), constant("")) do
       assert list != []
@@ -762,6 +778,14 @@ defmodule StreamDataTest do
     end
 
     assert check_all(list_of(boolean()), options, property) == {:ok, %{}}
+  end
+
+  # Taken from: https://github.com/whatyouhide/stream_data/issues/160
+  defp shrink(generator) do
+    {:error, %{shrunk_failure: value}} =
+      check_all(generator, [initial_seed: :os.timestamp()], &{:error, &1})
+
+    value
   end
 
   defp each_improper_list([], _head_fun, _tail_fun) do
