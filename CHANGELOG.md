@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.2.0
+
+  * Add `StreamData.shuffle/1`.
+
 ## v1.1.3
 
   * Fix compilation warnings with current Elixir version (1.18) and upcoming Elixir version.
