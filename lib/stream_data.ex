@@ -2095,6 +2095,123 @@ defmodule StreamData do
   end
 
   @doc """
+  Generates arbitrary (past and future) dates.
+
+  Generated values shrink towards `Date.utc_today/0`.
+  """
+  @spec date() :: t(Date.t())
+  def date do
+    date([])
+  end
+
+  @doc """
+  Generates dates according to the given `options` or `date_range`.
+
+  ## Options
+
+  * `:origin` - (`Date`) if present, generated values will shrink towards this date. Cannot be combined with `:min` or `:max`.
+
+  * `:min` - (`Date`) if present, only dates _after_ this date will be generated. Values will shrink towards this date.
+
+  * `:max` - (`Date`) if present, only dates _before_ this date will be generated. Values will shrink towards this date.
+
+  If both `:min` and `:max` are provided, dates between the two mentioned dates will be generated.
+  Values will shrink towards `:min`.
+
+  If no options are provided, will work just like `date/0`.
+
+  ## `Date.Range`
+
+  Alternatively a `Date.Range` can be given. This will generate dates in the given range,
+  and with the supplied `date_range.step`.
+
+  Values will shrink towards `date_range.first`.
+
+  ## Calendar support
+
+  This generator works with `Calendar.ISO` and any other calendar
+  which implements the callbacks
+  `c:Calendar.naive_datetime_to_iso_days/7` and `c:Calendar.naive_datetime_from_iso_days/2`.
+  """
+  @spec date(Date.Range.t() | keyword()) :: t(Date.t())
+  def date(options_or_date_range)
+
+  def date(date_range = %Date.Range{}) do
+    member_of(date_range)
+  end
+
+  def date(options) when is_list(options) do
+    min = Keyword.get(options, :min, nil)
+    max = Keyword.get(options, :max, nil)
+    origin = Keyword.get(options, :origin, Date.utc_today())
+
+    case {min, max} do
+      {nil, nil} ->
+        any_date(origin, origin.calendar)
+
+      {nil, max = %Date{}} ->
+        past_date(max, max.calendar)
+
+      {min = %Date{}, nil} ->
+        future_date(min, min.calendar)
+
+      {min = %Date{}, max = %Date{}} ->
+        if min.calendar != max.calendar do
+          raise ArgumentError,
+                "dates with different calendars were passed to StreamData.date/1"
+        end
+
+        date_between_bounds(min, max, min.calendar)
+    end
+  end
+
+  defp any_date(origin, calendar) do
+    {iso_days, day_fraction} = extract_date(origin, calendar)
+
+    map(integer(), fn offset ->
+      construct_date!(iso_days + offset, day_fraction, calendar)
+    end)
+  end
+
+  defp past_date(origin, calendar) do
+    {iso_days, day_fraction} = extract_date(origin, calendar)
+
+    map(positive_integer(), fn offset ->
+      construct_date!(iso_days - offset, day_fraction, calendar)
+    end)
+  end
+
+  defp future_date(origin, calendar) do
+    {iso_days, day_fraction} = extract_date(origin, calendar)
+
+    map(positive_integer(), fn offset ->
+      construct_date!(iso_days + offset, day_fraction, calendar)
+    end)
+  end
+
+  defp date_between_bounds(min, max, calendar) do
+    {min_iso_days, min_day_fraction} = extract_date(min, calendar)
+    {max_iso_days, _max_day_fraction} = extract_date(max, calendar)
+
+    map(integer(min_iso_days..max_iso_days), fn iso_days ->
+      construct_date!(iso_days, min_day_fraction, calendar)
+    end)
+  end
+
+  @compile {:inline, extract_date: 2}
+  defp extract_date(date, calendar) do
+    calendar.naive_datetime_to_iso_days(date.year, date.month, date.day, 0, 0, 0, {0, 0})
+  end
+
+  @compile {:inline, construct_date!: 3}
+  defp construct_date!(iso_days, day_fraction, calendar) do
+    {year, month, day, _hour, _minute, _second, _second_fraction} =
+      calendar.naive_datetime_from_iso_days({iso_days, day_fraction})
+
+    Date.new!(year, month, day, calendar)
+  end
+
+  @doc """
   Generates iolists.
 
   Iolists are values of the `t:iolist/0` type.
