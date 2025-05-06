@@ -47,7 +47,8 @@ defmodule StreamData.Mixfile do
         initial_size: 1,
         max_runs: 100,
         max_run_time: :infinity,
-        max_shrinking_steps: 100
+        max_shrinking_steps: 100,
+        inspect_opts: []
       ]
     ]
   end
