@@ -133,6 +133,20 @@ defmodule ExUnitProperties do
   examples. Fred's website uses an Erlang property-based testing tool called
   [PropEr](https://github.com/manopapad/proper) but many of the things he talks
   about apply to `ExUnitProperties` as well.
+
+  ## Options
+
+  When an error occurs, StreamData will shrink the generated values to find the smallest set of values that still reproduces the error.
+  It will then print out the generated values using `inspect/2`.
+
+  You can customize the `inspect/2` options used by setting the `:inspect_opts` option in your test config.
+
+      # config/test.exs
+      import Config
+
+      config :stream_data,
+        inspect_opts: [limit: :infinity]
+
   """
 
   alias ExUnit.AssertionError
@@ -637,7 +651,7 @@ defmodule ExUnitProperties do
     Enum.map_join(values, "\n\n", fn {gen_string, value} ->
       String.trim_trailing("""
       * Clause:    #{gen_string}
-        Generated: #{inspect(value)}
+        Generated: #{inspect(value, Application.fetch_env!(:stream_data, :inspect_opts))}
       """)
     end)
   end
