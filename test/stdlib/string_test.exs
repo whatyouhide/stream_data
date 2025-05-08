@@ -25,4 +25,15 @@ defmodule StreamData.StringTest do
       end
     end
   end
+
+  if Version.match?(System.version(), "~> 1.19.0-dev") do
+    # From https://github.com/elixir-lang/elixir/pull/14448.
+    property "String.count_matches/2 is equivalent to String.split/1 + Kernel.length/1 - 1" do
+      check all string <- string(:printable),
+                pattern <- string(:printable) do
+        assert String.count_matches(string, pattern) ==
+                 string |> String.split(pattern) |> Kernel.length() |> Kernel.-(1)
+      end
+    end
+  end
 end
