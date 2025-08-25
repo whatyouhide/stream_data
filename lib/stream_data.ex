@@ -1756,6 +1756,9 @@ defmodule StreamData do
       bind(exponent_data, fn exponent ->
         map(float_in_0_to_1(exponent), fn float -> float * (max - min) + min end)
       end)
+      |> filter(fn float ->
+        min <= float and float <= max
+      end)
     end)
   end
 
