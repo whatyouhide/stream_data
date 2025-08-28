@@ -745,6 +745,49 @@ defmodule StreamDataTest do
     end
   end
 
+  describe "nullable/2" do
+    test "with invalid options" do
+      data = constant(:term)
+
+      message =
+        "expected :ratio to be greater than 0.0 and less than 1.0, got:\n\n* ratio: 1.0\n"
+
+      assert_raise ArgumentError, message, fn -> nullable(data, ratio: 1.0) end
+
+      message =
+        "expected :ratio to be greater than 0.0 and less than 1.0, got:\n\n* ratio: 0.0\n"
+
+      assert_raise ArgumentError, message, fn -> nullable(data, ratio: 0.0) end
+
+      message =
+        "expected :ratio to be greater than 0.0 and less than 1.0, got:\n\n* ratio: -0.0\n"
+
+      assert_raise ArgumentError, message, fn -> nullable(data, ratio: -0.0) end
+    end
+
+    property "returns nil or the value returned by data" do
+      check all maybe_nil <- nullable(constant(:term)) do
+        assert is_nil(maybe_nil) or maybe_nil == :term
+      end
+    end
+
+    test "with very large chance of nils" do
+      values = Enum.take(nullable(:small_chance, ratio: 0.99), 1000)
+
+      assert :small_chance in values
+      assert nil in values
+      assert Enum.count(values, &(&1 == :small_chance)) < Enum.count(values, &is_nil(&1))
+    end
+
+    test "with very small chance of nils" do
+      values = Enum.take(nullable(:big_chance, ratio: 0.01), 1000)
+
+      assert :big_chance in values
+      assert nil in values
+      assert Enum.count(values, &is_nil(&1)) < Enum.count(values, &(&1 == :big_chance))
+    end
+  end
+
   test "check_all/3 with :os.timestamp" do
     options = [initial_seed: :os.timestamp()]
 
