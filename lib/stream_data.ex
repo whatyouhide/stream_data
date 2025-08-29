@@ -2230,9 +2230,9 @@ defmodule StreamData do
 
   ## Options
 
-    * `:ratio` - (float in between 0.0 and 1.0, not included) specifies the
+    * `:ratio` - (float in between `0.0` and `1.0`, not included) specifies the
       frequency with which `nil` should be selected. Higher means that `nil` is
-      more likely to be selected. Defaults to 0.5.
+      more likely to be selected. Defaults to `0.5`.
 
   ## Examples
 
