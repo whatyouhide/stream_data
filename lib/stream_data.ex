@@ -2250,8 +2250,8 @@ defmodule StreamData do
 
   """
   @spec nullable(t(a), keyword()) :: t(nil | a) when a: term()
-  def nullable(generator, opts \\ [ratio: 0.5]) do
-    ratio = Keyword.get(opts, :ratio)
+  def nullable(generator, options \\ []) when is_list(options) do
+    ratio = Keyword.get(options, :ratio, 0.5)
 
     {numerator, denominator} =
       if 0 < ratio and ratio < 1.0 do
