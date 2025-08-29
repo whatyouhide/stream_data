@@ -2247,6 +2247,7 @@ defmodule StreamData do
 
       Enum.take(StreamData.nullable(StreamData.boolean(), ratio: 0.25), 10)
       #=> [false, false, false, nil, true, true, true, false, false, true]
+
   """
   @spec nullable(t(a), keyword()) :: t(nil | a) when a: term()
   def nullable(generator, opts \\ [ratio: 0.5]) do
