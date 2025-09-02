@@ -19,9 +19,12 @@ jobs:
             os: ubuntu-latest
             lint: true
             coverage: true
+            dialyzer: true
 
-          - otp: "23.3"
-            elixir: "1.12"
+          # Technically supports down to OTP 23 (as that's what Elixir 1.14 supports),
+          # but on CI it's easier to use OTP 24.
+          - otp: "24.3"
+            elixir: "1.14"
             os: ubuntu-20.04
 
     env:
@@ -30,7 +33,7 @@ jobs:
 
     steps:
       - name: Clone repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install OTP and Elixir
         uses: erlef/setup-beam@v1
@@ -40,35 +43,36 @@ jobs:
           version-type: strict
 
       - name: Install dependencies
-        run: mix do deps.get --only test, deps.compile
+        run: mix deps.get --only test
 
       - name: Check for formatted code
         if: ${{ matrix.lint }}
         run: mix format --check-formatted
 
       - name: Cache/uncache PLTs
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             priv/plts
           key: "${{ runner.os }}-\
-                erlang-${{ matrix.otp }}-\
-                elixir-${{ matrix.elixir }}-\
-                ${{ hashFiles('mix.lock') }}"
+            erlang-${{ matrix.otp }}-\
+            elixir-${{ matrix.elixir }}-\
+            ${{ hashFiles('mix.lock') }}"
 
       - name: Run Dialyzer
+        if: ${{ matrix.dialyzer }}
         run: mix dialyzer
 
-      - name: Check for unused dependencies
+      - name: Check for unused/unlocked dependencies
         if: ${{ matrix.lint }}
-        run: mix do deps.get, deps.unlock --check-unused
+        run: mix do deps.get + deps.unlock --check-unused + deps.get --check-locked
 
       - name: Check for compilation warnings
         if: ${{ matrix.lint }}
         run: mix compile --warnings-as-errors
 
       - name: Run tests
-        run: mix test --trace
+        run: mix test
         if: ${{ !matrix.coverage }}
 
       - name: Run tests with coverage
