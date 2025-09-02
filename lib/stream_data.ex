@@ -2095,6 +2095,90 @@ defmodule StreamData do
   end
 
   @doc """
+  Generates dates according to the given `options` or `date_range`.
+
+  ## Options
+
+    * `:origin` - (`t:Date.t/0`) if present, generated values will shrink towards this date.
+      Cannot be combined with `:min` or `:max`.
+
+    * `:min` - (`t:Date.t/0`) if present, only dates *after* this date will be
+      generated. Values will shrink towards this date.
+
+    * `:max` - (`t:Date.t/0`) if present, only dates *before* this date will be
+      generated. Values will shrink towards this date.
+
+  If both `:min` and `:max` are provided, dates between the two mentioned dates will be generated.
+  Values will shrink towards `:min`.
+
+  If no options are provided, `:origin` will default to the current date (that is,
+  `Date.utc_today/0`).
+
+  ## `t:Date.Range.t/0`
+
+  Alternatively a `t:Date.Range.t/0` can be given. This will generate dates in the given range,
+  and with the supplied `date_range.step`.
+
+  Values will shrink towards `date_range.first`.
+
+  ## Calendar Support
+
+  This generator works with `m:Calendar.ISO` and any other calendar
+  which implements the callbacks
+  `c:Calendar.naive_datetime_to_iso_days/7` and `c:Calendar.naive_datetime_from_iso_days/2`.
+  """
+  @spec date(Date.Range.t() | keyword()) :: t(Date.t())
+  def date(options_or_date_range \\ [origin: Date.utc_today()])
+
+  def date(date_range = %Date.Range{}) do
+    Date.to_gregorian_days(date_range.first)..Date.to_gregorian_days(date_range.last)//date_range.step
+    |> StreamData.integer()
+    |> StreamData.map(&Date.from_gregorian_days(&1))
+  end
+
+  def date(options) when is_list(options) do
+    min = Keyword.get(options, :min, nil)
+    max = Keyword.get(options, :max, nil)
+    origin = Keyword.get(options, :origin)
+
+    case {min, max, origin} do
+      {nil, nil, nil} ->
+        StreamData.integer() |> StreamData.map(&Date.add(Date.utc_today(), &1))
+
+      {nil, nil, origin = %Date{}} ->
+        StreamData.integer() |> StreamData.map(&Date.add(origin, &1))
+
+      {nil, max = %Date{}, nil} ->
+        StreamData.positive_integer() |> StreamData.map(&Date.add(max, -&1))
+
+      {min = %Date{}, nil, nil} ->
+        StreamData.positive_integer() |> StreamData.map(&Date.add(min, &1))
+
+      {min = %Date{}, max = %Date{}, nil} ->
+        if Date.before?(max, min) do
+          raise ArgumentError, """
+          expected :max to be after or equal to :min, got:
+
+            * min: #{inspect(min)}
+            * max: #{inspect(max)}
+          """
+        end
+
+        diff = Date.diff(max, min)
+        StreamData.integer(0..diff) |> StreamData.map(&Date.add(min, &1))
+
+      _ ->
+        raise ArgumentError, """
+        :origin cannot be specified together with either :min or :max, got:
+
+          * origin: #{inspect(origin)}
+          * min: #{inspect(min)}
+          * max: #{inspect(max)}
+        """
+    end
+  end
+
+  @doc """
   Generates iolists.
 
   Iolists are values of the `t:iolist/0` type.
