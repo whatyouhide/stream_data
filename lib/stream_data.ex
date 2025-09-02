@@ -2126,33 +2126,50 @@ defmodule StreamData do
   This generator works with `m:Calendar.ISO` and any other calendar
   which implements the callbacks
   `c:Calendar.naive_datetime_to_iso_days/7` and `c:Calendar.naive_datetime_from_iso_days/2`.
+
+  ## Examples
+
+      Enum.take(StreamData.date(), 3)
+      #=> [~D[2023-11-24], ~D[2023-11-25], ~D[2023-11-23]]
+
+      Enum.take(StreamData.date(origin: ~D[2025-09-01]), 3)
+      #=> [~D[2025-08-31], ~D[2025-08-31], ~D[2025-09-04]]
+
+      Enum.take(StreamData.date(min: ~D[2025-01-01], max: ~D[2025-01-31]), 3)
+      #=> [~D[2025-01-27], ~D[2025-01-21], ~D[2025-01-16]]
+
+      Enum.take(StreamData.date(Date.range(~D[2025-01-01], ~D[2025-01-31])), 3)
+      #=> [~D[2025-01-29], ~D[2025-01-03], ~D[2025-01-15]]
+
   """
-  @spec date(Date.Range.t() | keyword()) :: t(Date.t())
-  def date(options_or_date_range \\ [origin: Date.utc_today()])
+  @doc since: "1.3.0"
+  @spec date(Date.Range.t() | [option]) :: t(Date.t())
+        when option: {:origin, Date.t()} | {:min, Date.t()} | {:max, Date.t()}
+  def date(options_or_date_range \\ [])
 
   def date(date_range = %Date.Range{}) do
     Date.to_gregorian_days(date_range.first)..Date.to_gregorian_days(date_range.last)//date_range.step
-    |> StreamData.integer()
-    |> StreamData.map(&Date.from_gregorian_days(&1))
+    |> integer()
+    |> map(&Date.from_gregorian_days/1)
   end
 
   def date(options) when is_list(options) do
-    min = Keyword.get(options, :min, nil)
-    max = Keyword.get(options, :max, nil)
+    min = Keyword.get(options, :min)
+    max = Keyword.get(options, :max)
     origin = Keyword.get(options, :origin)
 
     case {min, max, origin} do
       {nil, nil, nil} ->
-        StreamData.integer() |> StreamData.map(&Date.add(Date.utc_today(), &1))
+        map(integer(), &Date.add(Date.utc_today(), &1))
 
       {nil, nil, origin = %Date{}} ->
-        StreamData.integer() |> StreamData.map(&Date.add(origin, &1))
+        map(integer(), &Date.add(origin, &1))
 
       {nil, max = %Date{}, nil} ->
-        StreamData.positive_integer() |> StreamData.map(&Date.add(max, -&1))
+        map(positive_integer(), &Date.add(max, -&1))
 
       {min = %Date{}, nil, nil} ->
-        StreamData.positive_integer() |> StreamData.map(&Date.add(min, &1))
+        map(positive_integer(), &Date.add(min, &1))
 
       {min = %Date{}, max = %Date{}, nil} ->
         if Date.before?(max, min) do
@@ -2164,8 +2181,9 @@ defmodule StreamData do
           """
         end
 
-        diff = Date.diff(max, min)
-        StreamData.integer(0..diff) |> StreamData.map(&Date.add(min, &1))
+        0..Date.diff(max, min)
+        |> integer()
+        |> map(&Date.add(min, &1))
 
       _ ->
         raise ArgumentError, """
