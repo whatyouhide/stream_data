@@ -2254,11 +2254,11 @@ defmodule StreamData do
     ratio = Keyword.get(options, :ratio, 0.5)
 
     {numerator, denominator} =
-      if 0 < ratio and ratio < 1.0 do
+      if 0 <= ratio and ratio <= 1.0 do
         Float.ratio(ratio)
       else
         raise ArgumentError,
-          "expected :ratio to be greater than 0.0 and less than 1.0, got: #{inspect(ratio)}"
+              "expected :ratio to be greater than or equal to 0.0 and less than or equal to 1.0, got: #{inspect(ratio)}"
       end
 
     StreamData.frequency([{numerator, nil}, {denominator - numerator, generator}])

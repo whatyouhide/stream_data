@@ -750,19 +750,14 @@ defmodule StreamDataTest do
       data = constant(:term)
 
       message =
-        "expected :ratio to be greater than 0.0 and less than 1.0, got:\n\n* ratio: 1.0\n"
+        "expected :ratio to be greater than or equal to 0.0 and less than or equal to 1.0, got: 1.1"
 
-      assert_raise ArgumentError, message, fn -> nullable(data, ratio: 1.0) end
-
-      message =
-        "expected :ratio to be greater than 0.0 and less than 1.0, got:\n\n* ratio: 0.0\n"
-
-      assert_raise ArgumentError, message, fn -> nullable(data, ratio: 0.0) end
+      assert_raise ArgumentError, message, fn -> nullable(data, ratio: 1.1) end
 
       message =
-        "expected :ratio to be greater than 0.0 and less than 1.0, got:\n\n* ratio: -0.0\n"
+        "expected :ratio to be greater than or equal to 0.0 and less than or equal to 1.0, got: -0.1"
 
-      assert_raise ArgumentError, message, fn -> nullable(data, ratio: -0.0) end
+      assert_raise ArgumentError, message, fn -> nullable(data, ratio: -0.1) end
     end
 
     property "returns nil or the value returned by data" do
