@@ -534,7 +534,6 @@ defmodule StreamData do
     end
 
     def integer(%Range{first: left, last: right, step: step} = _range) do
-      require Integer
       lower_stepless = Integer.floor_div(left, step)
       upper_stepless = Integer.floor_div(right, step)
 
