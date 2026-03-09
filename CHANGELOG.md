@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.3.0
+
+  * Add `StreamData.date/0` and `StreamData.date/1`.
+  * Add `StreamData.nullable/2`.
+  * Add `:inspect_opts` config for the `:stream_data` application (documented in `ExUnitProperties`).
+
 ## v1.2.0
 
   * Add `StreamData.shuffle/1`.
