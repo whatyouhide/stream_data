@@ -330,6 +330,14 @@ defmodule StreamDataTest do
         assert float >= -1.12 and float <= 4.01
       end
     end
+
+    property "with a large negative :min and :max option" do
+      # The large negative min might cause loss of significance.
+      check all float <- float(min: -9.9e25, max: -1) do
+        assert is_float(float)
+        assert float <= -1
+      end
+    end
   end
 
   describe "date/0" do
