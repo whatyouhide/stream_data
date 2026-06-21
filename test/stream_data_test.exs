@@ -294,6 +294,20 @@ defmodule StreamDataTest do
   end
 
   describe "float/1" do
+    test "generates floats close to system limit" do
+      [min, max] = [-9.0e307, 9.0e307]
+      float = float(min: min, max: max) |> Enum.at(0)
+      assert float >= min and float <= max
+    end
+
+    property "with a large negative :min and :max option" do
+      # The large negative min might cause loss of significance.
+      check all float <- float(min: -9.9e25, max: -1) do
+        assert is_float(float)
+        assert float <= -1
+      end
+    end
+
     property "without bounds" do
       check all float <- float() do
         assert is_float(float)
