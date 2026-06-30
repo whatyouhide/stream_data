@@ -1087,6 +1087,11 @@ defmodule StreamData do
     end)
   end
 
+  # Dialyzer on OTP 29+ reports false-positive opacity warnings because the
+  # `seen` MapSet accumulator is threaded through these recursive clauses. We
+  # only ever touch it through the MapSet API, so the warnings are spurious.
+  @dialyzer {:nowarn_function, uniq_list_of: 9}
+
   defp uniq_list_of(
          _data,
          _uniq_fun,
