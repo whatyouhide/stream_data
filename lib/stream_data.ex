@@ -1087,6 +1087,11 @@ defmodule StreamData do
     end)
   end
 
+  # Dialyzer on OTP 29+ reports false-positive opacity warnings because the
+  # `seen` MapSet accumulator is threaded through these recursive clauses. We
+  # only ever touch it through the MapSet API, so the warnings are spurious.
+  @dialyzer {:nowarn_function, uniq_list_of: 9}
+
   defp uniq_list_of(
          _data,
          _uniq_fun,
@@ -2171,7 +2176,7 @@ defmodule StreamData do
         map(positive_integer(), &Date.add(min, &1))
 
       {min = %Date{}, max = %Date{}, nil} ->
-        if Date.before?(max, min) do
+        if Date.compare(max, min) == :lt do
           raise ArgumentError, """
           expected :max to be after or equal to :min, got:
 
