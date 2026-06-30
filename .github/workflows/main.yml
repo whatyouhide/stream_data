@@ -14,9 +14,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - otp: "27.2"
-            elixir: "1.18"
-            os: ubuntu-latest
+          - otp: "29.0"
+            elixir: "1.20"
+            os: ubuntu-24.04
             lint: true
             coverage: true
             dialyzer: true
@@ -25,7 +25,7 @@ jobs:
           # but on CI it's easier to use OTP 24.
           - otp: "24.3"
             elixir: "1.14"
-            os: ubuntu-20.04
+            os: ubuntu-22.04
 
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -33,7 +33,7 @@ jobs:
 
     steps:
       - name: Clone repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install OTP and Elixir
         uses: erlef/setup-beam@v1
@@ -50,7 +50,7 @@ jobs:
         run: mix format --check-formatted
 
       - name: Cache/uncache PLTs
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             priv/plts

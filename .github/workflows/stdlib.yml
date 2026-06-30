@@ -16,12 +16,12 @@ on:
 jobs:
   stdlib-test:
     name: Elixir standard library tests (OTP ${{ matrix.otp }}, Elixir ${{ matrix.elixir }})
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         include:
-          - otp: "25.3"
+          - otp: "29.0"
 
     env:
       MIX_ENV: test
@@ -29,22 +29,22 @@ jobs:
 
     steps:
       - name: Clone repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
 
       - name: Install Erlang/OTP
         uses: erlef/setup-beam@v1
         with:
           otp-version: ${{ matrix.otp }}
           # TODO: remove this once we'll compile Elixir from source again.
-          elixir-version: 1.14.4-otp-25
+          elixir-version: 1.20.0-otp-29
 
       - name: Get SHA of Elixir's main branch
         id: get-elixir-sha
         run: |
-          echo ::set-output name=sha::$( curl -u "u:${{ github.token }}" https://api.github.com/repos/elixir-lang/elixir/git/ref/heads/main | jq .object.sha | tr -d '"' )
+          echo "sha=$( curl -u "u:${{ github.token }}" https://api.github.com/repos/elixir-lang/elixir/git/ref/heads/main | jq .object.sha | tr -d '"' )" >> "$GITHUB_OUTPUT"
 
       - name: Check out latest Elixir
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           repository: elixir-lang/elixir
           ref: ${{ steps.get-elixir-sha.outputs.sha }}
@@ -52,7 +52,7 @@ jobs:
 
       - name: Cache compiled Elixir
         id: cache-compiled-elixir
-        uses: actions/cache@v3
+        uses: actions/cache@v6
         with:
           path: elixir_src
           key: ${{ runner.os }}-elixir-${{ steps.get-elixir-sha.outputs.sha }}
