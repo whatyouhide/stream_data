@@ -2176,7 +2176,7 @@ defmodule StreamData do
         map(positive_integer(), &Date.add(min, &1))
 
       {min = %Date{}, max = %Date{}, nil} ->
-        if Date.before?(max, min) do
+        if Date.compare(max, min) == :lt do
           raise ArgumentError, """
           expected :max to be after or equal to :min, got:
 
