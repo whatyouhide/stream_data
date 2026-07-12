@@ -1,5 +1,3 @@
-# TODO: test shrinking
-
 defmodule StreamDataTest do
   use ExUnit.Case, async: true
   use ExUnitProperties
@@ -54,12 +52,20 @@ defmodule StreamDataTest do
     end
   end
 
+  test "constant/1 doesn't shrink" do
+    assert shrink(constant(:term)) == :term
+  end
+
   property "map/1" do
     data = map(integer(1..5), &(-&1))
 
     check all int <- data do
       assert int in -1..-5//-1
     end
+  end
+
+  test "map/2 shrinks the underlying generator, mapping shrunk values" do
+    assert shrink(map(integer(), &(&1 - 100))) == -100
   end
 
   describe "bind_filter/2" do
@@ -101,6 +107,10 @@ defmodule StreamDataTest do
     end
   end
 
+  test "bind/2 shrinks the outer generator and re-applies the function" do
+    assert shrink(bind(integer(1..10), &constant(&1 * 2))) == 2
+  end
+
   describe "filter/2,3" do
     test "filters out terms that fail the predicate" do
       values =
@@ -128,11 +138,32 @@ defmodule StreamDataTest do
       assert message =~ "too many consecutive elements (10 elements in this case)"
       assert message =~ "The last element to be filtered out was: :term."
     end
+
+    test "only shrinks to values that satisfy the predicate" do
+      assert shrink(filter(integer(), &(&1 >= 0))) == 0
+    end
   end
 
   property "integer/1 for ranges without steps" do
     check all int <- integer(-10..10) do
       assert int in -10..10
+    end
+  end
+
+  property "integer/1 shrinks towards the smallest absolute value in the range" do
+    check all bound1 <- integer(),
+              bound2 <- integer(),
+              max_runs: 25 do
+      range = min(bound1, bound2)..max(bound1, bound2)
+
+      expected =
+        cond do
+          0 in range -> 0
+          range.first > 0 -> range.first
+          true -> range.last
+        end
+
+      assert shrink(integer(range)) == expected
     end
   end
 
@@ -221,6 +252,10 @@ defmodule StreamDataTest do
     assert Enum.count(values, &(&1 == :small_chance)) < Enum.count(values, &(&1 == :big_chance))
   end
 
+  test "frequency/1 shrinks towards generators that appear earlier in the list" do
+    assert shrink(frequency([{1, constant(:rare)}, {100, constant(:frequent)}])) == :rare
+  end
+
   describe "one_of/1" do
     property "picks one of the given generators" do
       check all int <- one_of([integer(1..5), integer(-1..-5//-1)]) do
@@ -243,6 +278,10 @@ defmodule StreamDataTest do
         assert result.nodes_visited < 100
       end
     end
+
+    test "shrinks towards earlier generators with shrunk values" do
+      assert shrink(one_of([integer(), boolean()])) == 0
+    end
   end
 
   property "member_of/1" do
@@ -259,6 +298,10 @@ defmodule StreamDataTest do
     end
   end
 
+  test "member_of/1 shrinks towards elements that appear earlier in the enumerable" do
+    assert shrink(member_of([:a, :b, :c])) == :a
+  end
+
   property "repeatedly/1" do
     check all value <- repeatedly(&System.unique_integer/0) do
       assert is_integer(value)
@@ -268,10 +311,31 @@ defmodule StreamDataTest do
     assert Enum.uniq(values) == values
   end
 
+  test "repeatedly/1 doesn't shrink" do
+    generator = repeatedly(fn -> System.unique_integer() end)
+
+    {:error, metadata} = check_all(generator, [initial_seed: :os.timestamp()], &{:error, &1})
+
+    assert metadata.shrunk_failure == metadata.original_failure
+    assert metadata.nodes_visited == 0
+  end
+
+  test "unshrinkable/1 makes values not shrink" do
+    {:error, metadata} =
+      check_all(unshrinkable(integer()), [initial_seed: :os.timestamp()], &{:error, &1})
+
+    assert metadata.shrunk_failure == metadata.original_failure
+    assert metadata.nodes_visited == 0
+  end
+
   property "boolean/0" do
     check all bool <- boolean() do
       assert is_boolean(bool)
     end
+  end
+
+  test "boolean/0 shrinks towards false" do
+    assert shrink(boolean()) == false
   end
 
   property "integer/0" do
@@ -279,6 +343,15 @@ defmodule StreamDataTest do
       assert is_integer(int)
       assert abs(int) < 1000
     end
+  end
+
+  test "integer/0 shrinks towards 0" do
+    assert shrink(integer()) == 0
+  end
+
+  test "integer/0 shrinks to the smallest failing value" do
+    assert shrink(integer(), &(&1 >= 42)) == 42
+    assert shrink(integer(), &(&1 <= -42)) == -42
   end
 
   describe "positive_integer/0" do
@@ -294,6 +367,10 @@ defmodule StreamDataTest do
         assert int == 1
       end
     end
+
+    test "shrinks towards 1" do
+      assert shrink(positive_integer()) == 1
+    end
   end
 
   describe "non_negative_integer/0" do
@@ -308,6 +385,10 @@ defmodule StreamDataTest do
       check all int <- resize(non_negative_integer(), 0), max_runs: 3 do
         assert int == 0
       end
+    end
+
+    test "shrinks towards 0" do
+      assert shrink(non_negative_integer()) == 0
     end
   end
 
@@ -361,6 +442,14 @@ defmodule StreamDataTest do
         assert is_float(float)
         assert float >= -1.12 and float <= 4.01
       end
+    end
+
+    test "never shrinks outside of the given bounds" do
+      assert shrink(float(min: 1.5)) >= 1.5
+      assert shrink(float(max: -1.5)) <= -1.5
+
+      shrunk = shrink(float(min: -2.5, max: 2.5))
+      assert shrunk >= -2.5 and shrunk <= 2.5
     end
   end
 
@@ -417,6 +506,10 @@ defmodule StreamDataTest do
     end
   end
 
+  test "byte/0 shrinks towards 0" do
+    assert shrink(byte()) == 0
+  end
+
   describe "binary/1" do
     property "generates binaries" do
       check all value <- resize(binary(), 10) do
@@ -430,6 +523,11 @@ defmodule StreamDataTest do
         assert is_binary(value)
         assert byte_size(value) == 3
       end
+    end
+
+    test "shrinks towards smaller binaries with bytes towards 0" do
+      assert shrink(binary()) == ""
+      assert shrink(binary(min_length: 3)) == <<0, 0, 0>>
     end
   end
 
@@ -446,6 +544,11 @@ defmodule StreamDataTest do
         assert is_bitstring(value)
         assert bit_size(value) == 3
       end
+    end
+
+    test "shrinks towards smaller bitstrings with bits towards 0" do
+      assert shrink(bitstring()) == ""
+      assert shrink(bitstring(min_length: 3)) == <<0::size(3)>>
     end
   end
 
@@ -486,6 +589,15 @@ defmodule StreamDataTest do
         assert Enum.all?(value, &(&1 == :term))
         assert length(value) <= 5
       end
+    end
+
+    test "shrinks towards smaller lists with shrunk elements" do
+      assert shrink(list_of(integer())) == []
+      assert shrink(list_of(integer()), &(length(&1) >= 3)) == [0, 0, 0]
+    end
+
+    test "respects length-related options when shrinking" do
+      assert shrink(list_of(integer(), min_length: 3)) == [0, 0, 0]
     end
 
     test "with invalid options" do
@@ -529,6 +641,13 @@ defmodule StreamDataTest do
         |> Enum.take(1)
       end
     end
+
+    test "shrinks towards smaller lists that keep elements unique" do
+      assert shrink(uniq_list_of(integer())) == []
+
+      shrunk = shrink(uniq_list_of(integer(), min_length: 3, max_tries: 1000))
+      assert Enum.sort(shrunk) == [-1, 0, 1]
+    end
   end
 
   describe "shuffle/1" do
@@ -555,11 +674,19 @@ defmodule StreamDataTest do
     end
   end
 
+  test "nonempty_improper_list_of/2 shrinks towards smaller (still improper) lists" do
+    assert shrink(nonempty_improper_list_of(integer(), constant("end"))) == [0 | "end"]
+  end
+
   property "maybe_improper_list_of/2" do
     check all list <- maybe_improper_list_of(integer(), constant("")) do
       assert list != [""]
       each_improper_list(list, &assert(is_integer(&1)), &assert(&1 == "" or is_integer(&1)))
     end
+  end
+
+  test "maybe_improper_list_of/2 ultimately shrinks towards proper lists" do
+    assert shrink(maybe_improper_list_of(integer(), constant("end"))) == []
   end
 
   property "tuple/1" do
@@ -568,6 +695,10 @@ defmodule StreamDataTest do
       assert int1 in -1..-10//-1
       assert int2 in 1..10
     end
+  end
+
+  test "tuple/1 shrinks each element according to the corresponding generator" do
+    assert shrink(tuple({integer(), boolean()})) == {0, false}
   end
 
   property "map_of/2" do
@@ -594,6 +725,10 @@ defmodule StreamDataTest do
     end
   end
 
+  test "map_of/3 shrinks towards smaller maps with shrunk keys and values" do
+    assert shrink(map_of(integer(), boolean())) == %{}
+  end
+
   property "fixed_map/1" do
     data_with_map = fixed_map(%{integer: integer(), binary: binary()})
     data_with_keyword = fixed_map(integer: integer(), binary: binary())
@@ -605,6 +740,10 @@ defmodule StreamDataTest do
         assert is_binary(Map.fetch!(map, :binary))
       end
     end)
+  end
+
+  test "fixed_map/1 shrinks values but never loses keys" do
+    assert shrink(fixed_map(%{int: integer(), bool: boolean()})) == %{int: 0, bool: false}
   end
 
   property "optional_map/1" do
@@ -629,6 +768,10 @@ defmodule StreamDataTest do
         end
       end
     end)
+  end
+
+  test "optional_map/1 shrinks by taking out keys" do
+    assert shrink(optional_map(%{int: integer(), bool: boolean()})) == %{}
   end
 
   property "optional_map/2" do
@@ -667,6 +810,11 @@ defmodule StreamDataTest do
     end
   end
 
+  test "keyword_of/1 shrinks towards smaller keyword lists with shrunk values" do
+    assert shrink(keyword_of(integer())) == []
+    assert shrink(nonempty(keyword_of(integer()))) == [a: 0]
+  end
+
   describe "mapset_of/1" do
     property "without options" do
       check all set <- mapset_of(integer(1..10000)) do
@@ -686,12 +834,20 @@ defmodule StreamDataTest do
         |> Enum.take(1)
       end
     end
+
+    test "shrinks towards smaller map sets" do
+      assert shrink(mapset_of(integer())) == MapSet.new()
+    end
   end
 
   property "nonempty/1" do
     check all list <- nonempty(list_of(:term)) do
       assert length(list) > 0
     end
+  end
+
+  test "nonempty/1 doesn't shrink to empty lists" do
+    assert shrink(nonempty(list_of(integer()))) == [0]
   end
 
   property "tree/2" do
@@ -702,6 +858,10 @@ defmodule StreamDataTest do
         assert is_boolean(tree)
       end
     end
+  end
+
+  test "tree/2 shrinks towards less deep trees with shrunk values" do
+    assert shrink(tree(boolean(), &list_of/1)) == false
   end
 
   describe "codepoint/1" do
@@ -727,6 +887,11 @@ defmodule StreamDataTest do
       check all codepoint <- codepoint(:utf8) do
         assert String.valid?(<<codepoint::utf8>>)
       end
+    end
+
+    test "shrinks towards the smallest codepoint" do
+      assert shrink(codepoint(:ascii)) == ?\s
+      assert shrink(codepoint(:utf8)) == 0
     end
   end
 
@@ -809,6 +974,12 @@ defmodule StreamDataTest do
       message = ":count must be either :codepoints or :graphemes, got: :bytes"
       assert_raise ArgumentError, message, fn -> string(:printable, count: :bytes) end
     end
+
+    test "shrinks towards smaller strings with smaller codepoints" do
+      assert shrink(string(:ascii)) == ""
+      assert shrink(string(:ascii, min_length: 2)) == "  "
+      assert shrink(string(?a..?z, length: 3)) == "aaa"
+    end
   end
 
   describe "atom/1" do
@@ -825,6 +996,11 @@ defmodule StreamDataTest do
         assert String.starts_with?(Atom.to_string(module), "Elixir.")
       end
     end
+
+    test "shrinks towards smaller atoms with simpler letters" do
+      assert shrink(atom(:alphanumeric)) == :a
+      assert shrink(atom(:alias)) == A
+    end
   end
 
   property "iolist/0" do
@@ -833,16 +1009,28 @@ defmodule StreamDataTest do
     end
   end
 
+  test "iolist/0 shrinks towards less nested iolists" do
+    assert shrink(iolist()) == [0]
+  end
+
   property "iodata/0" do
     check all iodata <- iodata(), max_runs: 50 do
       assert IO.iodata_length(iodata) >= 0
     end
   end
 
+  test "iodata/0 shrinks towards smaller binaries" do
+    assert shrink(iodata()) == ""
+  end
+
   property "chardata/0" do
     check all chardata <- chardata(), max_runs: 50 do
       assert IO.chardata_to_string(chardata) |> String.valid?()
     end
+  end
+
+  test "chardata/0 shrinks towards smaller binaries" do
+    assert shrink(chardata()) == ""
   end
 
   property "term/0" do
@@ -926,10 +1114,16 @@ defmodule StreamDataTest do
     assert check_all(list_of(boolean()), options, property) == {:ok, %{}}
   end
 
-  # Taken from: https://github.com/whatyouhide/stream_data/issues/160
-  defp shrink(generator) do
+  # Returns the smallest value that `generator` shrinks to for which `predicate` returns
+  # true, by running check_all/3 with a property that fails for all values that satisfy
+  # `predicate`. Taken from: https://github.com/whatyouhide/stream_data/issues/160
+  defp shrink(generator, predicate \\ fn _ -> true end) do
+    options = [initial_seed: :os.timestamp(), max_runs: 1000, max_shrinking_steps: 1000]
+
     {:error, %{shrunk_failure: value}} =
-      check_all(generator, [initial_seed: :os.timestamp()], &{:error, &1})
+      check_all(generator, options, fn value ->
+        if predicate.(value), do: {:error, value}, else: {:ok, value}
+      end)
 
     value
   end
