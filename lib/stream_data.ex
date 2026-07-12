@@ -1969,7 +1969,24 @@ defmodule StreamData do
 
   ## Options
 
-  See the documentation of `list_of/2` for the possible values of options.
+  This function accepts the same length-related options as `list_of/2`
+  (`:length`, `:min_length`, and `:max_length`), plus:
+
+    * `:count` - (`:codepoints` or `:graphemes`) controls what the
+      length-related options count. Defaults to `:codepoints`.
+
+      * `:codepoints` - the length-related options count the number of
+        Unicode codepoints in the generated string. This is what `list_of/2`
+        counts under the hood, and it is the default for backwards
+        compatibility.
+
+      * `:graphemes` - the length-related options count the number of
+        graphemes in the generated string, that is, what `String.length/1`
+        returns. This matters for kinds such as `:printable` and `:utf8`,
+        which can generate combining characters: a base character followed
+        by a combining mark is two codepoints but a single grapheme. Without
+        this option, `String.length/1` of a generated string can be *smaller*
+        than the requested minimum length. *Available since 1.4.0.*
 
   ## Examples
 
@@ -2019,9 +2036,51 @@ defmodule StreamData do
   end
 
   defp string_from_codepoint_data(codepoint_data, options) do
-    codepoint_data
-    |> list_of(options)
-    |> map(&List.to_string/1)
+    {count, options} = Keyword.pop(options, :count, :codepoints)
+
+    unless count in [:codepoints, :graphemes] do
+      raise ArgumentError,
+            ":count must be either :codepoints or :graphemes, got: #{inspect(count)}"
+    end
+
+    string =
+      codepoint_data
+      |> list_of(options)
+      |> map(&List.to_string/1)
+
+    # The length-related options are enforced by list_of/2 on the list of
+    # codepoints. When counting graphemes, a codepoint can combine with the
+    # previous one into a single grapheme (for example, a combining mark), so
+    # String.length/1 can end up *below* the requested minimum. Since the number
+    # of graphemes is always <= the number of codepoints, only the lower bound
+    # can be violated, so that's all we need to enforce here.
+    case count do
+      :codepoints ->
+        string
+
+      :graphemes ->
+        case min_grapheme_count(options) do
+          0 -> string
+          min -> filter(string, &(String.length(&1) >= min))
+        end
+    end
+  end
+
+  defp min_grapheme_count(options) do
+    case Keyword.fetch(options, :length) do
+      {:ok, length} when is_integer(length) and length >= 0 ->
+        length
+
+      {:ok, min..max//_} when min >= 0 and max >= 0 ->
+        Kernel.min(min, max)
+
+      _other ->
+        case Keyword.get(options, :min_length, 0) do
+          min when is_integer(min) and min >= 0 -> min
+          # Leave invalid values to list_of/2, which raises a proper error.
+          _invalid -> 0
+        end
+    end
   end
 
   @doc """

@@ -762,6 +762,35 @@ defmodule StreamDataTest do
         assert String.length(string) == 3
       end
     end
+
+    property "with count: :graphemes, the length options count graphemes" do
+      check all string <- string(:printable, min_length: 41, count: :graphemes) do
+        assert String.length(string) >= 41
+      end
+
+      check all string <- string(:printable, length: 20, count: :graphemes) do
+        assert String.length(string) == 20
+      end
+
+      check all string <- string(:printable, length: 10..15, count: :graphemes) do
+        assert String.length(string) in 10..15
+      end
+
+      check all string <- string(:utf8, min_length: 30, count: :graphemes) do
+        assert String.length(string) >= 30
+      end
+    end
+
+    property "with count: :codepoints, the length options count codepoints" do
+      check all string <- string(:printable, min_length: 41, count: :codepoints) do
+        assert length(String.to_charlist(string)) >= 41
+      end
+    end
+
+    test "with an invalid :count option" do
+      message = ":count must be either :codepoints or :graphemes, got: :bytes"
+      assert_raise ArgumentError, message, fn -> string(:printable, count: :bytes) end
+    end
   end
 
   describe "atom/1" do
