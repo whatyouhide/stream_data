@@ -25,4 +25,16 @@ defmodule StreamData.StringTest do
       end
     end
   end
+
+  # TODO: Make this unconditional when we depend on Elixir 1.20+.
+  if function_exported?(String, :count, 2) do
+    # From https://github.com/elixir-lang/elixir/pull/14448.
+    property "String.count/2 is equivalent to String.split/2 + Kernel.length/1 - 1" do
+      check all string <- string(:printable),
+                pattern <- string(:printable) do
+        assert String.count(string, pattern) ==
+                 string |> String.split(pattern) |> Kernel.length() |> Kernel.-(1)
+      end
+    end
+  end
 end
