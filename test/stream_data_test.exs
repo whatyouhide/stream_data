@@ -221,9 +221,27 @@ defmodule StreamDataTest do
     assert Enum.count(values, &(&1 == :small_chance)) < Enum.count(values, &(&1 == :big_chance))
   end
 
-  property "one_of/1" do
-    check all int <- one_of([integer(1..5), integer(-1..-5//-1)]) do
-      assert int in 1..5 or int in -1..-5//-1
+  describe "one_of/1" do
+    property "picks one of the given generators" do
+      check all int <- one_of([integer(1..5), integer(-1..-5//-1)]) do
+        assert int in 1..5 or int in -1..-5//-1
+      end
+    end
+
+    # Regression test for https://github.com/whatyouhide/stream_data/issues/97.
+    property "shrinks towards earlier generators" do
+      check all size <- positive_integer(),
+                seed <- {integer(), integer(), integer()} do
+        {:error, result} =
+          one_of([:foo, {:bar, integer()}])
+          |> check_all(
+            [max_shrinking_steps: 100, initial_size: size, initial_seed: seed],
+            fn example -> {:error, example} end
+          )
+
+        assert result.shrunk_failure == :foo
+        assert result.nodes_visited < 100
+      end
     end
   end
 

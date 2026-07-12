@@ -41,9 +41,9 @@ defmodule StreamData.LazyTreeTest do
 
     expected =
       new(:root1, [
+        new(:root2, [constant(:child2_a), constant(:child2_b)]),
         constant(:child1_a),
-        constant(:child1_b),
-        new(:root2, [constant(:child2_a), constant(:child2_b)])
+        constant(:child1_b)
       ])
 
     assert realize_tree(joined_tree) == realize_tree(expected)
