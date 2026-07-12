@@ -84,8 +84,13 @@ defmodule StreamData.LazyTree do
   @doc """
   Takes a tree of trees and flattens it to a tree of elements in those trees.
 
-  The tree is flattened so that the root and its children always come "before"
-  (as in higher or more towards the left in the tree) the children of `tree`.
+  The tree is flattened so that the children of `tree` (the "outer" trees)
+  always come "before" (as in higher or more towards the left in the tree) the
+  children of the root of `tree` (the "inner" tree). Since children of `tree`
+  usually represent more structural shrinking (for example, choosing an
+  earlier generator in `StreamData.one_of/1`), this makes shrinking try
+  structural simplifications before simplifications of the generated values
+  themselves.
 
   ## Examples
 
@@ -103,7 +108,7 @@ defmodule StreamData.LazyTree do
 
     %__MODULE__{
       root: child_root,
-      children: Stream.concat(child_children, Stream.map(children, &flatten/1))
+      children: Stream.concat(Stream.map(children, &flatten/1), child_children)
     }
   end
 
