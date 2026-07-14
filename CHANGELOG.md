@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.4.0
+
+  * Require Elixir 1.14+.
+  * Fix `StreamData.float/1` when min and max are too far apart.
+  * Support choosing between graphemes and codepoints in `StreamData.string/2`.
+  * Shrink `StreamData.one_of/1` towards earlier elements first (instead of smaller values for later elements).
+
 ## v1.3.0
 
   * Add `StreamData.date/0` and `StreamData.date/1`.
