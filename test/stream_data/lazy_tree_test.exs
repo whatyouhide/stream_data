@@ -32,18 +32,35 @@ defmodule StreamData.LazyTreeTest do
     assert realize_tree(mapped_tree) == realize_tree(expected)
   end
 
-  test "flatten/1" do
+  test "flatten/2 with outer children first" do
     tree1 = new(:root1, [constant(:child1_a), constant(:child1_b)])
     tree2 = new(:root2, [constant(:child2_a), constant(:child2_b)])
     tree = new(tree1, [constant(tree2)])
 
-    assert %LazyTree{} = joined_tree = LazyTree.flatten(tree)
+    assert %LazyTree{} = joined_tree = LazyTree.flatten(tree, :outer_first)
 
     expected =
       new(:root1, [
         new(:root2, [constant(:child2_a), constant(:child2_b)]),
         constant(:child1_a),
         constant(:child1_b)
+      ])
+
+    assert realize_tree(joined_tree) == realize_tree(expected)
+  end
+
+  test "flatten/2 with inner children first" do
+    tree1 = new(:root1, [constant(:child1_a), constant(:child1_b)])
+    tree2 = new(:root2, [constant(:child2_a), constant(:child2_b)])
+    tree = new(tree1, [constant(tree2)])
+
+    assert %LazyTree{} = joined_tree = LazyTree.flatten(tree, :inner_first)
+
+    expected =
+      new(:root1, [
+        constant(:child1_a),
+        constant(:child1_b),
+        new(:root2, [constant(:child2_a), constant(:child2_b)])
       ])
 
     assert realize_tree(joined_tree) == realize_tree(expected)

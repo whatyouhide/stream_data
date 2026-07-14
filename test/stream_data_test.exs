@@ -224,6 +224,13 @@ defmodule StreamDataTest do
     end
   end
 
+  # Regression test for https://github.com/whatyouhide/stream_data/issues/107.
+  test "constraints derived from sized/1 remain in place while shrinking" do
+    data = sized(fn size -> list_of(integer(), min_length: size) end)
+
+    assert shrink(data) == [0]
+  end
+
   test "seeded/2" do
     data = seeded(integer(), _seed = 1)
     assert Enum.take(data, 100) == Enum.take(data, 100)
@@ -596,6 +603,26 @@ defmodule StreamDataTest do
       assert shrink(list_of(integer()), &(length(&1) >= 3)) == [0, 0, 0]
     end
 
+    # Regression test for https://github.com/whatyouhide/stream_data/issues/107.
+    test "shrinks scaled lists structurally before shrinking their elements" do
+      data = scale(list_of(atom(:alphanumeric), min_length: 1), &(&1 * 3))
+
+      {:error, metadata} =
+        check_all(
+          data,
+          [
+            initial_seed: {1, 2, 3},
+            initial_size: 25,
+            max_runs: 1,
+            max_shrinking_steps: 50
+          ],
+          &{:error, &1}
+        )
+
+      assert metadata.shrunk_failure == [:a]
+      assert metadata.nodes_visited < 50
+    end
+
     test "respects length-related options when shrinking" do
       assert shrink(list_of(integer(), min_length: 3)) == [0, 0, 0]
     end
@@ -772,6 +799,9 @@ defmodule StreamDataTest do
 
   test "optional_map/1 shrinks by taking out keys" do
     assert shrink(optional_map(%{int: integer(), bool: boolean()})) == %{}
+
+    data = optional_map(%{optional: integer(1..100), required: integer(1..100)}, [:optional])
+    assert shrink(data) == %{required: 1}
   end
 
   property "optional_map/2" do

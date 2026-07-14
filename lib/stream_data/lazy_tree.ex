@@ -84,31 +84,36 @@ defmodule StreamData.LazyTree do
   @doc """
   Takes a tree of trees and flattens it to a tree of elements in those trees.
 
-  The tree is flattened so that the children of `tree` (the "outer" trees)
-  always come "before" (as in higher or more towards the left in the tree) the
-  children of the root of `tree` (the "inner" tree). Since children of `tree`
-  usually represent more structural shrinking (for example, choosing an
-  earlier generator in `StreamData.one_of/1`), this makes shrinking try
-  structural simplifications before simplifications of the generated values
-  themselves.
+  The `children_order` argument controls whether the children of `tree` (the
+  "outer" trees) or the children of the root of `tree` (the "inner" tree) come
+  first in the flattened tree. This lets each generator choose which kind of
+  shrinking it wants to prioritize.
 
   ## Examples
 
       iex> tree =
       ...>   %StreamData.LazyTree{root: 1, children: []}
       ...>   |> StreamData.LazyTree.map(&%StreamData.LazyTree{root: &1, children: []})
-      ...>   |> StreamData.LazyTree.flatten()
+      ...>   |> StreamData.LazyTree.flatten(:outer_first)
       iex> tree.root
       1
 
   """
-  @spec flatten(t(t(a))) :: t(a) when a: term()
-  def flatten(%__MODULE__{root: child, children: children}) do
+  @spec flatten(t(t(a)), :outer_first | :inner_first) :: t(a) when a: term()
+  def flatten(%__MODULE__{root: child, children: children}, children_order)
+      when children_order in [:outer_first, :inner_first] do
     %__MODULE__{root: child_root, children: child_children} = child
+    outer_children = Stream.map(children, &flatten(&1, children_order))
+
+    children =
+      case children_order do
+        :outer_first -> Stream.concat(outer_children, child_children)
+        :inner_first -> Stream.concat(child_children, outer_children)
+      end
 
     %__MODULE__{
       root: child_root,
-      children: Stream.concat(Stream.map(children, &flatten/1), child_children)
+      children: children
     }
   end
 

@@ -386,7 +386,7 @@ defmodule StreamData do
         tree =
           filter_mapped_tree
           |> LazyTree.map(&call(&1, seed2, size))
-          |> LazyTree.flatten()
+          |> LazyTree.flatten(:outer_first)
 
         {:ok, tree}
 
@@ -621,6 +621,14 @@ defmodule StreamData do
       Enum.take(data, 3)
       #=> [0, -1, 5]
 
+  ## Shrinking
+
+  Generation size itself **does not shrink**. Any constraints derived from it
+  stay in place while shrinking the generated value. For example, a list
+  generated with `min_length: size` cannot shrink below the size used for that
+  run. In this example, if the intent is to generate a list with up to `size`
+  elements that can shrink to an empty list, use `list_of/1` directly or pass
+  `max_length: size` instead.
   """
   @spec sized((size() -> t(a))) :: t(a) when a: term()
   def sized(fun) when is_function(fun, 1) do
@@ -883,19 +891,6 @@ defmodule StreamData do
   possible length-related option: for example, if `:min_length` is provided, all
   shrunk list will have more than `:min_length` elements.
   """
-  # We could have an implementation that relies on fixed_list/1 and List.duplicate/2,
-  # it would look like this:
-  #
-  #     new(fn seed, size ->
-  #       {length, next_seed} = uniform_in_range(0..size, seed)
-  #       data
-  #       |> List.duplicate(length)
-  #       |> fixed_list()
-  #       |> call(next_seed, size)
-  #       |> LazyTree.map(&list_lazy_tree/1)
-  #       |> LazyTree.flatten()
-  #     end)
-  #
   @spec list_of(t(a), keyword()) :: t([a]) when a: term()
   def list_of(data, options) do
     list_length_range_fun = list_length_range_fun(options)
@@ -906,9 +901,8 @@ defmodule StreamData do
 
       data
       |> call_n_times(next_seed, size, length, [])
-      |> LazyTree.zip()
-      |> LazyTree.map(&list_lazy_tree(&1, min_length))
-      |> LazyTree.flatten()
+      |> list_lazy_tree(min_length)
+      |> LazyTree.flatten(:outer_first)
     end)
   end
 
@@ -924,9 +918,8 @@ defmodule StreamData do
 
       data
       |> call_n_times(next_seed, size, length, [])
-      |> LazyTree.zip()
-      |> LazyTree.map(&list_lazy_tree(&1, 0))
-      |> LazyTree.flatten()
+      |> list_lazy_tree(0)
+      |> LazyTree.flatten(:outer_first)
     end)
   end
 
@@ -973,18 +966,19 @@ defmodule StreamData do
     call_n_times(data, seed2, size, length - 1, [call(data, seed1, size) | acc])
   end
 
-  defp list_lazy_tree(list, min_length) do
-    length = length(list)
+  defp list_lazy_tree(trees, min_length) do
+    length = length(trees)
+    inner_tree = LazyTree.zip(trees)
 
     if length == min_length do
-      lazy_tree_constant(list)
+      lazy_tree_constant(inner_tree)
     else
       children =
         Stream.map(0..(length - 1), fn index ->
-          list_lazy_tree(List.delete_at(list, index), min_length)
+          list_lazy_tree(List.delete_at(trees, index), min_length)
         end)
 
-      lazy_tree(list, children)
+      lazy_tree(inner_tree, children)
     end
   end
 
@@ -1058,9 +1052,8 @@ defmodule StreamData do
         length,
         []
       )
-      |> LazyTree.zip()
-      |> LazyTree.map(&list_lazy_tree(&1, min_length))
-      |> LazyTree.flatten()
+      |> list_lazy_tree(min_length)
+      |> LazyTree.flatten(:outer_first)
       |> LazyTree.map(&Enum.uniq_by(&1, uniq_fun))
       |> LazyTree.filter(&(length(&1) >= min_length))
     end)
@@ -1402,17 +1395,16 @@ defmodule StreamData do
       {seed1, seed2} = split_seed(seed)
       subkeys_tree = call(subkeys_data, seed1, size)
 
-      # This map contains the constant keys and the data value for the map we are going to
-      # generate. Since we are only going to take keys away, doing this here instead of generating
-      # the map first with all the keys and then taking away values saves us from generating keys
-      # that we are never going to use.
-      base_data_map = Map.take(data_map, constant_keys ++ subkeys_tree.root)
-
-      call(fixed_map(base_data_map), seed2, size)
-      |> LazyTree.map(fn fixed_map ->
-        LazyTree.map(subkeys_tree, &Map.take(fixed_map, constant_keys ++ &1))
+      subkeys_tree
+      |> LazyTree.map(fn subkeys ->
+        # Generating only the selected keys avoids generating values that will
+        # immediately be removed during structural shrinking.
+        data_map
+        |> Map.take(constant_keys ++ subkeys)
+        |> fixed_map()
+        |> call(seed2, size)
       end)
-      |> LazyTree.flatten()
+      |> LazyTree.flatten(:outer_first)
     end)
   end
 
