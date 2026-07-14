@@ -8,7 +8,7 @@ defmodule StreamData.Mixfile do
     [
       app: :stream_data,
       version: @version,
-      elixir: "~> 1.12",
+      elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
 
