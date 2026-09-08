@@ -1747,8 +1747,7 @@ defmodule StreamData do
     end)
   end
 
-  defp power_of_two(0), do: 1
-  defp power_of_two(n), do: 2 * power_of_two(n - 1)
+  defp power_of_two(n), do: Bitwise.bsl(1, n)
 
   @doc """
   Generates bytes.
