@@ -28,6 +28,7 @@ defmodule StreamData.Mixfile do
       package: [
         maintainers: ["Andrea Leopardi"],
         licenses: ["Apache-2.0"],
+        files: ~w(lib .formatter.exs mix.exs README.md CHANGELOG.md usage-rules.md),
         links: %{"GitHub" => @repo_url, "Sponsor" => "https://github.com/sponsors/whatyouhide"}
       ],
 
